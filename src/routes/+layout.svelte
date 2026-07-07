@@ -58,9 +58,11 @@
 		<link rel="alternate" hreflang={l} href={SITE + localePath(l, rest)} />
 	{/each}
 	<link rel="alternate" hreflang="x-default" href={SITE + localePath(defaultLocale, rest)} />
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	<script type="application/ld+json">{@html websiteLd}</script>
 </svelte:head>
+
+<!-- WebSite 구조화 데이터 (svelte:head 의 script 안 {@html} 은 비어버려서 body 에 둠 — 크롤러는 body JSON-LD 도 읽음) -->
+<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+{@html `<script type="application/ld+json">${websiteLd}</script>`}
 
 <!--
   광고 슬롯. 지금은 비어 있어 자동으로 숨겨짐(현재와 동일한 모습).
