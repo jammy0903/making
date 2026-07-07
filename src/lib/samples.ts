@@ -388,6 +388,24 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'고슴도치',
 			'아기코알라',
 			'아기알파카'
+		],
+		images: [
+			'/gen/animal-00.jpeg',
+			'/gen/animal-01.jpeg',
+			'/gen/animal-02.jpeg',
+			'/gen/animal-03.jpeg',
+			'/gen/animal-04.jpeg',
+			'/gen/animal-05.jpeg',
+			'/gen/animal-06.jpeg',
+			'/gen/animal-07.jpeg',
+			'/gen/animal-08.jpeg',
+			'/gen/animal-09.jpeg',
+			'/gen/animal-10.jpeg',
+			'/gen/animal-11.jpeg',
+			'/gen/animal-12.jpeg',
+			'/gen/animal-13.jpeg',
+			'/gen/animal-14.jpeg',
+			'/gen/animal-15.jpeg'
 		]
 	},
 	{
