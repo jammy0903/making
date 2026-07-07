@@ -58,6 +58,19 @@
 		<link rel="alternate" hreflang={l} href={SITE + localePath(l, rest)} />
 	{/each}
 	<link rel="alternate" hreflang="x-default" href={SITE + localePath(defaultLocale, rest)} />
+
+	<!-- 구글 서치콘솔 소유권 확인 -->
+	<meta name="google-site-verification" content="fTGiuFJ27AfnyjIL6zIcD_VGvsguOIn1kEaVHBRfG10" />
+
+	<!-- 기본 Open Graph / Twitter (페이지에서 og:title 등은 덮어씀) -->
+	<meta property="og:site_name" content={t('app.title')} />
+	<meta property="og:locale" content={locale} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:image" content="{SITE}/og-default.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content="{SITE}/og-default.png" />
 </svelte:head>
 
 <!-- WebSite 구조화 데이터 (svelte:head 의 script 안 {@html} 은 비어버려서 body 에 둠 — 크롤러는 body JSON-LD 도 읽음) -->
