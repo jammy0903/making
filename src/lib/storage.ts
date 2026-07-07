@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import type { Topic } from './domain';
 import { publicTopicBySlug, isSampleTitle } from './publicTopics';
+import { defaultLocale, type Locale } from './i18n';
 
 /**
  * 로컬 저장소 — 이제 **사용자가 만든 주제만** 보관한다.
@@ -44,9 +45,9 @@ export function listUserTopics(): Topic[] {
 		.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** 슬러그면 공개 주제, 아니면 localStorage 사용자 주제 */
-export function getTopic(id: string): Topic | undefined {
-	return publicTopicBySlug(id) ?? readAll().find((t) => t.id === id);
+/** 슬러그면 공개 주제(로케일별), 아니면 localStorage 사용자 주제 */
+export function getTopic(id: string, locale: Locale = defaultLocale): Topic | undefined {
+	return publicTopicBySlug(id, locale) ?? readAll().find((t) => t.id === id);
 }
 
 export function saveTopic(topic: Topic): void {

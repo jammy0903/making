@@ -33,7 +33,7 @@
 
 	onMount(() => {
 		today = new Date().toLocaleDateString(dateLocale);
-		const tp = getTopic(page.params.id!);
+		const tp = getTopic(page.params.id!, getLocale());
 		topic = tp;
 		loaded = true;
 		if (!tp) return;
