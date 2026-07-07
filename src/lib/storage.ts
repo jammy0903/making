@@ -7,7 +7,8 @@ import { SAMPLE_TOPICS } from './samples';
  * (2단계에서 Supabase 어댑터로 교체 예정 — 인터페이스는 이 모듈로 유지)
  */
 const KEY = 'jn:topics';
-const SEEDED_KEY = 'jn:seeded'; // 샘플 주제를 이미 심었는지 표시(지워도 재생성 안 함)
+const SAMPLES_VERSION_KEY = 'jn:samples_version';
+const SAMPLES_VERSION = '2'; // 이 값이 바뀌면 기존 주제를 지우고 새 샘플로 교체
 
 function readAll(): Topic[] {
 	if (!browser) return [];
@@ -27,16 +28,12 @@ function writeAll(topics: Topic[]): void {
 }
 
 /**
- * 첫 방문 시 다양한 샘플 주제를 한 번만 심는다.
- * 이미 심었거나(플래그) 사용자가 만든 주제가 있으면 아무것도 하지 않는다.
+ * 샘플 주제 버전이 바뀌면 기존 주제를 모두 지우고 새 샘플 세트로 교체한다.
+ * (같은 버전에서는 한 번만 심고, 이후 사용자의 편집/삭제는 유지된다)
  */
 export function seedSamplesIfNeeded(): void {
 	if (!browser) return;
-	if (localStorage.getItem(SEEDED_KEY)) return;
-	if (readAll().length > 0) {
-		localStorage.setItem(SEEDED_KEY, '1');
-		return;
-	}
+	if (localStorage.getItem(SAMPLES_VERSION_KEY) === SAMPLES_VERSION) return;
 	const now = Date.now();
 	const topics: Topic[] = SAMPLE_TOPICS.map((s, i) => ({
 		id: makeId(),
@@ -46,8 +43,8 @@ export function seedSamplesIfNeeded(): void {
 		candidates: s.candidates.map((name) => ({ id: makeId(), name })),
 		createdAt: now - i * 1000 // 목록에서 정의한 순서대로 보이도록
 	}));
-	writeAll(topics);
-	localStorage.setItem(SEEDED_KEY, '1');
+	writeAll(topics); // 기존 주제를 새 세트로 완전히 교체
+	localStorage.setItem(SAMPLES_VERSION_KEY, SAMPLES_VERSION);
 }
 
 export function listTopics(): Topic[] {
