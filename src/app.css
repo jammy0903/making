@@ -42,9 +42,9 @@ body {
 body {
 	background: var(--bg);
 	color: var(--ink);
-	font-family: 'Galmuri11', 'Apple SD Gothic Neo', monospace;
-	font-size: 15px;
-	line-height: 1.6;
+	font-family: 'Galmuri14', 'Galmuri11', 'Apple SD Gothic Neo', monospace;
+	font-size: 16px;
+	line-height: 1.7;
 	-webkit-text-size-adjust: 100%;
 	overflow-x: hidden; /* 하드 그림자 등으로 인한 가로 스크롤 방지 */
 	overscroll-behavior-y: none; /* 당겨서 새로고침·바운스 억제 */
@@ -69,6 +69,111 @@ button,
 	max-width: 640px;
 	margin: 0 auto;
 	padding: 0 16px 48px;
+}
+
+/* 홈 갤러리는 넓게 (헤더·다른 페이지는 640px 유지) */
+.wrap.wide {
+	max-width: 1040px;
+}
+
+/* ── 광고 슬롯 ──────────────────────────────────────────────
+   비어 있으면 완전히 숨겨져 현재와 동일한 모습. 슬롯 안에 광고 코드를
+   넣으면 배너로 표시된다. 콘텐츠는 잘리지 않는다(위/아래로 밀리거나 옆 여백 사용). */
+.ad:empty {
+	display: none;
+}
+/* 상·하단 가로 배너: 콘텐츠가 그만큼 아래/위로 밀린다(스크롤만 늘 뿐 안 잘림) */
+.ad-top,
+.ad-bottom {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 90px;
+	padding: 8px 16px;
+	background: var(--soft);
+}
+.ad-top {
+	border-bottom: 3px solid var(--line);
+}
+.ad-bottom {
+	border-top: 3px solid var(--line);
+	margin-top: 24px;
+}
+/* 좌·우 세로 배너: 화면 양옆 빈 여백에 고정 → 콘텐츠 안 잘림 */
+.ad-side {
+	position: fixed;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 160px;
+	min-height: 600px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: var(--soft);
+	border: 3px solid var(--line);
+	z-index: 5;
+}
+.ad-left {
+	left: 20px;
+}
+.ad-right {
+	right: 20px;
+}
+/* 콘텐츠(최대 1040) + 좌우 배너(160*2)가 겹치지 않을 만큼 넓을 때만 노출 */
+@media (max-width: 1439px) {
+	.ad-side {
+		display: none;
+	}
+}
+
+/* 하우스 광고(배너 내용) */
+.house-ad {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	width: 100%;
+	max-width: 900px;
+	text-decoration: none;
+	color: var(--ink);
+}
+.ha-img {
+	width: 60px;
+	height: 60px;
+	flex: 0 0 auto;
+	image-rendering: auto; /* 사진이라 전역 pixelated 해제 */
+}
+.ha-text {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.3;
+	flex: 1;
+	min-width: 0;
+}
+.ha-title {
+	font-size: 16px;
+}
+.ha-desc {
+	color: var(--muted);
+	font-size: 12px;
+}
+.ha-cta {
+	flex: 0 0 auto;
+	padding: 8px 14px;
+	background: var(--accent);
+	color: var(--accent-ink);
+	border: 3px solid var(--line);
+	box-shadow: 2px 2px 0 var(--ink);
+	font-weight: 700;
+	white-space: nowrap;
+}
+@media (max-width: 560px) {
+	.ha-desc {
+		display: none;
+	}
+	.ha-cta {
+		padding: 6px 10px;
+		font-size: 13px;
+	}
 }
 
 .app-header {

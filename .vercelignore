@@ -1,0 +1,6 @@
+# 배포에서 제외 (비밀키/불필요 파일)
+.env
+.env.*
+!.env.example
+산출물/
+legacy/

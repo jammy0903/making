@@ -3,6 +3,7 @@
 	import { saveTopic } from '$lib/storage';
 	import { makeId, type RankMode, type Topic } from '$lib/domain';
 	import { resizeImageToDataUrl } from '$lib/image';
+	import ImageSearchModal from '$lib/components/ImageSearchModal.svelte';
 
 	const MAX = 256;
 
@@ -17,6 +18,7 @@
 	let mode = $state<RankMode>('sort');
 	let rows = $state<Row[]>([blank(), blank()]);
 	let error = $state('');
+	let searchRowId = $state<string | null>(null); // 검색 모달을 연 행 id
 
 	function blank(): Row {
 		return { id: makeId(), name: '', image: undefined };
@@ -40,6 +42,14 @@
 			rows = rows; // 반응성 트리거
 		} catch {
 			error = '이미지를 처리하지 못했어요. 다른 파일을 시도해 주세요.';
+		}
+	}
+
+	function applySearchImage(dataUrl: string) {
+		const row = rows.find((r) => r.id === searchRowId);
+		if (row) {
+			row.image = dataUrl;
+			rows = rows; // 반응성 트리거
 		}
 	}
 
@@ -125,6 +135,13 @@
 			/>
 			<button
 				class="btn"
+				onclick={() => (searchRowId = row.id)}
+				aria-label="사진 검색"
+				title="사진 검색"
+				style="padding:8px 12px">🔍</button
+			>
+			<button
+				class="btn"
 				onclick={() => removeRow(row.id)}
 				aria-label="삭제"
 				style="padding:8px 12px"
@@ -143,3 +160,11 @@
 {/if}
 
 <button class="btn btn-primary btn-block" onclick={save}>주제 저장하고 플레이</button>
+
+{#if searchRowId}
+	<ImageSearchModal
+		initialQuery={rows.find((r) => r.id === searchRowId)?.name ?? ''}
+		onselect={applySearchImage}
+		onclose={() => (searchRowId = null)}
+	/>
+{/if}

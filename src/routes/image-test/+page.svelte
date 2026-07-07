@@ -1,6 +1,6 @@
 <script lang="ts">
-	// Kling 이미지 생성 연동 테스트 페이지.
-	// 프롬프트 → /api/kling → base64 이미지. 후보 UI 로 옮기기 전 동작 확인용.
+	// 이미지 생성 연동 테스트 페이지.
+	// 프롬프트 → /api/image → base64 이미지. 후보 UI 로 옮기기 전 동작 확인용.
 	let prompt = $state('a cute cartoon cat wearing a knight helmet, white background');
 	let aspectRatio = $state<'1:1' | '3:4' | '9:16'>('3:4');
 	let loading = $state(false);
@@ -32,7 +32,7 @@
 </script>
 
 <main>
-	<h1>Kling 이미지 생성 테스트</h1>
+	<h1>이미지 생성 테스트</h1>
 
 	<label>
 		프롬프트 (영어 권장)

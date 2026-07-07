@@ -3,7 +3,7 @@
  * 무료 티어 저장소 보호를 위해 긴 변을 maxSide 로 줄인다(기본 512px).
  * 1단계에서는 data URL 을 localStorage 에 보관(2단계에서 Storage 업로드로 교체).
  */
-export async function resizeImageToDataUrl(file: File, maxSide = 512, quality = 0.82): Promise<string> {
+export async function resizeImageToDataUrl(file: Blob, maxSide = 512, quality = 0.82): Promise<string> {
 	const bitmap = await loadBitmap(file);
 	const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
 	const w = Math.round(bitmap.width * scale);
@@ -22,7 +22,7 @@ export async function resizeImageToDataUrl(file: File, maxSide = 512, quality = 
 	return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', quality);
 }
 
-async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
+async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
 	if ('createImageBitmap' in window) {
 		return await createImageBitmap(file);
 	}

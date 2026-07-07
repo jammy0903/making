@@ -6,12 +6,13 @@
  * 모델: black-forest-labs/FLUX.1-schnell (빠르고 라이선스 자유, 무료 크레딧으로 저렴).
  * 무료 유저는 매달 $0.10 크레딧 → schnell 기준 대략 20~30장. 소진 시 그 달은 막힘.
  * 토큰: hf.co/settings/tokens 에서 "Inference Providers" 권한으로 발급 → .env 의 HF_TOKEN.
- * Kling 어댑터(kling.ts)와 동일한 시그니처라 서로 갈아끼우기 쉽다.
  */
-import { InferenceClient } from '@huggingface/inference';
+import { InferenceClient, type InferenceProviderOrPolicy } from '@huggingface/inference';
 import { env } from '$env/dynamic/private';
 
 const MODEL = env.HF_IMAGE_MODEL || 'black-forest-labs/FLUX.1-schnell';
+// provider 고정. 'auto' 는 접속 불가한 provider 를 고를 수 있어 검증된 replicate 를 기본값으로.
+const PROVIDER = (env.HF_PROVIDER || 'replicate') as InferenceProviderOrPolicy;
 
 export interface GenerateOptions {
 	n?: number;
@@ -56,6 +57,9 @@ export async function generateImages(
 	const { width, height } = dimsFor(opts.aspectRatio);
 	const n = opts.n ?? 1;
 
+	// 변수로 빼서 객체 리터럴 excess-property 체크를 피한다 (provider 는 base Options 소속).
+	const callOpts = { provider: PROVIDER, outputType: 'dataUrl' as const };
+
 	// HF textToImage 는 호출당 이미지 1장 → n 만큼 병렬 호출.
 	// outputType 'dataUrl' 이면 data:image/...;base64 문자열을 바로 돌려준다.
 	const jobs = Array.from({ length: n }, () =>
@@ -71,7 +75,7 @@ export async function generateImages(
 					...(opts.negativePrompt ? { negative_prompt: opts.negativePrompt } : {})
 				}
 			},
-			{ outputType: 'dataUrl' }
+			callOpts
 		)
 	);
 

@@ -22,3 +22,6 @@ node_modules/
 .env.*
 !.env.example
 vite.config.ts.timestamp-*
+
+# 생성 산출물 (이미지/영상 바이너리)
+산출물/
