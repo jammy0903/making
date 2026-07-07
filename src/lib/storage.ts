@@ -8,7 +8,7 @@ import { SAMPLE_TOPICS } from './samples';
  */
 const KEY = 'jn:topics';
 const SAMPLES_VERSION_KEY = 'jn:samples_version';
-const SAMPLES_VERSION = '3'; // 이 값이 바뀌면 기존 주제를 지우고 새 샘플로 교체
+const SAMPLES_VERSION = '4'; // 이 값이 바뀌면 기존 주제를 지우고 새 샘플로 교체
 
 function readAll(): Topic[] {
 	if (!browser) return [];
@@ -40,7 +40,7 @@ export function seedSamplesIfNeeded(): void {
 		title: s.title,
 		description: s.description,
 		defaultMode: s.defaultMode,
-		candidates: s.candidates.map((name) => ({ id: makeId(), name })),
+		candidates: s.candidates.map((name, ci) => ({ id: makeId(), name, image: s.images?.[ci] })),
 		createdAt: now - i * 1000 // 목록에서 정의한 순서대로 보이도록
 	}));
 	writeAll(topics); // 기존 주제를 새 세트로 완전히 교체

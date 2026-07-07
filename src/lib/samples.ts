@@ -11,6 +11,8 @@ export interface SampleTopic {
 	description: string;
 	defaultMode: RankMode;
 	candidates: string[];
+	/** candidates 와 같은 순서의 이미지 URL. 생성된 주제만 채워진다(없으면 이름 앞글자 표시). */
+	images?: string[];
 }
 
 export const SAMPLE_TOPICS: SampleTopic[] = [
@@ -349,6 +351,20 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'참외',
 			'체리',
 			'파인애플'
+		],
+		images: [
+			'/gen/fruit-00.jpeg',
+			'/gen/fruit-01.jpeg',
+			'/gen/fruit-02.jpeg',
+			'/gen/fruit-03.jpeg',
+			'/gen/fruit-04.jpeg',
+			'/gen/fruit-05.jpeg',
+			'/gen/fruit-06.jpeg',
+			'/gen/fruit-07.jpeg',
+			'/gen/fruit-08.jpeg',
+			'/gen/fruit-09.jpeg',
+			'/gen/fruit-10.jpeg',
+			'/gen/fruit-11.jpeg'
 		]
 	},
 	{
