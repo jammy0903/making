@@ -36,6 +36,22 @@ export function useT() {
 	return (key: string, vars?: Record<string, string | number>) => translate(l, key, vars);
 }
 
+/** 경로에 로케일 prefix 를 붙인다. ko(기본)는 prefix 없음, en/zh 는 /en /zh. */
+export function localePath(locale: Locale, path: string): string {
+	const p = path.startsWith('/') ? path : `/${path}`;
+	return locale === defaultLocale ? p : `/${locale}${p}`;
+}
+
+/** pathname 에서 로케일 prefix 와 나머지 순수 경로를 분리. */
+export function splitLocale(pathname: string): { locale: Locale; rest: string } {
+	const seg = pathname.split('/')[1];
+	if (seg === 'en' || seg === 'zh') {
+		const rest = pathname.slice(seg.length + 1);
+		return { locale: seg, rest: rest || '/' };
+	}
+	return { locale: defaultLocale, rest: pathname || '/' };
+}
+
 /** Accept-Language(우선) + IP 국가(보정)로 로케일 결정. US→en, CN→zh, KR→ko, 그 외→en. */
 export function pickLocale(acceptLanguage: string | null, country?: string | null): Locale {
 	const al = (acceptLanguage ?? '').toLowerCase();

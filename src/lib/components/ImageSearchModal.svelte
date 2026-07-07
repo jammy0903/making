@@ -89,7 +89,7 @@
 	class="backdrop"
 	role="button"
 	tabindex="-1"
-	aria-label="닫기"
+	aria-label={t('search.close')}
 	onclick={onclose}
 	onkeydown={() => {}}
 >
@@ -98,7 +98,7 @@
 		class="card panel"
 		role="dialog"
 		aria-modal="true"
-		aria-label="이미지 검색"
+		aria-label={t('search.title')}
 		tabindex="-1"
 		onclick={(e) => e.stopPropagation()}
 		onkeydown={() => {}}
@@ -158,7 +158,7 @@
 							onerror={() => (broken = { ...broken, [r.url]: true })}
 						/>
 						{#if applying === r.url}
-							<span class="spin">불러오는 중…</span>
+							<span class="spin">{t('search.loading')}</span>
 						{/if}
 					</button>
 				{/each}

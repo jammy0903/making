@@ -6,9 +6,10 @@
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import RankBoard from '$lib/components/RankBoard.svelte';
-	import { useT } from '$lib/i18n';
+	import { useT, getLocale, localePath } from '$lib/i18n';
 
 	const t = useT();
+	const dateLocale = { ko: 'ko-KR', en: 'en-US', zh: 'zh-CN' }[getLocale()];
 
 	let topic = $state<Topic | undefined>(undefined);
 	let loaded = $state(false);
@@ -31,7 +32,7 @@
 	const ratio = $derived(estTotal > 0 ? Math.min(asked / estTotal, 1) : 0);
 
 	onMount(() => {
-		today = new Date().toLocaleDateString('ko-KR');
+		today = new Date().toLocaleDateString(dateLocale);
 		const tp = getTopic(page.params.id!);
 		topic = tp;
 		loaded = true;
@@ -95,7 +96,7 @@
 {#if !loaded}
 	<p class="muted">{t('topic.loading')}</p>
 {:else if !topic}
-	<div class="empty">{t('topic.notFound')} <a href="/">{t('nav.home')}</a></div>
+	<div class="empty">{t('topic.notFound')} <a href={localePath(getLocale(), "/")}>{t("nav.home")}</a></div>
 {:else if ranking}
 	<!-- ===== 결과 ===== -->
 	<div class="print-area">
@@ -132,14 +133,14 @@
 		</ol>
 
 		<!-- PDF 전용 푸터 -->
-		<div class="pdf-footer print-only">codeinsight.online · 순위 월드컵</div>
+		<div class="pdf-footer print-only">codeinsight.online · {t('app.title')}</div>
 	</div>
 
 	<div class="no-print" style="display:grid; gap:10px; margin-top:20px">
 		<button class="btn btn-primary btn-block" onclick={exportPdf}>{t('result.exportPdf')}</button>
 		<div style="display:flex; gap:10px">
 			<button class="btn" style="flex:1" onclick={restart}>{t('result.restart')}</button>
-			<a class="btn" style="flex:1" href="/">{t('nav.home')}</a>
+			<a class="btn" style="flex:1" href={localePath(getLocale(), "/")}>{t("nav.home")}</a>
 		</div>
 	</div>
 {:else if mode === 'sort'}

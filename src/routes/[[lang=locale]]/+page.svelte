@@ -1,21 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { listTopics, deleteTopic, seedSamplesIfNeeded } from '$lib/storage';
-	import { isPlayable, type Topic } from '$lib/domain';
-	import { useT } from '$lib/i18n';
+	import { page } from '$app/state';
+	import { pruneSeededSamples, listUserTopics, deleteTopic } from '$lib/storage';
+	import { type Topic } from '$lib/domain';
+	import { useT, localePath, defaultLocale, type Locale } from '$lib/i18n';
 
 	const t = useT();
+	let { data } = $props();
+	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
-	let topics = $state<Topic[]>([]);
+	// 사용자가 만든 주제(클라이언트 localStorage)
+	let userTopics = $state<Topic[]>([]);
 
 	onMount(() => {
-		seedSamplesIfNeeded();
-		topics = listTopics();
+		pruneSeededSamples(); // 예전에 심긴 샘플 제거(서버 렌더로 이관됨)
+		userTopics = listUserTopics();
 	});
 
 	function remove(id: string) {
 		deleteTopic(id);
-		topics = listTopics();
+		userTopics = listUserTopics();
 	}
 
 	const modeLabel: Record<string, string> = {
@@ -24,61 +28,80 @@
 		drag: t('mode.drag')
 	};
 
-	// 갤러리 커버: 사진이 있는 첫 후보 이미지
-	function cover(topic: Topic): string | undefined {
-		return topic.candidates.find((c) => c.image)?.image;
+	interface Item {
+		href: string;
+		title: string;
+		description: string;
+		mode: string;
+		count: number;
+		cover: string | null;
+		deletable: boolean;
+		id?: string;
 	}
+
+	// 공개(샘플, SSR) + 사용자(localStorage) 통합 목록
+	const items = $derived<Item[]>([
+		...data.samples.map((s) => ({
+			href: localePath(locale, `/t/${s.slug}`),
+			title: s.title,
+			description: s.description,
+			mode: s.defaultMode,
+			count: s.count,
+			cover: s.cover,
+			deletable: false
+		})),
+		...userTopics.map((tp) => ({
+			href: localePath(locale, `/t/${tp.id}`),
+			title: tp.title,
+			description: tp.description,
+			mode: tp.defaultMode,
+			count: tp.candidates.length,
+			cover: tp.candidates.find((c) => c.image)?.image ?? null,
+			deletable: true,
+			id: tp.id
+		}))
+	]);
 </script>
 
 <div class="home-head">
 	<p class="muted" style="margin:8px 0 20px">{@html t('home.intro')}</p>
 
-	<a class="btn btn-primary btn-block" href="/create" style="margin-bottom:24px"
+	<a class="btn btn-primary btn-block" href={localePath(locale, '/create')} style="margin-bottom:24px"
 		>{t('home.newTopic')}</a
 	>
 </div>
 
-{#if topics.length === 0}
-	<div class="empty">{@html t('home.empty')}</div>
-{:else}
-	<ul class="gallery">
-		{#each topics as topic (topic.id)}
-			<li class="card gcard">
-				<a
-					class="cover"
-					href={isPlayable(topic) ? `/t/${topic.id}` : undefined}
-					aria-label={topic.title}
-				>
-					{#if cover(topic)}
-						<img src={cover(topic)} alt="" />
-					{:else}
-						<span class="cover-ph">🏆</span>
-					{/if}
-					<span class="badge">{t('badge.count', { n: topic.candidates.length })}</span>
-				</a>
-				<div class="body">
-					<strong class="gtitle">{topic.title}</strong>
-					<span class="muted gmeta">{modeLabel[topic.defaultMode]}</span>
-					{#if topic.description}
-						<p class="muted gdesc">{topic.description}</p>
-					{/if}
-					<div class="actions">
-						{#if isPlayable(topic)}
-							<a class="btn btn-primary" href="/t/{topic.id}" style="flex:1">{t('home.play')}</a>
-						{:else}
-							<span class="btn" style="flex:1" aria-disabled="true">{t('home.notEnough')}</span>
-						{/if}
+<ul class="gallery">
+	{#each items as item (item.href)}
+		<li class="card gcard">
+			<a class="cover" href={item.href} aria-label={item.title}>
+				{#if item.cover}
+					<img src={item.cover} alt={item.title} loading="lazy" />
+				{:else}
+					<span class="cover-ph">🏆</span>
+				{/if}
+				<span class="badge">{t('badge.count', { n: item.count })}</span>
+			</a>
+			<div class="body">
+				<strong class="gtitle">{item.title}</strong>
+				<span class="muted gmeta">{modeLabel[item.mode]}</span>
+				{#if item.description}
+					<p class="muted gdesc">{item.description}</p>
+				{/if}
+				<div class="actions">
+					<a class="btn btn-primary" href={item.href} style="flex:1">{t('home.play')}</a>
+					{#if item.deletable}
 						<button
 							class="btn btn-danger del"
-							onclick={() => remove(topic.id)}
+							onclick={() => remove(item.id!)}
 							aria-label={t('common.delete')}>✕</button
 						>
-					</div>
+					{/if}
 				</div>
-			</li>
-		{/each}
-	</ul>
-{/if}
+			</div>
+		</li>
+	{/each}
+</ul>
 
 <style>
 	/* 상단 소개·버튼은 가운데 640px 로 유지 (갤러리만 넓게) */

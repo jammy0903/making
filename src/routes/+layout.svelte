@@ -3,21 +3,35 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import WalkingDog from '$lib/components/WalkingDog.svelte';
-	import { setLocaleContext, useT, locales, localeNames, type Locale } from '$lib/i18n';
+	import {
+		setLocaleContext,
+		useT,
+		locales,
+		localeNames,
+		localePath,
+		splitLocale,
+		defaultLocale,
+		type Locale
+	} from '$lib/i18n';
 
-	let { data, children } = $props();
+	let { children } = $props();
 
-	// 서버가 감지한 로케일을 트리 전체에 주입
-	setLocaleContext(data.locale);
+	const SITE = 'https://codeinsight.online';
+
+	// 로케일은 URL 로 결정 (/ = ko, /en, /zh). 크로스-로케일 전환은 전체 리로드라 컨텍스트는 초기값 고정으로 안전.
+	const initialLocale: Locale = (page.params.lang as Locale) ?? defaultLocale;
+	setLocaleContext(initialLocale);
 	const t = useT();
 
-	// 홈이 아니면 뒤로가기 노출
-	const isHome = $derived(page.url.pathname === '/');
+	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
+	// 현재 경로에서 로케일 prefix 를 제거한 순수 경로(hreflang·전환기·canonical 용)
+	const rest = $derived(splitLocale(page.url.pathname).rest);
+	const isHome = $derived(rest === '/');
+	const canonical = $derived(SITE + localePath(locale, rest));
 
 	function switchLang(e: Event) {
 		const l = (e.currentTarget as HTMLSelectElement).value as Locale;
-		document.cookie = `locale=${l};path=/;max-age=31536000`;
-		location.reload(); // 로케일은 로드마다 고정 → 새로고침으로 전체 재렌더
+		location.href = localePath(l, rest); // 크로스-로케일: URL 이동 + 전체 리로드
 	}
 </script>
 
@@ -25,6 +39,11 @@
 	<title>{t('app.title')}</title>
 	<link rel="icon" href={favicon} />
 	<meta name="theme-color" content="#6d5efc" />
+	<link rel="canonical" href={canonical} />
+	{#each locales as l (l)}
+		<link rel="alternate" hreflang={l} href={SITE + localePath(l, rest)} />
+	{/each}
+	<link rel="alternate" hreflang="x-default" href={SITE + localePath(defaultLocale, rest)} />
 </svelte:head>
 
 <!--
@@ -36,15 +55,12 @@
 
 <header class="app-header">
 	{#if !isHome}
-		<a class="btn" href="/" aria-label={t('nav.home')} style="padding:8px 12px">‹</a>
+		<a class="btn" href={localePath(locale, '/')} aria-label={t('nav.home')} style="padding:8px 12px"
+			>‹</a
+		>
 	{/if}
 	<h1 class="app-title">🏆 {t('app.title')}</h1>
-	<select
-		class="lang-select"
-		aria-label={t('lang.label')}
-		value={data.locale}
-		onchange={switchLang}
-	>
+	<select class="lang-select" aria-label={t('lang.label')} value={locale} onchange={switchLang}>
 		{#each locales as l (l)}
 			<option value={l}>{localeNames[l]}</option>
 		{/each}

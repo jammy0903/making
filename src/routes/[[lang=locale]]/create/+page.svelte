@@ -4,7 +4,7 @@
 	import { makeId, type RankMode, type Topic } from '$lib/domain';
 	import { resizeImageToDataUrl } from '$lib/image';
 	import ImageSearchModal from '$lib/components/ImageSearchModal.svelte';
-	import { useT } from '$lib/i18n';
+	import { useT, getLocale, localePath } from '$lib/i18n';
 
 	const t = useT();
 	const MAX = 256;
@@ -78,7 +78,7 @@
 			createdAt: Date.now()
 		};
 		saveTopic(topic);
-		goto(`/t/${topic.id}`);
+		goto(localePath(getLocale(), `/t/${topic.id}`));
 	}
 
 	const filled = $derived(rows.filter((r) => r.name.trim().length > 0).length);

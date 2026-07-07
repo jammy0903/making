@@ -76,7 +76,7 @@
 		title={t('ad.dogWalk')}
 		style="transform: translateX({x}px)"
 	>
-		<img src={src} alt="강아지 산책 크롬 확장 광고" />
+		<img src={src} alt={t('ad.dogWalk')} />
 	</a>
 </div>
 
