@@ -10,3 +10,15 @@ Thumbs.db
 # 로그/임시
 *.log
 node_modules/
+
+# SvelteKit / Vite
+.svelte-kit/
+/build
+.output
+.vercel
+.netlify
+.wrangler
+.env
+.env.*
+!.env.example
+vite.config.ts.timestamp-*
