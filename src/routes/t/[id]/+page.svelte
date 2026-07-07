@@ -28,17 +28,17 @@
 		<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px">
 			{#each topic.candidates as c (c.id)}
 				<span
-					style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border:1px solid var(--line); border-radius:999px; font-size:14px"
+					style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border:1px solid var(--line); border-radius:0; font-size:14px"
 				>
 					{#if c.image}
 						<img
 							src={c.image}
 							alt=""
-							style="width:24px; height:24px; border-radius:50%; object-fit:cover"
+							style="width:24px; height:24px; border-radius:0; object-fit:cover"
 						/>
 					{:else}
 						<span
-							style="width:24px; height:24px; border-radius:50%; background:var(--bg); display:grid; place-items:center; font-size:12px"
+							style="width:24px; height:24px; border-radius:0; background:var(--bg); display:grid; place-items:center; font-size:12px"
 							>{c.name.slice(0, 1)}</span
 						>
 					{/if}

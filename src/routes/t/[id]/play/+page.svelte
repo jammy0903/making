@@ -109,7 +109,7 @@
 						<img
 							src={c.image}
 							alt=""
-							style="width:40px; height:40px; border-radius:8px; object-fit:cover"
+							style="width:40px; height:40px; border-radius:0; object-fit:cover"
 						/>
 					{/if}
 					<strong style="font-size:16px">{c.name}</strong>
@@ -132,9 +132,12 @@
 		<button class="btn" style="padding:6px 12px" onclick={undo} disabled={!canUndo}>↶ 되돌리기</button>
 	</div>
 	<div
-		style="height:6px; background:var(--line); border-radius:999px; overflow:hidden; margin-bottom:20px"
+		style="height:16px; background:var(--soft); border:3px solid var(--ink); overflow:hidden; margin-bottom:20px"
 	>
-		<div style="height:100%; width:{ratio * 100}%; background:var(--accent); transition:width .2s"></div>
+		<div
+			style="height:100%; width:{ratio *
+				100}%; background:var(--accent); transition:width .12s steps(6)"
+		></div>
 	</div>
 
 	{#if pair}
@@ -153,11 +156,11 @@
 						<img
 							src={c.image}
 							alt=""
-							style="width:100%; aspect-ratio:1; border-radius:12px; object-fit:cover"
+							style="width:100%; aspect-ratio:1; border-radius:0; object-fit:cover"
 						/>
 					{:else}
 						<div
-							style="width:100%; aspect-ratio:1; border-radius:12px; background:var(--bg); display:grid; place-items:center; font-size:40px"
+							style="width:100%; aspect-ratio:1; border-radius:0; background:var(--bg); display:grid; place-items:center; font-size:40px"
 						>
 							{c.name.slice(0, 1)}
 						</div>
@@ -175,18 +178,17 @@
 <style>
 	/* 비교 카드 선택 피드백: 누르면 약 1초간 커지며 강조 */
 	.compare-card {
-		border: 2px solid transparent;
 		transition:
-			transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-			border-color 0.2s ease,
-			box-shadow 0.2s ease,
-			opacity 0.2s ease;
+			transform 0.18s steps(3),
+			border-color 0.1s steps(2),
+			box-shadow 0.1s steps(2),
+			opacity 0.15s ease;
 		will-change: transform;
 	}
 	.compare-card.picked {
 		transform: scale(1.06);
 		border-color: var(--accent);
-		box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 40%, transparent);
+		box-shadow: 6px 6px 0 var(--accent);
 	}
 	.compare-card.dim {
 		opacity: 0.45;

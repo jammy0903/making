@@ -195,17 +195,19 @@
 	.slot {
 		position: relative;
 		aspect-ratio: 3 / 4;
-		border: 2px dashed var(--line);
-		border-radius: 12px;
+		border: 3px dashed var(--soft);
+		border-radius: 0;
 		display: grid;
 		place-items: center;
 		background: var(--surface);
 		transition:
-			border-color 0.15s ease,
-			background 0.15s ease;
+			border-color 0.1s steps(2),
+			background 0.1s steps(2);
 	}
 	.slot.filled {
 		border-style: solid;
+		border-color: var(--ink);
+		box-shadow: 4px 4px 0 var(--ink);
 	}
 	.slot.over {
 		border-color: var(--accent);
@@ -236,7 +238,7 @@
 		width: 100%;
 		aspect-ratio: 1;
 		object-fit: cover;
-		border-radius: 8px;
+		border-radius: 0;
 	}
 	.mini-card .mono {
 		width: 100%;
@@ -244,7 +246,7 @@
 		display: grid;
 		place-items: center;
 		background: var(--bg);
-		border-radius: 8px;
+		border-radius: 0;
 		font-weight: 700;
 	}
 	.mini-card small {
@@ -262,10 +264,11 @@
 		gap: 8px;
 		min-height: 96px;
 		padding: 10px;
-		border: 1px solid var(--line);
-		border-radius: 12px;
+		border: 3px solid var(--ink);
+		border-radius: 0;
 		background: var(--bg);
-		transition: background 0.15s ease;
+		box-shadow: var(--shadow);
+		transition: background 0.1s steps(2);
 	}
 	.pool.over {
 		background: color-mix(in srgb, var(--accent) 10%, var(--bg));
@@ -277,14 +280,15 @@
 		pointer-events: none;
 		z-index: 100;
 		opacity: 0.92;
-		box-shadow: 0 12px 28px rgba(40, 30, 90, 0.3);
-		border-radius: 8px;
+		box-shadow: 4px 4px 0 var(--ink);
+		border-radius: 0;
+		border: 3px solid var(--ink);
 	}
 	.ghost img {
 		width: 100%;
 		aspect-ratio: 1;
 		object-fit: cover;
-		border-radius: 8px;
+		border-radius: 0;
 	}
 	.ghost .mono {
 		display: grid;
@@ -292,7 +296,7 @@
 		width: 68px;
 		height: 68px;
 		background: var(--surface);
-		border-radius: 8px;
+		border-radius: 0;
 		font-weight: 700;
 	}
 </style>

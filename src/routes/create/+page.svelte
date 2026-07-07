@@ -101,7 +101,7 @@
 	{#each rows as row, i (row.id)}
 		<li class="card" style="padding:10px; display:flex; gap:10px; align-items:center">
 			<label
-				style="flex:0 0 52px; height:52px; border-radius:10px; overflow:hidden; border:1px dashed var(--line); display:grid; place-items:center; cursor:pointer; background:var(--bg)"
+				style="flex:0 0 52px; height:52px; border-radius:0; overflow:hidden; border:1px dashed var(--line); display:grid; place-items:center; cursor:pointer; background:var(--bg)"
 				title="사진 추가"
 			>
 				{#if row.image}
