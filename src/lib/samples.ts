@@ -234,6 +234,20 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'카레',
 			'햄버거',
 			'훠궈'
+		],
+		images: [
+			'/gen/worldfood-00.jpeg',
+			'/gen/worldfood-01.jpeg',
+			'/gen/worldfood-02.jpeg',
+			'/gen/worldfood-03.jpeg',
+			'/gen/worldfood-04.jpeg',
+			'/gen/worldfood-05.jpeg',
+			'/gen/worldfood-06.jpeg',
+			'/gen/worldfood-07.jpeg',
+			'/gen/worldfood-08.jpeg',
+			'/gen/worldfood-09.jpeg',
+			'/gen/worldfood-10.jpeg',
+			'/gen/worldfood-11.jpeg'
 		]
 	},
 	{
