@@ -12,7 +12,11 @@
  */
 import { InferenceClient } from '@huggingface/inference';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { basename } from 'node:path';
+import sharp from 'sharp';
+
+// 생성물 재압축 스펙: 카드 표시엔 384px면 충분, webp 로 용량 대폭 절감
+const MAX_SIDE = 384;
+const WEBP_QUALITY = 78;
 
 // .env 로드 (HF_TOKEN 등)
 function loadEnv() {
@@ -53,11 +57,6 @@ mkdirSync(OUT_DIR, { recursive: true });
 
 const client = new InferenceClient(TOKEN);
 
-function extOf(dataUrl) {
-	const m = dataUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,/);
-	return m ? m[1] : 'png';
-}
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function genOnce(prompt) {
@@ -93,13 +92,18 @@ let ok = 0;
 for (const it of items) {
 	try {
 		const dataUrl = await genOne(it.prompt);
-		const ext = extOf(dataUrl);
 		const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-		const outName = `${it.file}.${ext}`;
-		writeFileSync(`${OUT_DIR}/${outName}`, Buffer.from(b64, 'base64'));
+		const raw = Buffer.from(b64, 'base64');
+		// sharp 로 리사이즈 + webp 재압축 후 저장
+		const out = await sharp(raw)
+			.resize(MAX_SIDE, MAX_SIDE, { fit: 'inside', withoutEnlargement: true })
+			.webp({ quality: WEBP_QUALITY })
+			.toBuffer();
+		const outName = `${it.file}.webp`;
+		writeFileSync(`${OUT_DIR}/${outName}`, out);
 		manifest.push(`/gen/${outName}`);
 		ok++;
-		console.log(`OK  ${outName}  (${Math.round(b64.length / 1365)}KB)`);
+		console.log(`OK  ${outName}  (${Math.round(out.length / 1024)}KB)`);
 	} catch (err) {
 		manifest.push(null);
 		console.log(`FAIL ${it.file}: ${err.message}`);

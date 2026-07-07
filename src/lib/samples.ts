@@ -236,18 +236,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'훠궈'
 		],
 		images: [
-			'/gen/worldfood-00.jpeg',
-			'/gen/worldfood-01.jpeg',
-			'/gen/worldfood-02.jpeg',
-			'/gen/worldfood-03.jpeg',
-			'/gen/worldfood-04.jpeg',
-			'/gen/worldfood-05.jpeg',
-			'/gen/worldfood-06.jpeg',
-			'/gen/worldfood-07.jpeg',
-			'/gen/worldfood-08.jpeg',
-			'/gen/worldfood-09.jpeg',
-			'/gen/worldfood-10.jpeg',
-			'/gen/worldfood-11.jpeg'
+			'/gen/worldfood-00.webp',
+			'/gen/worldfood-01.webp',
+			'/gen/worldfood-02.webp',
+			'/gen/worldfood-03.webp',
+			'/gen/worldfood-04.webp',
+			'/gen/worldfood-05.webp',
+			'/gen/worldfood-06.webp',
+			'/gen/worldfood-07.webp',
+			'/gen/worldfood-08.webp',
+			'/gen/worldfood-09.webp',
+			'/gen/worldfood-10.webp',
+			'/gen/worldfood-11.webp'
 		]
 	},
 	{
@@ -367,18 +367,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'파인애플'
 		],
 		images: [
-			'/gen/fruit-00.jpeg',
-			'/gen/fruit-01.jpeg',
-			'/gen/fruit-02.jpeg',
-			'/gen/fruit-03.jpeg',
-			'/gen/fruit-04.jpeg',
-			'/gen/fruit-05.jpeg',
-			'/gen/fruit-06.jpeg',
-			'/gen/fruit-07.jpeg',
-			'/gen/fruit-08.jpeg',
-			'/gen/fruit-09.jpeg',
-			'/gen/fruit-10.jpeg',
-			'/gen/fruit-11.jpeg'
+			'/gen/fruit-00.webp',
+			'/gen/fruit-01.webp',
+			'/gen/fruit-02.webp',
+			'/gen/fruit-03.webp',
+			'/gen/fruit-04.webp',
+			'/gen/fruit-05.webp',
+			'/gen/fruit-06.webp',
+			'/gen/fruit-07.webp',
+			'/gen/fruit-08.webp',
+			'/gen/fruit-09.webp',
+			'/gen/fruit-10.webp',
+			'/gen/fruit-11.webp'
 		]
 	},
 	{
@@ -404,22 +404,22 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'아기알파카'
 		],
 		images: [
-			'/gen/animal-00.jpeg',
-			'/gen/animal-01.jpeg',
-			'/gen/animal-02.jpeg',
-			'/gen/animal-03.jpeg',
-			'/gen/animal-04.jpeg',
-			'/gen/animal-05.jpeg',
-			'/gen/animal-06.jpeg',
-			'/gen/animal-07.jpeg',
-			'/gen/animal-08.jpeg',
-			'/gen/animal-09.jpeg',
-			'/gen/animal-10.jpeg',
-			'/gen/animal-11.jpeg',
-			'/gen/animal-12.jpeg',
-			'/gen/animal-13.jpeg',
-			'/gen/animal-14.jpeg',
-			'/gen/animal-15.jpeg'
+			'/gen/animal-00.webp',
+			'/gen/animal-01.webp',
+			'/gen/animal-02.webp',
+			'/gen/animal-03.webp',
+			'/gen/animal-04.webp',
+			'/gen/animal-05.webp',
+			'/gen/animal-06.webp',
+			'/gen/animal-07.webp',
+			'/gen/animal-08.webp',
+			'/gen/animal-09.webp',
+			'/gen/animal-10.webp',
+			'/gen/animal-11.webp',
+			'/gen/animal-12.webp',
+			'/gen/animal-13.webp',
+			'/gen/animal-14.webp',
+			'/gen/animal-15.webp'
 		]
 	},
 	{
