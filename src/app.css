@@ -46,11 +46,23 @@ body {
 	font-size: 15px;
 	line-height: 1.6;
 	-webkit-text-size-adjust: 100%;
+	overflow-x: hidden; /* 하드 그림자 등으로 인한 가로 스크롤 방지 */
+	overscroll-behavior-y: none; /* 당겨서 새로고침·바운스 억제 */
 }
 
 /* 사진을 8비트처럼 각지게 */
 img {
 	image-rendering: pixelated;
+}
+
+/* 터치: 파란 하이라이트 제거, 드래그 카드 스크롤 간섭 방지 */
+button,
+[data-card] {
+	-webkit-tap-highlight-color: transparent;
+}
+[data-card] {
+	touch-action: none;
+	user-select: none;
 }
 
 .wrap {
@@ -69,6 +81,7 @@ img {
 	max-width: 640px;
 	margin: 0 auto 8px;
 	padding: 14px 16px;
+	padding-top: max(14px, env(safe-area-inset-top)); /* 노치 대응 */
 	background: var(--bg);
 	border-bottom: 3px solid var(--ink);
 }
@@ -98,7 +111,8 @@ a {
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
-	padding: 12px 16px;
+	min-height: 44px; /* 터치 타깃 확보 */
+	padding: 10px 16px;
 	border: 3px solid var(--ink);
 	border-radius: 0;
 	background: var(--surface);
@@ -107,6 +121,9 @@ a {
 	font-weight: 700;
 	cursor: pointer;
 	box-shadow: var(--shadow);
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation; /* 더블탭 확대 지연 제거 */
 	transition:
 		transform 0.05s steps(2),
 		box-shadow 0.05s steps(2);
