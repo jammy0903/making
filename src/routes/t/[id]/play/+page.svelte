@@ -5,7 +5,7 @@
 	import type { Candidate, Topic, RankMode } from '$lib/domain';
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
-	import { dragReorder } from '$lib/actions/dragReorder';
+	import RankBoard from '$lib/components/RankBoard.svelte';
 
 	let topic = $state<Topic | undefined>(undefined);
 	let loaded = $state(false);
@@ -21,12 +21,8 @@
 	let canUndo = $state(false);
 	let picking = $state<string | null>(null); // 선택 애니메이션 중인 후보 id
 
-	// 드래그 상태
-	let order = $state<Candidate[]>([]);
-	let byId = new Map<string, Candidate>();
-
 	// 완료된 순위(두 모드 공통)
-	let ranking = $state<Candidate[] | null>(null);
+	let ranking = $state.raw<Candidate[] | null>(null);
 
 	const ratio = $derived(estTotal > 0 ? Math.min(asked / estTotal, 1) : 0);
 
@@ -37,14 +33,12 @@
 		if (!t) return;
 		const q = page.url.searchParams.get('mode');
 		mode = q === 'drag' ? 'drag' : 'sort';
-		byId = new Map(t.candidates.map((c) => [c.id, c]));
 
 		if (mode === 'sort') {
 			ranker = new MergeRanker(t.candidates, { seed: Math.floor(Math.random() * 1e9) });
 			refresh();
-		} else {
-			order = t.candidates.slice();
 		}
+		// drag 모드는 RankBoard 가 자체 상태를 관리
 	});
 
 	function refresh() {
@@ -77,21 +71,13 @@
 		refresh();
 	}
 
-	function onReorder(ids: string[]) {
-		order = ids.map((id) => byId.get(id)!).filter(Boolean);
-	}
-	function finishDrag() {
-		ranking = order.slice();
-	}
-
 	function restart() {
 		ranking = null;
 		if (mode === 'sort' && topic) {
 			ranker = new MergeRanker(topic.candidates, { seed: Math.floor(Math.random() * 1e9) });
 			refresh();
-		} else if (topic) {
-			order = topic.candidates.slice();
 		}
+		// drag 모드는 RankBoard 가 새로 마운트되며 초기화됨
 	}
 
 	function exportPdf() {
@@ -182,33 +168,8 @@
 		</div>
 	{/if}
 {:else}
-	<!-- ===== 직접 순위(드래그) ===== -->
-	<p style="text-align:center; margin:8px 0 16px" class="muted">위에서부터 1등. 드래그해서 배치해요</p>
-	<ul
-		use:dragReorder={{ onReorder }}
-		style="list-style:none; margin:0 0 20px; padding:0; display:grid; gap:8px; touch-action:none"
-	>
-		{#each order as c, i (c.id)}
-			<li
-				data-drag-item
-				data-id={c.id}
-				class="card"
-				style="padding:10px 14px; display:flex; align-items:center; gap:12px; cursor:grab; user-select:none"
-			>
-				<span class="muted" style="width:24px; text-align:center">{i + 1}</span>
-				{#if c.image}
-					<img
-						src={c.image}
-						alt=""
-						style="width:40px; height:40px; border-radius:8px; object-fit:cover"
-					/>
-				{/if}
-				<strong style="font-size:16px; flex:1">{c.name}</strong>
-				<span class="muted" style="font-size:20px">⠿</span>
-			</li>
-		{/each}
-	</ul>
-	<button class="btn btn-primary btn-block" onclick={finishDrag}>이 순위로 완료</button>
+	<!-- ===== 직접 순위(순위판 + 후보풀 드래그앤드롭) ===== -->
+	<RankBoard candidates={topic.candidates} onComplete={(r) => (ranking = r)} />
 {/if}
 
 <style>
