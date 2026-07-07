@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { listTopics, deleteTopic } from '$lib/storage';
+	import { listTopics, deleteTopic, seedSamplesIfNeeded } from '$lib/storage';
 	import { isPlayable, type Topic } from '$lib/domain';
 
 	let topics = $state<Topic[]>([]);
 
 	onMount(() => {
+		seedSamplesIfNeeded();
 		topics = listTopics();
 	});
 
