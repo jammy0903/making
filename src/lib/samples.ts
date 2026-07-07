@@ -295,7 +295,19 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🍩 디저트 월드컵',
 		description: '달콤한 디저트 최강자',
 		defaultMode: 'sort',
-		candidates: ['마카롱', '티라미수', '케이크', '크로플', '도넛', '붕어빵', '호떡', '와플', '마들렌', '푸딩']
+		candidates: ['마카롱', '티라미수', '케이크', '크로플', '도넛', '붕어빵', '호떡', '와플', '마들렌', '푸딩'],
+		images: [
+			'/gen/dessert-00.webp',
+			'/gen/dessert-01.webp',
+			'/gen/dessert-02.webp',
+			'/gen/dessert-03.webp',
+			'/gen/dessert-04.webp',
+			'/gen/dessert-05.webp',
+			'/gen/dessert-06.webp',
+			'/gen/dessert-07.webp',
+			'/gen/dessert-08.webp',
+			'/gen/dessert-09.webp'
+		]
 	},
 	{
 		title: '🥐 빵 월드컵',
@@ -307,7 +319,19 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🍡 길거리 간식 월드컵',
 		description: '학교 앞 그 맛',
 		defaultMode: 'sort',
-		candidates: ['붕어빵', '호떡', '계란빵', '어묵', '순대', '군고구마', '핫도그', '타코야키', '와플', '떡꼬치']
+		candidates: ['붕어빵', '호떡', '계란빵', '어묵', '순대', '군고구마', '핫도그', '타코야키', '와플', '떡꼬치'],
+		images: [
+			'/gen/street-00.webp',
+			'/gen/street-01.webp',
+			'/gen/street-02.webp',
+			'/gen/street-03.webp',
+			'/gen/street-04.webp',
+			'/gen/street-05.webp',
+			'/gen/street-06.webp',
+			'/gen/street-07.webp',
+			'/gen/street-08.webp',
+			'/gen/street-09.webp'
+		]
 	},
 	{
 		title: '🍘 떡 월드컵',

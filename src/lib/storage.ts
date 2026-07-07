@@ -8,7 +8,7 @@ import { SAMPLE_TOPICS } from './samples';
  */
 const KEY = 'jn:topics';
 const SAMPLES_VERSION_KEY = 'jn:samples_version';
-const SAMPLES_VERSION = '7'; // 이 값이 바뀌면 기존 주제를 지우고 새 샘플로 교체
+const SAMPLES_VERSION = '8'; // 이 값이 바뀌면 기존 주제를 지우고 새 샘플로 교체
 
 function readAll(): Topic[] {
 	if (!browser) return [];
