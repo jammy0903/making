@@ -57,7 +57,8 @@
 					{#if c.image}
 						<img
 							src={c.image}
-							alt=""
+							alt={c.name}
+							loading="lazy"
 							style="width:24px; height:24px; border-radius:0; object-fit:cover"
 						/>
 					{:else}

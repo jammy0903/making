@@ -1,0 +1,11 @@
+{
+  "name": "순위 월드컵",
+  "short_name": "순위 월드컵",
+  "description": "둘 중 하나씩 골라 전체 순위를 정하는 이상형 월드컵 웹앱",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e7e5f6",
+  "theme_color": "#6d5efc",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

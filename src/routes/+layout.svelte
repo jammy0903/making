@@ -2,6 +2,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import WalkingDog from '$lib/components/WalkingDog.svelte';
 	import {
 		setLocaleContext,
@@ -16,6 +17,8 @@
 
 	let { children } = $props();
 
+	injectAnalytics(); // Vercel Web Analytics (유입 측정)
+
 	const SITE = 'https://codeinsight.online';
 
 	// 로케일은 URL 로 결정 (/ = ko, /en, /zh). 크로스-로케일 전환은 전체 리로드라 컨텍스트는 초기값 고정으로 안전.
@@ -28,6 +31,17 @@
 	const rest = $derived(splitLocale(page.url.pathname).rest);
 	const isHome = $derived(rest === '/');
 	const canonical = $derived(SITE + localePath(locale, rest));
+
+	// WebSite 구조화 데이터(JSON-LD)
+	const websiteLd = $derived(
+		JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'WebSite',
+			name: t('app.title'),
+			url: SITE + localePath(locale, '/'),
+			inLanguage: locale
+		})
+	);
 
 	function switchLang(e: Event) {
 		const l = (e.currentTarget as HTMLSelectElement).value as Locale;
@@ -44,6 +58,8 @@
 		<link rel="alternate" hreflang={l} href={SITE + localePath(l, rest)} />
 	{/each}
 	<link rel="alternate" hreflang="x-default" href={SITE + localePath(defaultLocale, rest)} />
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	<script type="application/ld+json">{@html websiteLd}</script>
 </svelte:head>
 
 <!--

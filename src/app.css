@@ -1,5 +1,5 @@
 /* 픽셀 아케이드 테마 (라이트) — 갈무리 비트맵 폰트 + 하드 오프셋 그림자 */
-@import url('https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css');
+/* 폰트는 app.html 의 <link>(preconnect) 로 로드 — @import 렌더 블로킹 제거(CWV) */
 
 :root {
 	--bg: #e7e5f6;
