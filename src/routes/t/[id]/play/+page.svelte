@@ -6,6 +6,9 @@
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import RankBoard from '$lib/components/RankBoard.svelte';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	let topic = $state<Topic | undefined>(undefined);
 	let loaded = $state(false);
@@ -23,19 +26,21 @@
 
 	// 완료된 순위(두 모드 공통)
 	let ranking = $state.raw<Candidate[] | null>(null);
+	let today = $state(''); // PDF 헤더 날짜(클라이언트에서 설정)
 
 	const ratio = $derived(estTotal > 0 ? Math.min(asked / estTotal, 1) : 0);
 
 	onMount(() => {
-		const t = getTopic(page.params.id!);
-		topic = t;
+		today = new Date().toLocaleDateString('ko-KR');
+		const tp = getTopic(page.params.id!);
+		topic = tp;
 		loaded = true;
-		if (!t) return;
+		if (!tp) return;
 		const q = page.url.searchParams.get('mode');
 		mode = q === 'drag' ? 'drag' : 'sort';
 
 		if (mode === 'sort') {
-			ranker = new MergeRanker(t.candidates, { seed: Math.floor(Math.random() * 1e9) });
+			ranker = new MergeRanker(tp.candidates, { seed: Math.floor(Math.random() * 1e9) });
 			refresh();
 		}
 		// drag 모드는 RankBoard 가 자체 상태를 관리
@@ -88,18 +93,27 @@
 </script>
 
 {#if !loaded}
-	<p class="muted">불러오는 중…</p>
+	<p class="muted">{t('topic.loading')}</p>
 {:else if !topic}
-	<div class="empty">주제를 찾을 수 없어요. <a href="/">홈으로</a></div>
+	<div class="empty">{t('topic.notFound')} <a href="/">{t('nav.home')}</a></div>
 {:else if ranking}
 	<!-- ===== 결과 ===== -->
 	<div class="print-area">
-		<h2 style="margin:8px 0 4px">🏆 {topic.title} — 결과</h2>
-		<p class="muted no-print" style="margin:0 0 16px">순위가 정해졌어요!</p>
-		<ol style="list-style:none; margin:0; padding:0; display:grid; gap:8px">
+		<!-- 화면용 제목 -->
+		<h2 class="no-print" style="margin:8px 0 4px">🏆 {topic.title} — {t('result.suffix')}</h2>
+		<p class="muted no-print" style="margin:0 0 16px">{t('result.done')}</p>
+
+		<!-- PDF 전용 헤더 -->
+		<div class="pdf-header print-only">
+			<div class="pdf-title">🏆 {topic.title}</div>
+			<div class="pdf-sub">{t('result.suffix')}{today ? ` · ${today}` : ''}</div>
+			<div class="pdf-rule"></div>
+		</div>
+
+		<ol class="rank-list" style="list-style:none; margin:0; padding:0; display:grid; gap:8px">
 			{#each ranking as c, i (c.id)}
 				<li
-					class="card"
+					class="card rank-row {i < 3 ? 'top' : ''}"
 					style="padding:10px 14px; display:flex; align-items:center; gap:12px; {i < 3
 						? 'border-color: var(--accent)'
 						: ''}"
@@ -116,20 +130,25 @@
 				</li>
 			{/each}
 		</ol>
+
+		<!-- PDF 전용 푸터 -->
+		<div class="pdf-footer print-only">codeinsight.online · 순위 월드컵</div>
 	</div>
 
 	<div class="no-print" style="display:grid; gap:10px; margin-top:20px">
-		<button class="btn btn-primary btn-block" onclick={exportPdf}>📄 PDF로 내보내기</button>
+		<button class="btn btn-primary btn-block" onclick={exportPdf}>{t('result.exportPdf')}</button>
 		<div style="display:flex; gap:10px">
-			<button class="btn" style="flex:1" onclick={restart}>다시 하기</button>
-			<a class="btn" style="flex:1" href="/">홈으로</a>
+			<button class="btn" style="flex:1" onclick={restart}>{t('result.restart')}</button>
+			<a class="btn" style="flex:1" href="/">{t('nav.home')}</a>
 		</div>
 	</div>
 {:else if mode === 'sort'}
 	<!-- ===== 순위 월드컵(비교) ===== -->
 	<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 6px">
-		<span class="muted" style="font-size:13px">{asked} / 약 {estTotal}회</span>
-		<button class="btn" style="padding:6px 12px" onclick={undo} disabled={!canUndo}>↶ 되돌리기</button>
+		<span class="muted" style="font-size:13px">{t('play.progress', { asked, est: estTotal })}</span>
+		<button class="btn" style="padding:6px 12px" onclick={undo} disabled={!canUndo}
+			>{t('play.undo')}</button
+		>
 	</div>
 	<div
 		style="height:16px; background:var(--soft); border:3px solid var(--ink); overflow:hidden; margin-bottom:20px"
@@ -141,7 +160,7 @@
 	</div>
 
 	{#if pair}
-		<p style="text-align:center; margin:0 0 16px" class="muted">둘 중 더 위인 걸 골라요</p>
+		<p style="text-align:center; margin:0 0 16px" class="muted">{t('play.pickHigher')}</p>
 		<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
 			{#each [pair.a, pair.b] as c (c.id)}
 				<button

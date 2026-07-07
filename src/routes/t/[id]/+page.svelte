@@ -3,6 +3,9 @@
 	import { page } from '$app/state';
 	import { getTopic } from '$lib/storage';
 	import { isPlayable, type Topic } from '$lib/domain';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	let topic = $state<Topic | undefined>(undefined);
 	let loaded = $state(false);
@@ -14,9 +17,9 @@
 </script>
 
 {#if !loaded}
-	<p class="muted">불러오는 중…</p>
+	<p class="muted">{t('topic.loading')}</p>
 {:else if !topic}
-	<div class="empty">주제를 찾을 수 없어요. <a href="/">홈으로</a></div>
+	<div class="empty">{t('topic.notFound')} <a href="/">{t('nav.home')}</a></div>
 {:else}
 	<h2 style="margin:8px 0 4px">{topic.title}</h2>
 	{#if topic.description}
@@ -24,7 +27,9 @@
 	{/if}
 
 	<div class="card" style="padding:14px; margin-bottom:20px">
-		<span class="muted" style="font-size:13px">후보 {topic.candidates.length}명</span>
+		<span class="muted" style="font-size:13px"
+			>{t('topic.candidateCount', { n: topic.candidates.length })}</span
+		>
 		<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px">
 			{#each topic.candidates as c (c.id)}
 				<span
@@ -49,16 +54,16 @@
 	</div>
 
 	{#if isPlayable(topic)}
-		<h3 style="margin:0 0 10px">어떻게 정할까요?</h3>
+		<h3 style="margin:0 0 10px">{t('topic.howDecide')}</h3>
 		<div style="display:grid; gap:10px">
 			<a class="btn btn-primary btn-block" href="/t/{topic.id}/play?mode=sort">
-				⚔️ 순위 월드컵 — 둘 중 하나씩 골라 전체 순위
+				{t('topic.optWorldcup')}
 			</a>
 			<a class="btn btn-block" href="/t/{topic.id}/play?mode=drag">
-				✋ 직접 순위 — 드래그로 직접 배치
+				{t('topic.optDrag')}
 			</a>
 		</div>
 	{:else}
-		<div class="empty">후보가 2명 이상이어야 플레이할 수 있어요.</div>
+		<div class="empty">{t('topic.needTwo')}</div>
 	{/if}
 {/if}

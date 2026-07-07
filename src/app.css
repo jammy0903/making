@@ -303,8 +303,19 @@ select.input {
 	border: 3px dashed var(--soft);
 }
 
-/* PDF 내보내기: 인쇄 시 결과 영역만 (한글 폰트 안전) */
+/* PDF 전용 요소는 화면에선 숨김 */
+.print-only {
+	display: none;
+}
+
+/* PDF 내보내기: 인쇄 시 결과 영역만 깔끔한 문서로 (한글 폰트 안전) */
 @media print {
+	@page {
+		margin: 14mm;
+	}
+	body {
+		background: #fff;
+	}
 	body * {
 		visibility: hidden;
 	}
@@ -317,9 +328,88 @@ select.input {
 		left: 0;
 		top: 0;
 		width: 100%;
-		padding: 0 8mm;
+		padding: 0;
+		color: #14131c;
+		font-family: 'Galmuri11', 'Apple SD Gothic Neo', sans-serif;
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
 	}
 	.no-print {
 		display: none !important;
+	}
+	.print-only {
+		display: block !important;
+	}
+
+	/* PDF 헤더 */
+	.pdf-header {
+		text-align: center;
+		margin-bottom: 8mm;
+	}
+	.pdf-title {
+		font-family: 'Galmuri14', 'Galmuri11', sans-serif;
+		font-size: 22pt;
+		font-weight: 700;
+		margin-bottom: 2mm;
+		word-break: keep-all;
+		line-height: 1.3;
+	}
+	.pdf-sub {
+		font-size: 10pt;
+		color: #6b6980;
+	}
+	.pdf-rule {
+		height: 3px;
+		background: #211f3d;
+		margin-top: 4mm;
+	}
+
+	/* 순위 행: 앱 카드 대신 깔끔한 문서 행으로 */
+	.print-area .rank-list {
+		display: block !important;
+	}
+	.print-area .rank-row {
+		box-shadow: none !important;
+		border: none !important;
+		border-bottom: 1.2px solid #e3e1ee !important;
+		border-radius: 0 !important;
+		padding: 3.2mm 2mm !important;
+		gap: 5mm !important;
+		break-inside: avoid;
+		page-break-inside: avoid;
+	}
+	.print-area .rank-row.top {
+		background: #f3f1fe;
+	}
+	.print-area .rank-row > span:first-child {
+		font-size: 15pt !important;
+		width: 12mm !important;
+		font-weight: 800;
+		flex: 0 0 auto;
+	}
+	.print-area .rank-row img {
+		width: 15mm !important;
+		height: 15mm !important;
+		object-fit: cover;
+		border: 1px solid #ddd;
+		flex: 0 0 auto;
+		image-rendering: auto !important; /* 인쇄는 픽셀화 대신 부드럽게 */
+	}
+	.print-area .rank-row strong {
+		font-size: 13pt !important;
+		white-space: normal !important;
+		word-break: keep-all;
+		overflow: visible !important;
+	}
+
+	/* 푸터 브랜딩 */
+	.pdf-footer {
+		position: fixed;
+		bottom: 6mm;
+		left: 0;
+		width: 100%;
+		text-align: center;
+		font-size: 8.5pt;
+		color: #a29fbb;
 	}
 }

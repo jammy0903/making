@@ -3,6 +3,9 @@
 	// onselect 로 넘긴다. 후보 관리 UI 에서 각 행의 사진을 검색으로 채우는 데 쓴다.
 	import { onMount } from 'svelte';
 	import { resizeImageToDataUrl } from '$lib/image';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	interface ImageResult {
 		title: string;
@@ -46,9 +49,9 @@
 				throw new Error(body.message ?? `HTTP ${res.status}`);
 			}
 			results = ((await res.json()) as { results: ImageResult[] }).results;
-			if (results.length === 0) error = '검색 결과가 없어요. 다른 검색어를 시도해 보세요.';
+			if (results.length === 0) error = t('search.noResults');
 		} catch (e) {
-			error = e instanceof Error ? e.message : '검색에 실패했어요.';
+			error = e instanceof Error ? e.message : t('search.failed');
 		} finally {
 			loading = false;
 		}
@@ -66,7 +69,7 @@
 			onselect(dataUrl);
 			onclose();
 		} catch {
-			error = '이 이미지는 가져오지 못했어요. 다른 걸 골라 주세요.';
+			error = t('search.pickFailed');
 			applying = null;
 		}
 	}
@@ -112,14 +115,14 @@
 				<input
 					class="input"
 					bind:value={query}
-					placeholder="검색어 (예: 골든리트리버)"
+					placeholder={t('search.placeholder')}
 					autofocus
 				/>
 				<button class="btn btn-primary" type="submit" disabled={loading || !query.trim()}>
-					{loading ? '검색 중' : '검색'}
+					{loading ? t('search.searching') : t('search.search')}
 				</button>
 			</form>
-			<button class="btn" onclick={onclose} aria-label="닫기">✕</button>
+			<button class="btn" onclick={onclose} aria-label={t('search.close')}>✕</button>
 		</div>
 
 		{#if error}
@@ -164,7 +167,7 @@
 
 		{#if results.length > 0}
 			<p class="muted" style="font-size:12px; margin:10px 0 0; text-align:center">
-				이미지를 클릭하면 이 후보 사진으로 설정돼요. (웹 이미지는 저작권 주의)
+				{t('search.hint')}
 			</p>
 		{/if}
 	</div>

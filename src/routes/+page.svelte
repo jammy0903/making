@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { listTopics, deleteTopic, seedSamplesIfNeeded } from '$lib/storage';
 	import { isPlayable, type Topic } from '$lib/domain';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	let topics = $state<Topic[]>([]);
 
@@ -16,52 +19,60 @@
 	}
 
 	const modeLabel: Record<string, string> = {
-		sort: '순위 월드컵',
-		worldcup: '순위 월드컵',
-		drag: '직접 순위'
+		sort: t('mode.worldcup'),
+		worldcup: t('mode.worldcup'),
+		drag: t('mode.drag')
 	};
 
 	// 갤러리 커버: 사진이 있는 첫 후보 이미지
-	function cover(t: Topic): string | undefined {
-		return t.candidates.find((c) => c.image)?.image;
+	function cover(topic: Topic): string | undefined {
+		return topic.candidates.find((c) => c.image)?.image;
 	}
 </script>
 
 <div class="home-head">
-	<p class="muted" style="margin:8px 0 20px">
-		후보를 비교하거나 직접 배치해 <b>전체 순위</b>를 정하는 놀이터.
-	</p>
+	<p class="muted" style="margin:8px 0 20px">{@html t('home.intro')}</p>
 
-	<a class="btn btn-primary btn-block" href="/create" style="margin-bottom:24px">+ 새 주제 만들기</a>
+	<a class="btn btn-primary btn-block" href="/create" style="margin-bottom:24px"
+		>{t('home.newTopic')}</a
+	>
 </div>
 
 {#if topics.length === 0}
-	<div class="empty">아직 만든 주제가 없어요.<br />위 버튼으로 첫 주제를 만들어 보세요.</div>
+	<div class="empty">{@html t('home.empty')}</div>
 {:else}
 	<ul class="gallery">
-		{#each topics as t (t.id)}
+		{#each topics as topic (topic.id)}
 			<li class="card gcard">
-				<a class="cover" href={isPlayable(t) ? `/t/${t.id}` : undefined} aria-label={t.title}>
-					{#if cover(t)}
-						<img src={cover(t)} alt="" />
+				<a
+					class="cover"
+					href={isPlayable(topic) ? `/t/${topic.id}` : undefined}
+					aria-label={topic.title}
+				>
+					{#if cover(topic)}
+						<img src={cover(topic)} alt="" />
 					{:else}
 						<span class="cover-ph">🏆</span>
 					{/if}
-					<span class="badge">{t.candidates.length}명</span>
+					<span class="badge">{t('badge.count', { n: topic.candidates.length })}</span>
 				</a>
 				<div class="body">
-					<strong class="gtitle">{t.title}</strong>
-					<span class="muted gmeta">{modeLabel[t.defaultMode]}</span>
-					{#if t.description}
-						<p class="muted gdesc">{t.description}</p>
+					<strong class="gtitle">{topic.title}</strong>
+					<span class="muted gmeta">{modeLabel[topic.defaultMode]}</span>
+					{#if topic.description}
+						<p class="muted gdesc">{topic.description}</p>
 					{/if}
 					<div class="actions">
-						{#if isPlayable(t)}
-							<a class="btn btn-primary" href="/t/{t.id}" style="flex:1">▶ 플레이</a>
+						{#if isPlayable(topic)}
+							<a class="btn btn-primary" href="/t/{topic.id}" style="flex:1">{t('home.play')}</a>
 						{:else}
-							<span class="btn" style="flex:1" aria-disabled="true">후보 부족</span>
+							<span class="btn" style="flex:1" aria-disabled="true">{t('home.notEnough')}</span>
 						{/if}
-						<button class="btn btn-danger del" onclick={() => remove(t.id)} aria-label="삭제">✕</button>
+						<button
+							class="btn btn-danger del"
+							onclick={() => remove(topic.id)}
+							aria-label={t('common.delete')}>✕</button
+						>
 					</div>
 				</div>
 			</li>

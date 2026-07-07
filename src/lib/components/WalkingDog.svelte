@@ -3,6 +3,9 @@
 	// 걷기 프레임(walk1~4)을 순환해 다리를 움직이고, 가끔 멈춰 쉬는(rest) 모습.
 	// 한 바퀴 돌면 품종을 랜덤으로 바꿔 여러 강아지가 번갈아 나온다.
 	import { onMount } from 'svelte';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	const AD_URL =
 		'https://chromewebstore.google.com/detail/glciecgcibkmbkkllmhagignmmjghkmj'; // 강아지 산책 크롬 웹스토어
@@ -70,7 +73,7 @@
 		href={AD_URL}
 		target="_blank"
 		rel="noopener"
-		title="강아지 산책 — 타자로 걷는 크롬 확장"
+		title={t('ad.dogWalk')}
 		style="transform: translateX({x}px)"
 	>
 		<img src={src} alt="강아지 산책 크롬 확장 광고" />

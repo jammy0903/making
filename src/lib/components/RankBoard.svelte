@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { Candidate } from '$lib/domain';
+	import { useT } from '$lib/i18n';
+
+	const t = useT();
 
 	let { candidates, onComplete }: { candidates: Candidate[]; onComplete: (ranked: Candidate[]) => void } =
 		$props();
@@ -111,9 +114,7 @@
 	}
 </script>
 
-<p class="muted" style="text-align:center; margin:8px 0 14px">
-	아래 후보를 위 순위 칸으로 <b>끌어다 놓아</b> 정해요 (좌상단이 1등)
-</p>
+<p class="muted" style="text-align:center; margin:8px 0 14px">{@html t('rank.instruction')}</p>
 
 <!-- 순위 슬롯: 좌상단 1등 → 우하단 꼴등 -->
 <div class="rank-grid">
@@ -146,7 +147,7 @@
 <div class="pool" data-pool class:over={overPool}>
 	{#if pool.length === 0}
 		<span class="muted" style="padding:12px; grid-column:1 / -1; text-align:center"
-			>모든 후보를 배치했어요 🎉</span
+			>{t('rank.allPlaced')}</span
 		>
 	{:else}
 		{#each pool as id (id)}
@@ -171,7 +172,9 @@
 </div>
 
 <button class="btn btn-primary btn-block" style="margin-top:18px" onclick={done} disabled={!allFilled}>
-	{allFilled ? '이 순위로 완료' : `아직 ${slots.filter((s) => s === null).length}칸 남았어요`}
+	{allFilled
+		? t('rank.done')
+		: t('rank.remaining', { n: slots.filter((s) => s === null).length })}
 </button>
 
 <!-- 드래그 고스트 -->
