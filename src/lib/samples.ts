@@ -117,8 +117,20 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'이준영',
 			'지창욱',
 			'원빈',
-			'최현욱',
+			'신하균',
 			'송강'
+		],
+		images: [
+			'/gen/actor-00.webp',
+			'/gen/actor-01.webp',
+			'/gen/actor-02.webp',
+			'/gen/actor-03.webp',
+			'/gen/actor-04.webp',
+			'/gen/actor-05.webp',
+			'/gen/actor-06.webp',
+			'/gen/actor-07.webp',
+			'/gen/actor-08.webp',
+			'/gen/actor-09.webp'
 		]
 	},
 	{
