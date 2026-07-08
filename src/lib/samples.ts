@@ -314,7 +314,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'/gen/best-food-00.webp', // 치킨
 			'/gen/best-food-01.webp', // 피자
 			'/gen/best-food-14.webp', // 족발
-			'', // 보쌈 — 사진 없음
+			'/gen/bossam.webp', // 보쌈
 			'/gen/best-food-06.webp', // 중국집(짜장면 대표)
 			'/gen/best-food-04.webp', // 떡볶이
 			'/gen/best-food-05.webp', // 햄버거
@@ -427,26 +427,83 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
-		title: '🍫 과자 월드컵',
-		description: '역대급 국민 과자는?',
+		title: '🥧 파이과자 월드컵',
+		description: '촉촉한 파이류 최강자',
 		defaultMode: 'sort',
 		candidates: [
-			'새우깡',
-			'포카칩',
-			'홈런볼',
-			'초코파이',
-			'꼬북칩',
-			'오징어땅콩',
-			'맛동산',
-			'예감',
-			'프링글스',
-			'죠리퐁',
-			'카라멜콘',
-			'고래밥',
-			'빼빼로',
-			'초코송이',
-			'자갈치',
-			'양파링'
+			'초코파이', '몽쉘', '오예스', '엄마손파이', '빅파이', '미쯔', '빈츠', '사브레',
+			'카스타드', '쿠크다스', '후레쉬베리', '촉촉한초코칩', '로아커', '빠다코코낫', '키드오', '오뜨',
+			'계란과자', '웨하스', '쌀로별', '조청유과', '찰떡파이'
+		],
+		images: [
+			'/gen/pie-snack-00.webp', '/gen/pie-snack-01.webp', '/gen/pie-snack-02.webp', '/gen/pie-snack-03.webp',
+			'/gen/pie-snack-04.webp', '/gen/pie-snack-05.webp', '/gen/pie-snack-06.webp', '/gen/pie-snack-07.webp', '/gen/pie-snack-08.webp',
+			'/gen/pie-snack-09.webp', '/gen/pie-snack-10.webp', '/gen/pie-snack-11.webp', '/gen/pie-snack-12.webp', '/gen/pie-snack-13.webp',
+			'/gen/pie-snack-14.webp', '/gen/pie-snack-15.webp', '/gen/pie-snack-16.webp', '/gen/pie-snack-17.webp', '/gen/pie-snack-18.webp', '/gen/pie-snack-19.webp',
+			'/gen/pie-snack-20.webp'
+		]
+	},
+	{
+		title: '🍿 봉지과자 월드컵',
+		description: '뜯으면 순삭되는 봉지과자',
+		defaultMode: 'sort',
+		candidates: [
+			'새우깡', '꼬북칩', '오징어땅콩', '고래밥', '죠리퐁', '맛동산', '자갈치', '바나나킥',
+			'꼬깔콘', '인디안밥', '오징어집', '알새우칩', '콘초', '콘칩', '신당동떡볶이과자', '꿀꽈배기',
+			'오잉', '오사쯔', '사또밥', '카라멜콘', '썬칩', '메이플콘'
+		],
+		images: [
+			'/gen/bag-snack-00.webp', '/gen/bag-snack-01.webp', '/gen/bag-snack-02.webp', '/gen/bag-snack-03.webp', '/gen/bag-snack-04.webp', '/gen/bag-snack-05.webp', '/gen/bag-snack-06.webp', '/gen/bag-snack-07.webp',
+			'/gen/bag-snack-08.webp', '/gen/bag-snack-09.webp', '/gen/bag-snack-10.webp', '/gen/bag-snack-11.webp', '/gen/bag-snack-12.webp', '/gen/bag-snack-13.webp',
+			'/gen/bag-snack-14.webp', '/gen/bag-snack-15.webp', '/gen/bag-snack-16.webp', '/gen/bag-snack-17.webp', '/gen/bag-snack-18.webp', '/gen/bag-snack-19.webp',
+			'/gen/bag-snack-20.webp', '/gen/bag-snack-21.webp'
+		]
+	},
+	{
+		title: '🥔 감자과자 월드컵',
+		description: '감자칩 계열 최강자',
+		defaultMode: 'sort',
+		candidates: [
+			'포카칩', '프링글스', '오감자', '수미칩', '감자깡', '자가비', '눈을감자', '구운감자',
+			'무뚝뚝', '포스틱', '허니버터칩', '레이즈', '촉촉한황치즈칩', '닭다리과자', '예감', '스윙칩',
+			'프렌치프라이', '포테토칩', '오!감자', '감자별'
+		],
+		images: [
+			'/gen/potato-snack-00.webp', '/gen/potato-snack-01.webp', '/gen/potato-snack-02.webp', '/gen/potato-snack-03.webp', '/gen/potato-snack-04.webp', '/gen/potato-snack-05.webp', '/gen/potato-snack-06.webp', '/gen/potato-snack-07.webp',
+			'/gen/potato-snack-08.webp', '/gen/potato-snack-09.webp', '/gen/potato-snack-10.webp', '/gen/potato-snack-11.webp',
+			'/gen/potato-snack-12.webp', '/gen/potato-snack-13.webp', '', '', '', '', '', ''
+		]
+	},
+	{
+		title: '🍫 단과자 월드컵',
+		description: '달달한 과자 최강자',
+		defaultMode: 'sort',
+		candidates: [
+			'초코파이', '몽쉘', '빼빼로', '초코송이', '오예스', '미쯔', '빈츠', '콘초',
+			'빅파이', '엄마손파이', '뽀또', '사브레', '후레쉬베리', '쿠크다스', '마가렛트', '홈런볼',
+			'칸쵸', '초코칩쿠키', '첵스초코', '하리보젤리', '초코하임', '화이트하임', '짱구과자'
+		],
+		images: [
+			'/gen/sweet-snack-00.webp', '/gen/sweet-snack-01.webp', '/gen/sweet-snack-02.webp', '/gen/sweet-snack-03.webp',
+			'/gen/sweet-snack-04.webp', '/gen/sweet-snack-05.webp', '/gen/sweet-snack-06.webp', '/gen/sweet-snack-07.webp', '/gen/sweet-snack-08.webp', '/gen/sweet-snack-09.webp', '/gen/sweet-snack-10.webp', '/gen/sweet-snack-11.webp',
+			'/gen/sweet-snack-12.webp', '/gen/sweet-snack-13.webp', '/gen/sweet-snack-14.webp', '/gen/sweet-snack-15.webp', '/gen/sweet-snack-16.webp', '/gen/sweet-snack-17.webp',
+			'/gen/sweet-snack-18.webp', '/gen/sweet-snack-19.webp', '/gen/sweet-snack-20.webp', '/gen/sweet-snack-21.webp', '/gen/sweet-snack-22.webp'
+		]
+	},
+	{
+		title: '🧂 짠과자 월드컵',
+		description: '짭짤한 과자 최강자',
+		defaultMode: 'sort',
+		candidates: [
+			'새우깡', '포카칩', '프링글스', '꼬북칩', '오징어땅콩', '자갈치', '감자깡', '에이스',
+			'제크', '참크래커', '도리토스', '나쵸', '알새우칩', '오징어집', '인디안밥', '포스틱',
+			'콘칩', '프레첼', '오잉', '오사쯔', '치킨팝'
+		],
+		images: [
+			'/gen/salty-snack-00.webp', '/gen/salty-snack-01.webp', '/gen/salty-snack-02.webp', '/gen/salty-snack-03.webp', '/gen/salty-snack-04.webp', '/gen/salty-snack-05.webp', '/gen/salty-snack-06.webp', '/gen/salty-snack-07.webp', '/gen/salty-snack-08.webp', '/gen/salty-snack-09.webp',
+			'/gen/salty-snack-10.webp', '/gen/salty-snack-11.webp', '/gen/salty-snack-12.webp', '/gen/salty-snack-13.webp',
+			'/gen/salty-snack-14.webp', '/gen/salty-snack-15.webp', '/gen/salty-snack-16.webp', '/gen/salty-snack-17.webp',
+			'/gen/salty-snack-18.webp', '/gen/salty-snack-19.webp', '/gen/salty-snack-20.webp'
 		]
 	},
 	{

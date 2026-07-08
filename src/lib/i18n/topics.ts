@@ -109,9 +109,25 @@ export const topicTranslations: Record<string, Partial<Record<Locale, TopicTr>>>
 		en: { title: '🐔 Chicken Brand Worldcup', description: 'Favorite chicken brand' },
 		zh: { title: '🐔 炸鸡品牌世界杯', description: '最爱的炸鸡品牌' }
 	},
-	'korean-snack': {
-		en: { title: '🍫 Korean Snack Worldcup', description: 'The all-time national snack?' },
-		zh: { title: '🍫 韩国零食世界杯', description: '国民级零食是？' }
+	'pie-snack': {
+		en: { title: '🥧 Pie Snack Worldcup', description: 'The best soft pie snack' },
+		zh: { title: '🥧 派点心世界杯', description: '最强松软派点心' }
+	},
+	'bag-snack': {
+		en: { title: '🍿 Bag Snack Worldcup', description: 'Bagged snacks that vanish fast' },
+		zh: { title: '🍿 袋装零食世界杯', description: '一开袋就秒光的袋装零食' }
+	},
+	'potato-snack': {
+		en: { title: '🥔 Potato Snack Worldcup', description: 'The best potato chip snack' },
+		zh: { title: '🥔 薯片世界杯', description: '最强薯片系零食' }
+	},
+	'sweet-snack': {
+		en: { title: '🍫 Sweet Snack Worldcup', description: 'The best sweet snack' },
+		zh: { title: '🍫 甜味零食世界杯', description: '最强甜味零食' }
+	},
+	'salty-snack': {
+		en: { title: '🧂 Salty Snack Worldcup', description: 'The best salty snack' },
+		zh: { title: '🧂 咸味零食世界杯', description: '最强咸味零食' }
 	},
 	'ice-cream': {
 		en: { title: '🍦 Ice Cream Worldcup', description: 'The one you crave in summer' },
