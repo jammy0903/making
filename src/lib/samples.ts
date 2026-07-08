@@ -32,6 +32,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'프로미스나인 송하영',
 			'뉴진스 해린',
 			'베이비몬스터 아현'
+		],
+		images: [
+			'/gen/girl-idol-00.webp',
+			'/gen/girl-idol-01.webp',
+			'/gen/girl-idol-02.webp',
+			'/gen/girl-idol-03.webp',
+			'/gen/girl-idol-04.webp',
+			'/gen/girl-idol-05.webp',
+			'/gen/girl-idol-06.webp',
+			'/gen/girl-idol-07.webp',
+			'/gen/girl-idol-08.webp',
+			'/gen/girl-idol-09.webp'
 		]
 	},
 	{
@@ -49,6 +61,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'앤더블 한유진',
 			'앤더블 장하오',
 			'투어스 도훈'
+		],
+		images: [
+			'/gen/boy-idol-00.webp',
+			'/gen/boy-idol-01.webp',
+			'/gen/boy-idol-02.webp',
+			'/gen/boy-idol-03.webp',
+			'/gen/boy-idol-04.webp',
+			'/gen/boy-idol-05.webp',
+			'/gen/boy-idol-06.webp',
+			'/gen/boy-idol-07.webp',
+			'/gen/boy-idol-08.webp',
+			'/gen/boy-idol-09.webp'
 		]
 	},
 	{
@@ -66,6 +90,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'전지현',
 			'임윤아',
 			'김다미'
+		],
+		images: [
+			'/gen/actress-00.webp',
+			'/gen/actress-01.webp',
+			'/gen/actress-02.webp',
+			'/gen/actress-03.webp',
+			'/gen/actress-04.webp',
+			'/gen/actress-05.webp',
+			'/gen/actress-06.webp',
+			'/gen/actress-07.webp',
+			'/gen/actress-08.webp',
+			'/gen/actress-09.webp'
 		]
 	},
 	{
