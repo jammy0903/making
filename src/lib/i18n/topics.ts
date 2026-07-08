@@ -150,8 +150,8 @@ export const topicTranslations: Record<string, Partial<Record<Locale, TopicTr>>>
 		zh: { title: '🍘 年糕世界杯', description: '最有嚼劲的冠军' }
 	},
 	'cafe-drink': {
-		en: { title: '☕ Cafe Drink Worldcup', description: 'Your go-to cafe order' },
-		zh: { title: '☕ 咖啡厅饮品世界杯', description: '去咖啡厅必点的' }
+		en: { title: '☕ Cafe Brand Worldcup', description: 'Your favorite cafe brand?' },
+		zh: { title: '☕ 咖啡品牌世界杯', description: '最爱的咖啡品牌是？' }
 	},
 	soda: {
 		en: { title: '🥤 Soda Worldcup', description: 'The fizzy favorite' },
