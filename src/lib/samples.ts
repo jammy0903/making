@@ -148,6 +148,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'나나세 유즈키',
 			'호시노 아이',
 			'쿠로카와 아카네'
+		],
+		images: [
+			'/gen/anime-girl-00.webp',
+			'/gen/anime-girl-01.webp',
+			'/gen/anime-girl-02.webp',
+			'/gen/anime-girl-03.webp',
+			'/gen/anime-girl-04.webp',
+			'/gen/anime-girl-05.webp',
+			'/gen/anime-girl-06.webp',
+			'/gen/anime-girl-07.webp',
+			'/gen/anime-girl-08.webp',
+			'/gen/anime-girl-09.webp'
 		]
 	},
 	{
@@ -165,6 +177,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'오레키 호타로',
 			'미야무라 이즈미',
 			'사쿠라 하루카'
+		],
+		images: [
+			'/gen/anime-boy-00.webp',
+			'/gen/anime-boy-01.webp',
+			'/gen/anime-boy-02.webp',
+			'/gen/anime-boy-03.webp',
+			'/gen/anime-boy-04.webp',
+			'/gen/anime-boy-05.webp',
+			'/gen/anime-boy-06.webp',
+			'/gen/anime-boy-07.webp',
+			'/gen/anime-boy-08.webp',
+			'/gen/anime-boy-09.webp'
 		]
 	},
 
@@ -190,6 +214,24 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'돈까스',
 			'족발',
 			'회'
+		],
+		images: [
+			'/gen/best-food-00.webp',
+			'/gen/best-food-01.webp',
+			'/gen/best-food-02.webp',
+			'/gen/best-food-03.webp',
+			'/gen/best-food-04.webp',
+			'/gen/best-food-05.webp',
+			'/gen/best-food-06.webp',
+			'/gen/best-food-07.webp',
+			'/gen/best-food-08.webp',
+			'/gen/best-food-09.webp',
+			'/gen/best-food-10.webp',
+			'/gen/best-food-11.webp',
+			'/gen/best-food-12.webp',
+			'/gen/best-food-13.webp',
+			'/gen/best-food-14.webp',
+			'/gen/best-food-15.webp'
 		]
 	},
 	{
@@ -234,13 +276,38 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🍢 분식 월드컵',
 		description: '분식집 최애 메뉴',
 		defaultMode: 'sort',
-		candidates: ['떡볶이', '김밥', '순대', '튀김', '라볶이', '쫄면', '우동', '만두', '어묵', '김말이']
+		candidates: ['떡볶이', '김밥', '순대', '튀김', '라볶이', '쫄면', '우동', '만두', '어묵', '김말이'],
+		images: [
+			'/gen/bunsik-00.webp',
+			'/gen/bunsik-01.webp',
+			'/gen/bunsik-02.webp',
+			'/gen/bunsik-03.webp',
+			'/gen/bunsik-04.webp',
+			'/gen/bunsik-05.webp',
+			'/gen/bunsik-06.webp',
+			'/gen/bunsik-07.webp',
+			'/gen/bunsik-08.webp',
+			'/gen/bunsik-09.webp'
+		]
 	},
 	{
 		title: '🛵 배달음식 월드컵',
 		description: '오늘 뭐 시켜 먹지?',
 		defaultMode: 'sort',
-		candidates: ['치킨', '피자', '족발', '보쌈', '중국집', '떡볶이', '햄버거', '초밥', '곱창', '마라탕']
+		candidates: ['치킨', '피자', '족발', '보쌈', '중국집', '떡볶이', '햄버거', '초밥', '곱창', '마라탕'],
+		// best-food 이미지 재사용. 보쌈은 사진 없음(이름 표시), 중국집은 짜장면 이미지로 대표.
+		images: [
+			'/gen/best-food-00.webp', // 치킨
+			'/gen/best-food-01.webp', // 피자
+			'/gen/best-food-14.webp', // 족발
+			'', // 보쌈 — 사진 없음
+			'/gen/best-food-06.webp', // 중국집(짜장면 대표)
+			'/gen/best-food-04.webp', // 떡볶이
+			'/gen/best-food-05.webp', // 햄버거
+			'/gen/best-food-03.webp', // 초밥
+			'/gen/best-food-11.webp', // 곱창
+			'/gen/best-food-10.webp' // 마라탕
+		]
 	},
 	{
 		title: '🍲 국물요리 월드컵',
@@ -257,6 +324,18 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'육개장',
 			'감자탕',
 			'매운탕'
+		],
+		images: [
+			'/gen/korean-stew-00.webp',
+			'/gen/korean-stew-01.webp',
+			'/gen/korean-stew-02.webp',
+			'/gen/korean-stew-03.webp',
+			'/gen/korean-stew-04.webp',
+			'/gen/korean-stew-05.webp',
+			'/gen/korean-stew-06.webp',
+			'/gen/korean-stew-07.webp',
+			'/gen/korean-stew-08.webp',
+			'/gen/korean-stew-09.webp'
 		]
 	},
 	{
