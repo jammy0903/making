@@ -29,7 +29,6 @@ const SLUGS: string[] = [
 	'korean-stew',
 	'gukbap',
 	'world-food',
-	'chicken-menu',
 	'chicken-brand',
 	'korean-snack',
 	'ice-cream',

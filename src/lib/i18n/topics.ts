@@ -105,10 +105,6 @@ export const topicTranslations: Record<string, Partial<Record<Locale, TopicTr>>>
 			]
 		}
 	},
-	'chicken-menu': {
-		en: { title: '🍗 Fried Chicken Menu Worldcup', description: 'The best chicken flavor?' },
-		zh: { title: '🍗 炸鸡口味世界杯', description: '最好吃的炸鸡口味？' }
-	},
 	'chicken-brand': {
 		en: { title: '🐔 Chicken Brand Worldcup', description: 'Favorite chicken brand' },
 		zh: { title: '🐔 炸鸡品牌世界杯', description: '最爱的炸鸡品牌' }

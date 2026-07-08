@@ -251,6 +251,20 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'사리곰탕면',
 			'팔도비빔면',
 			'오징어짬뽕'
+		],
+		images: [
+			'/gen/ramen-00.webp',
+			'/gen/ramen-01.webp',
+			'/gen/ramen-02.webp',
+			'/gen/ramen-03.webp',
+			'/gen/ramen-04.webp',
+			'/gen/ramen-05.webp',
+			'/gen/ramen-06.webp',
+			'/gen/ramen-07.webp',
+			'/gen/ramen-08.webp',
+			'/gen/ramen-09.webp',
+			'/gen/ramen-10.webp',
+			'/gen/ramen-11.webp'
 		]
 	},
 	{
@@ -378,16 +392,39 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
-		title: '🍗 치킨 메뉴 월드컵',
-		description: '최고의 치킨 메뉴는?',
-		defaultMode: 'sort',
-		candidates: ['후라이드', '양념', '간장', '파닭', '마늘치킨', '반반', '뿌링클', '허니콤보', '골드올리브', '맵단치킨']
-	},
-	{
 		title: '🐔 치킨 브랜드 월드컵',
 		description: '최애 치킨 브랜드',
 		defaultMode: 'sort',
-		candidates: ['교촌', 'BBQ', 'BHC', '굽네', '페리카나', '네네', '처갓집', '60계', '노랑통닭', '자담치킨']
+		candidates: [
+			'교촌',
+			'BBQ',
+			'BHC',
+			'굽네',
+			'페리카나',
+			'네네',
+			'처갓집',
+			'60계',
+			'노랑통닭',
+			'또래오래',
+			'멕시카나',
+			'부어치킨',
+			'호식이두마리'
+		],
+		images: [
+			'/gen/chicken-brand-00.webp',
+			'/gen/chicken-brand-01.webp',
+			'/gen/chicken-brand-02.webp',
+			'/gen/chicken-brand-03.webp',
+			'/gen/chicken-brand-04.webp',
+			'/gen/chicken-brand-05.webp',
+			'/gen/chicken-brand-06.webp',
+			'/gen/chicken-brand-07.webp',
+			'/gen/chicken-brand-08.webp',
+			'/gen/chicken-brand-09.webp',
+			'/gen/chicken-brand-10.webp',
+			'/gen/chicken-brand-11.webp',
+			'/gen/chicken-brand-12.webp'
+		]
 	},
 	{
 		title: '🍫 과자 월드컵',
@@ -440,7 +477,19 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🥐 빵 월드컵',
 		description: '빵집 가면 담는 그 빵',
 		defaultMode: 'sort',
-		candidates: ['소금빵', '크루아상', '단팥빵', '소보로빵', '크림빵', '마늘바게트', '베이글', '카스텔라', '식빵', '도넛']
+		candidates: ['소금빵', '크루아상', '메론빵', '까눌레', '크로플', '마늘바게트', '베이글', '카스텔라', '식빵', '도넛'],
+		images: [
+			'/gen/bread-00.webp', // 소금빵
+			'/gen/bread-01.webp', // 크루아상
+			'/gen/bread-02.webp', // 메론빵
+			'/gen/bread-03.webp', // 까눌레
+			'/gen/bread-04.webp', // 크로플
+			'/gen/bread-05.webp', // 마늘바게트
+			'/gen/bread-06.webp', // 베이글
+			'/gen/bread-07.webp', // 카스텔라
+			'/gen/bread-08.webp', // 식빵
+			'/gen/bread-09.webp' // 도넛
+		]
 	},
 	{
 		title: '🍡 길거리 간식 월드컵',
@@ -464,7 +513,17 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🍘 떡 월드컵',
 		description: '쫀득한 떡의 최강자',
 		defaultMode: 'drag',
-		candidates: ['인절미', '백설기', '절편', '가래떡', '꿀떡', '시루떡', '무지개떡', '경단']
+		candidates: ['인절미', '백설기', '절편', '가래떡', '꿀떡', '시루떡', '무지개떡', '경단'],
+		images: [
+			'/gen/rice-cake-00.webp',
+			'/gen/rice-cake-01.webp',
+			'/gen/rice-cake-02.webp',
+			'/gen/rice-cake-03.webp',
+			'/gen/rice-cake-04.webp',
+			'/gen/rice-cake-05.webp',
+			'/gen/rice-cake-06.webp',
+			'/gen/rice-cake-07.webp'
+		]
 	},
 
 	// ── 음료 ──
@@ -577,25 +636,51 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		title: '🐾 반려동물 월드컵',
 		description: '함께 살고 싶은 친구는?',
 		defaultMode: 'sort',
-		candidates: ['강아지', '고양이', '햄스터', '앵무새', '고슴도치', '거북이', '토끼', '금붕어', '도마뱀', '페럿']
+		candidates: ['강아지', '고양이', '햄스터', '앵무새', '고슴도치', '거북이', '토끼', '금붕어', '도마뱀', '페럿'],
+		images: [
+			'/gen/pet-00.webp',
+			'/gen/pet-01.webp',
+			'/gen/pet-02.webp',
+			'/gen/pet-03.webp',
+			'/gen/pet-04.webp',
+			'/gen/pet-05.webp',
+			'/gen/pet-06.webp',
+			'/gen/pet-07.webp',
+			'/gen/pet-08.webp',
+			'/gen/pet-09.webp'
+		]
 	},
 	{
 		title: '✈️ 가고 싶은 여행지 월드컵',
 		description: '지금 당장 떠난다면',
 		defaultMode: 'sort',
 		candidates: [
-			'제주',
+			'교토',
 			'도쿄',
 			'파리',
 			'방콕',
 			'뉴욕',
 			'로마',
-			'발리',
-			'하와이',
-			'스위스',
-			'다낭',
-			'오사카',
+			'시드니',
+			'그랜드캐년',
+			'리우데자네이루',
+			'마추픽추',
+			'산토리니',
 			'바르셀로나'
+		],
+		images: [
+			'/gen/travel-destination-00.webp', // 교토
+			'/gen/travel-destination-01.webp', // 도쿄
+			'/gen/travel-destination-02.webp', // 파리
+			'/gen/travel-destination-03.webp', // 방콕
+			'/gen/travel-destination-04.webp', // 뉴욕
+			'/gen/travel-destination-05.webp', // 로마
+			'/gen/travel-destination-06.webp', // 시드니
+			'/gen/travel-destination-07.webp', // 그랜드캐년
+			'/gen/travel-destination-08.webp', // 리우데자네이루
+			'/gen/travel-destination-09.webp', // 마추픽추
+			'/gen/travel-destination-10.webp', // 산토리니
+			'/gen/travel-destination-11.webp' // 바르셀로나
 		]
 	},
 	{
@@ -619,6 +704,24 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'ESFJ',
 			'ENFJ',
 			'ENTJ'
+		],
+		images: [
+			'/gen/mbti-00.webp',
+			'/gen/mbti-01.webp',
+			'/gen/mbti-02.webp',
+			'/gen/mbti-03.webp',
+			'/gen/mbti-04.webp',
+			'/gen/mbti-05.webp',
+			'/gen/mbti-06.webp',
+			'/gen/mbti-07.webp',
+			'/gen/mbti-08.webp',
+			'/gen/mbti-09.webp',
+			'/gen/mbti-10.webp',
+			'/gen/mbti-11.webp',
+			'/gen/mbti-12.webp',
+			'/gen/mbti-13.webp',
+			'/gen/mbti-14.webp',
+			'/gen/mbti-15.webp'
 		]
 	},
 	{
