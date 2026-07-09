@@ -4,7 +4,6 @@
 	import { SITE } from '$lib/site';
 	import { page } from '$app/state';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
-	import WalkingDog from '$lib/components/WalkingDog.svelte';
 	import {
 		setLocaleContext,
 		useT,
@@ -89,7 +88,7 @@
 			>‹</a
 		>
 	{/if}
-	<h1 class="app-title">🏆 {t('app.title')}</h1>
+	<h1 class="app-title">{t('app.title')}</h1>
 	<select class="lang-select" aria-label={t('lang.label')} value={locale} onchange={switchLang}>
 		{#each locales as l (l)}
 			<option value={l}>{localeNames[l]}</option>
@@ -105,9 +104,6 @@
 </main>
 
 <div class="ad ad-bottom" id="ad-bottom"></div>
-
-<!-- 하우스 광고: 화면 아래를 걸어다니는 강아지 (dog-walk 크롬 확장) -->
-<WalkingDog />
 
 <style>
 	.lang-select {

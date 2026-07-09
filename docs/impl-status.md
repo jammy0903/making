@@ -6,7 +6,10 @@
 
 - **설계 완료**: `docs/game-design.md` (정본 스펙 A~F) · `docs/balance-game-plan.md` (근거·역사).
 - **Supabase 스키마 적용 완료** (원격 `making` 프로젝트) + MVP 2덱 시드 완료.
-- **앱 코드 = 아직 랭킹게임 상태.** 밸런스게임으로 변형/폐기 작업이 다음 할 일.
+- **앱 이름 = "그런데이제"로 통일** (package.json·manifest·i18n `app.title`). 2026-07-10.
+- **랭킹게임(과거내역) 전면 삭제 완료.** 코드(`src/lib/ranking`·`stats`·`server`·`share`·`components`·`samples`·`publicTopics`·`domain`·`image`·`storage`·`i18n/topics`)·랭킹 라우트(`create`·`r`·`t`·`api`·image-test)·`scripts/*`·구 문서(설계서·seo-plan·growth-plan·code-review-solid)·미사용 deps(`@huggingface/inference`·`sharp`) 제거.
+- **현재 앱 = 최소 셸.** SvelteKit+i18n+레이아웃+홈 플레이스홀더("준비 중")만 남음. `pnpm check && build` 통과. 이미지 자산(`static/gen`·`ads`·`산출물`)은 보존.
+- **다음 = 밸런스게임 신규 구현** (§5 체크리스트, 전부 미착수).
 
 ## 1. 문서 지도
 
@@ -31,20 +34,22 @@
 - 스키마 = `supabase/migrations/0001_init.sql`, 시드 = `supabase/seed.sql`(2덱, 각 9+9장 적용됨).
 - **다른 컴터 셋업**: `.env`에 `PUBLIC_SUPABASE_URL`(=https://faofjruxrabdbtesrkub.supabase.co) + `PUBLIC_SUPABASE_ANON_KEY` 넣기(Supabase 대시보드에서 복사, git 커밋 금지).
 
-## 4. 코드 재활용/변형/폐기 맵 (기존 랭킹게임 → 밸런스게임)
+## 4. 현재 코드베이스 (랭킹게임 삭제 후 클린 슬레이트)
 
-**그대로 재활용**: SvelteKit+Vite+adapter-vercel+pnpm+vitest 셋업 · i18n 엔진(`src/lib/i18n/`) · 반응시간 `src/lib/ranking/hesitation.ts`(필드명만) · SEO(sitemap/hreflang) · 레이아웃 셸.
+랭킹게임 코드·자산·구 문서는 **삭제 완료**(§0). 밸런스게임은 아래 셸 위에 신규 구현한다.
 
-**손봐서 변형**:
-- 공유 코덱 `src/lib/share/rankingCodec.ts` → 순열 대신 **10판 선택배열(0/1) 인코딩**(base64url 유틸·무상태 패턴 이식).
-- `src/routes/[[lang=locale]]/t/[id]/play/+page.svelte`의 **2-카드 선택 UI** → "그런데 이제" 페널티-온리 10판.
-- `src/lib/storage.ts` localStorage → Supabase 어댑터(주석에 이미 예고됨).
-- 홈 라우트 → decks 그리드. i18n 메시지 내용 밸런스게임으로 교체(또는 한국어 온리 정리).
+**남은 셸 (전부 재활용)**:
+- 빌드 셋업: SvelteKit+Vite+adapter-vercel+pnpm+vitest.
+- `src/lib/i18n/` (엔진 + 로케일 파라미터·hooks). 현재 문구는 `app.title`·`nav.home`·`lang.label`만 — 밸런스게임 화면 만들며 키 추가.
+- `src/routes/+layout.svelte` (헤더·언어전환·광고 슬롯·SEO 셸), `+error.svelte`, `sitemap.xml`.
+- `src/routes/[[lang=locale]]/+page.*` = 홈 **플레이스홀더("준비 중")** → decks 그리드로 교체(§B-4).
+- `src/lib/site.ts`(도메인), `params/locale.ts`, `hooks.server.ts`(호스트 정규화·로케일).
+- 이미지 자산 `static/gen`·`static/ads`·`산출물` 보존.
 
-**버리고 새로 / 폐기**:
-- PNG 결과카드(html2canvas 없음 → 의존성+구현 신규).
-- Supabase 클라이언트 연결(현재 없음 → 신규).
-- 폐기: `src/lib/ranking/eloRanker.ts`·`mergeRanker.ts`·`consistency.ts`·`types.ts` · `src/lib/stats/*` · `RankBoard.svelte`·`RankResult.svelte` · 후보 이미지 파이프라인(`ImageSearchModal`·`api/image*`·`server/bingImageSearch`·`server/hf`·`server/ssrf`·`scripts/*.mjs`) · 콘텐츠(`samples.ts`·`i18n/topics.ts`·`publicTopics.ts`·`static/gen/*`·`static/ads/dogs/*`).
+**신규로 만들 것** (기존 코드 없음 — §5에서 상술):
+- Supabase 클라이언트 연결 · 익명 세션 · decks 로드 어댑터.
+- 게임 상태/엔진(선택배열·누적 페널티·스위치) · 2-카드 play UI · 결과 계산(§A-5).
+- 결과 카드 + PNG 이미지화 · 10판 선택배열 공유 코덱 · plays 로그 저장.
 
 ## 5. 다음 스텝 체크리스트 (impl-todo)
 

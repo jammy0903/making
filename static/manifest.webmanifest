@@ -1,7 +1,7 @@
 {
-  "name": "순위 월드컵",
-  "short_name": "순위 월드컵",
-  "description": "둘 중 하나씩 골라 전체 순위를 정하는 이상형 월드컵 웹앱",
+  "name": "그런데이제",
+  "short_name": "그런데이제",
+  "description": "고른 쪽에 조건이 하나씩 붙는 10판 밸런스 게임",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

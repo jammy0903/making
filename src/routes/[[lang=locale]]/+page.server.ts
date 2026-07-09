@@ -1,20 +1,7 @@
-import { publicTopics } from '$lib/publicTopics';
-import { defaultLocale, type Locale } from '$lib/i18n';
-
 /**
- * 홈 SSR 데이터 — 로케일별 공개(샘플) 주제 목록을 서버가 렌더.
- * 클라이언트는 여기에 localStorage 의 사용자 생성 주제를 얹는다.
+ * 홈 SSR — 랭킹게임 콘텐츠(publicTopics)는 피벗으로 제거됨.
+ * "그런데이제" 밸런스게임 구현 시 decks 그리드 데이터로 대체(docs/game-design.md §B-4).
  */
-export function load({ params }) {
-	const locale = (params.lang as Locale) ?? defaultLocale;
-	return {
-		samples: publicTopics(locale).map((t) => ({
-			slug: t.slug,
-			title: t.title,
-			description: t.description,
-			defaultMode: t.defaultMode,
-			count: t.candidates.length,
-			cover: t.candidates.find((c) => c.image)?.image ?? null
-		}))
-	};
+export function load() {
+	return {};
 }
