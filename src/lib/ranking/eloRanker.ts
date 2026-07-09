@@ -90,7 +90,9 @@ export class EloRanker<T> implements RankSession<T> {
 	private sumConf = 0; // 확신도 누적(평균 = sumConf/asked)
 	private log: LogEntry[] = [];
 	private current: { i: number; j: number } | null = null; // 직전 next() 가 고른 쌍
-	private lastPair: [number, number] | null = null; // 즉시 같은 쌍 반복 완화용
+	// 이미 물어본 쌍(min-max 인덱스 키). 취향 비교는 결정적이라 재-질문에서 얻는 정보가 0 →
+	// 한 번 물으면 다시 안 묻는다(체스식 노이즈 재샘플링과 다름). undo 시 제거.
+	private askedPairs = new Set<string>();
 
 	constructor(items: readonly T[], opts: EloRankerOptions = {}) {
 		this.items = opts.seed !== undefined ? shuffle(items, opts.seed) : items.slice();
@@ -143,7 +145,7 @@ export class EloRanker<T> implements RankSession<T> {
 		this.sumConf += conf;
 
 		this.log.push({ winner: w, loser: l, wBefore, lBefore, conf });
-		this.lastPair = [Math.min(i, j), Math.max(i, j)];
+		this.askedPairs.add(pairKey(i, j));
 		this.current = null;
 	}
 
@@ -172,10 +174,7 @@ export class EloRanker<T> implements RankSession<T> {
 		this.asked -= 1;
 		this.sumConf -= e.conf;
 		this.current = null;
-		const prev = this.log[this.log.length - 1];
-		this.lastPair = prev
-			? [Math.min(prev.winner, prev.loser), Math.max(prev.winner, prev.loser)]
-			: null;
+		this.askedPairs.delete(pairKey(e.winner, e.loser));
 	}
 
 	// ---- 다운스트림용(§5-2 순환 탐지·통계·결과 카드). RankSession 인터페이스 밖. ----
@@ -197,7 +196,10 @@ export class EloRanker<T> implements RankSession<T> {
 	// ---- 내부 ----
 
 	private isDone(): boolean {
-		return this.asked >= this.effectiveTarget();
+		if (this.asked >= this.effectiveTarget()) return true;
+		// 가능한 모든 쌍을 다 물었으면(N·(N-1)/2) 목표 미달이어도 종료 — 더 물을 게 없음.
+		const n = this.items.length;
+		return this.askedPairs.size >= (n * (n - 1)) / 2;
 	}
 
 	/**
@@ -223,33 +225,39 @@ export class EloRanker<T> implements RankSession<T> {
 	 * (b) 사용자에겐 "계속 고민되는 매치업만 나온다"는 재미가 된다.
 	 *   - 1순위: 레이팅 격차가 가장 작은 인접쌍(가장 불확실).
 	 *   - 동률(초기엔 전부 0): 덜 비교된 쌍(커버리지 확보).
-	 *   - 직전과 똑같은 쌍은 건너뛴다(연속 반복 완화). N=2 라 대안이 없으면 그대로.
+	 *   - **이미 물어본 쌍은 절대 재선택하지 않는다.** 취향은 결정적 → 재-질문 정보량 0.
+	 *   - 인접쌍(rank distance 1)이 다 소진되면 rank distance 2, 3… 으로 확장.
+	 *   - 모든 쌍이 소진되면 null(→ isDone 이 true 로 세션 종료).
 	 */
 	private selectPair(): { i: number; j: number } | null {
 		const n = this.items.length;
 		if (n < 2) return null;
 		const order = this.standingsOrder(); // 레이팅 내림차순
 
-		let best: { i: number; j: number } | null = null;
-		let bestGap = Infinity;
-		let bestCount = Infinity;
-		for (let p = 0; p < n - 1; p++) {
-			const a = order[p];
-			const b = order[p + 1];
-			const isRepeat =
-				this.lastPair &&
-				Math.min(a, b) === this.lastPair[0] &&
-				Math.max(a, b) === this.lastPair[1];
-			if (isRepeat) continue; // 직전 쌍 회피(대안이 있으면)
-			const gap = this.rating[a] - this.rating[b]; // 정렬돼 있어 ≥ 0
-			const cs = this.count[a] + this.count[b];
-			if (gap < bestGap - 1e-9 || (Math.abs(gap - bestGap) <= 1e-9 && cs < bestCount)) {
-				bestGap = gap;
-				bestCount = cs;
-				best = { i: a, j: b };
+		// 순위표 거리 1 부터 (인접쌍) → 다 물었으면 2, 3, … 로 확장.
+		for (let dist = 1; dist < n; dist++) {
+			let best: { i: number; j: number } | null = null;
+			let bestGap = Infinity;
+			let bestCount = Infinity;
+			for (let p = 0; p + dist < n; p++) {
+				const a = order[p];
+				const b = order[p + dist];
+				if (this.askedPairs.has(pairKey(a, b))) continue; // 재-질문 금지
+				const gap = this.rating[a] - this.rating[b]; // 정렬돼 있어 ≥ 0
+				const cs = this.count[a] + this.count[b];
+				if (gap < bestGap - 1e-9 || (Math.abs(gap - bestGap) <= 1e-9 && cs < bestCount)) {
+					bestGap = gap;
+					bestCount = cs;
+					best = { i: a, j: b };
+				}
 			}
+			if (best) return best;
 		}
-		// 인접쌍이 직전 쌍 하나뿐(N=2) → 그대로 반복
-		return best ?? { i: order[0], j: order[1] };
+		return null; // 모든 쌍 소진 → 세션 종료.
 	}
+}
+
+/** 두 인덱스로 순서 무관 쌍 키. Set 에 넣어 중복 질문 차단. */
+function pairKey(i: number, j: number): string {
+	return i < j ? `${i}-${j}` : `${j}-${i}`;
 }
