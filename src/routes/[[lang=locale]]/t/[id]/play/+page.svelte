@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { getTopic } from '$lib/storage';
 	import type { Candidate, Topic, RankMode } from '$lib/domain';
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
+	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
 	import RankBoard from '$lib/components/RankBoard.svelte';
 	import { useT, getLocale, localePath } from '$lib/i18n';
 
@@ -28,6 +29,34 @@
 	// 완료된 순위(두 모드 공통)
 	let ranking = $state.raw<Candidate[] | null>(null);
 	let today = $state(''); // PDF 헤더 날짜(클라이언트에서 설정)
+
+	// 망설임(반응시간) 측정 — sort 모드 전용. 로그엔 원본 ms 만 저장(가공 X).
+	let pairShownAt = 0; // 현재 쌍이 화면에 뜬 시각(performance.now)
+	let compareLog = $state.raw<CompareLog[]>([]);
+	const hesitation = $derived(summarize(compareLog));
+
+	// 자리비움(AFK): 한 대결을 2분간 안 고르면 타이머를 멈추고 오버레이 표시.
+	// 자리비운 시간이 망설임으로 잘못 잡히지 않게, 복귀 시 시계를 재시작한다.
+	const AFK_MS = 120_000; // 2분 무응답 → 자리비움
+	let away = $state(false);
+	let awayTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function clearAwayTimer() {
+		if (awayTimer) {
+			clearTimeout(awayTimer);
+			awayTimer = null;
+		}
+	}
+	function armAwayTimer() {
+		clearAwayTimer();
+		awayTimer = setTimeout(() => (away = true), AFK_MS);
+	}
+	function resume() {
+		away = false;
+		pairShownAt = performance.now(); // 자리비운 시간은 측정에서 제외(시계 재시작)
+		armAwayTimer();
+	}
+	onDestroy(clearAwayTimer);
 
 	const ratio = $derived(estTotal > 0 ? Math.min(asked / estTotal, 1) : 0);
 
@@ -55,6 +84,13 @@
 		canUndo = ranker.canUndo();
 		ranking = ranker.result();
 		pair = ranker.next();
+		// 새 쌍이 뜬 시각을 기록 → pick() 진입 시각과의 차가 순수 반응시간
+		if (pair) {
+			pairShownAt = performance.now();
+			armAwayTimer(); // 무응답 2분이면 자리비움
+		} else {
+			clearAwayTimer();
+		}
 	}
 
 	function reducedMotion() {
@@ -62,7 +98,22 @@
 	}
 
 	function pick(c: Candidate) {
-		if (picking) return; // 애니메이션 중 중복 선택 방지
+		if (picking || away) return; // 애니 중·자리비움 중 선택 방지(= 로그 이중 집계 방지)
+		clearAwayTimer(); // 골랐으니 자리비움 타이머 해제
+		// 반응시간은 애니(setTimeout) 지연 전, 진입 즉시 확정. 원본 ms 그대로 저장.
+		if (pair && pairShownAt) {
+			const other = pair.a.id === c.id ? pair.b : pair.a;
+			compareLog = [
+				...compareLog,
+				{
+					winnerId: c.id,
+					loserId: other.id,
+					winnerName: c.name,
+					loserName: other.name,
+					ms: performance.now() - pairShownAt
+				}
+			];
+		}
 		picking = c.id;
 		// 고른 카드를 약 1초간 강조(커짐)한 뒤 다음 비교로 진행
 		const delay = reducedMotion() ? 150 : 900;
@@ -73,12 +124,18 @@
 		}, delay);
 	}
 	function undo() {
-		ranker?.undo();
+		// ranker 가 실제로 되돌린 경우에만 로그도 pop → "undo 횟수 = pop 횟수" 정합 보장
+		if (!ranker?.canUndo()) return;
+		ranker.undo();
+		compareLog = compareLog.slice(0, -1);
 		refresh();
 	}
 
 	function restart() {
 		ranking = null;
+		compareLog = [];
+		away = false;
+		clearAwayTimer();
 		if (mode === 'sort' && topic) {
 			ranker = new MergeRanker(topic.candidates, { seed: Math.floor(Math.random() * 1e9) });
 			refresh();
@@ -132,6 +189,34 @@
 			{/each}
 		</ol>
 
+		<!-- 고뇌 리포트: 화면 + PDF 모두 표시. 비교가 없던 드래그 모드면 숨김. -->
+		{#if hesitation.count > 0}
+			<div
+				class="card hesitation-report"
+				style="margin-top:16px; padding:14px; display:grid; gap:8px; font-size:14px"
+			>
+				<strong>{t('result.hesitation.title')}</strong>
+				{#if hesitation.mostAgonized}
+					<span
+						>{t('result.hesitation.agonized', {
+							a: hesitation.mostAgonized.winnerName,
+							b: hesitation.mostAgonized.loserName,
+							s: hesitation.mostAgonized.seconds
+						})}</span
+					>
+				{/if}
+				{#if hesitation.instant}
+					<span
+						>{t('result.hesitation.instant', {
+							a: hesitation.instant.winnerName,
+							b: hesitation.instant.loserName,
+							s: hesitation.instant.seconds
+						})}</span
+					>
+				{/if}
+			</div>
+		{/if}
+
 		<!-- PDF 전용 푸터 -->
 		<div class="pdf-footer print-only">codeinsight.online · {t('app.title')}</div>
 	</div>
@@ -147,7 +232,7 @@
 	<!-- ===== 순위 월드컵(비교) ===== -->
 	<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 6px">
 		<span class="muted" style="font-size:13px">{t('play.progress', { asked, est: estTotal })}</span>
-		<button class="btn" style="padding:6px 12px" onclick={undo} disabled={!canUndo}
+		<button class="btn" style="padding:6px 12px" onclick={undo} disabled={!canUndo || away}
 			>{t('play.undo')}</button
 		>
 	</div>
@@ -161,15 +246,18 @@
 	</div>
 
 	{#if pair}
-		<p style="text-align:center; margin:0 0 16px" class="muted">{t('play.pickHigher')}</p>
+		<p style="text-align:center; margin:0 0 4px" class="muted">{t('play.pickHigher')}</p>
+		<p style="text-align:center; margin:0 0 16px; font-size:12px" class="muted">
+			{t('play.timeLimit')}
+		</p>
 		<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
 			{#each [pair.a, pair.b] as c (c.id)}
 				<button
 					class="card compare-card"
 					class:picked={picking === c.id}
-					class:dim={picking !== null && picking !== c.id}
+					class:dim={(picking !== null && picking !== c.id) || away}
 					onclick={() => pick(c)}
-					disabled={picking !== null}
+					disabled={picking !== null || away}
 					style="padding:16px; display:flex; flex-direction:column; align-items:center; gap:12px; cursor:pointer"
 				>
 					{#if c.image}
@@ -189,6 +277,13 @@
 				</button>
 			{/each}
 		</div>
+		{#if away}
+			<!-- 자리비움 오버레이: 타이머 정지, 복귀 시 시계 재시작 -->
+			<div class="away-overlay" role="alertdialog" aria-label={t('play.away.title')}>
+				<p style="font-size:16px; margin:0 0 14px; text-align:center">{t('play.away.title')}</p>
+				<button class="btn btn-primary" onclick={resume}>{t('play.away.resume')}</button>
+			</div>
+		{/if}
 	{/if}
 {:else}
 	<!-- ===== 직접 순위(순위판 + 후보풀 드래그앤드롭) ===== -->
@@ -225,5 +320,20 @@
 		.compare-card.picked {
 			transform: none;
 		}
+	}
+	/* 자리비움 오버레이: 화면 전체를 덮고 복귀 버튼만 활성 */
+	.away-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		background: rgba(10, 8, 20, 0.62);
+	}
+	.away-overlay p {
+		color: #fff;
 	}
 </style>

@@ -50,9 +50,15 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'result.done': '순위가 정해졌어요!',
 		'result.exportPdf': '📄 PDF로 내보내기',
 		'result.restart': '다시 하기',
+		'result.hesitation.title': '⏱ 고뇌 리포트',
+		'result.hesitation.agonized': '가장 고뇌한 대결: {a} vs {b} · {s}초',
+		'result.hesitation.instant': '0초컷: {a} (vs {b}) · {s}초, 한 치의 망설임도 없음',
 
 		'play.progress': '{asked} / 약 {est}회',
 		'play.undo': '↶ 되돌리기',
+		'play.timeLimit': '⏱ 각 대결은 2분 안에 골라주세요.',
+		'play.away.title': '자리 비우셨나요? 타이머를 멈춰뒀어요.',
+		'play.away.resume': '계속하기',
 		'play.pickHigher': '둘 중 더 위인 걸 골라요',
 
 		'rank.instruction': '아래 후보를 위 순위 칸으로 <b>끌어다 놓아</b> 정해요 (좌상단이 1등)',
@@ -122,9 +128,15 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'result.done': 'The ranking is decided!',
 		'result.exportPdf': '📄 Export as PDF',
 		'result.restart': 'Play again',
+		'result.hesitation.title': '⏱ Agony report',
+		'result.hesitation.agonized': 'Most agonizing duel: {a} vs {b} · {s}s',
+		'result.hesitation.instant': 'Instant call: {a} (vs {b}) · {s}s, no hesitation at all',
 
 		'play.progress': '{asked} / ~{est}',
 		'play.undo': '↶ Undo',
+		'play.timeLimit': '⏱ Pick within 2 minutes for each duel.',
+		'play.away.title': 'Stepped away? We paused the timer.',
+		'play.away.resume': 'Resume',
 		'play.pickHigher': 'Pick the one you rank higher',
 
 		'rank.instruction': '<b>Drag</b> candidates below into the rank slots above (top-left is #1)',
@@ -194,9 +206,15 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'result.done': '排名已定！',
 		'result.exportPdf': '📄 导出为 PDF',
 		'result.restart': '再玩一次',
+		'result.hesitation.title': '⏱ 纠结报告',
+		'result.hesitation.agonized': '最纠结的对决：{a} vs {b} · {s}秒',
+		'result.hesitation.instant': '秒选：{a}（vs {b}）· {s}秒，毫不犹豫',
 
 		'play.progress': '{asked} / 约 {est} 次',
 		'play.undo': '↶ 撤销',
+		'play.timeLimit': '⏱ 每场对决请在 2 分钟内选择。',
+		'play.away.title': '离开了吗？计时器已暂停。',
+		'play.away.resume': '继续',
 		'play.pickHigher': '选出你觉得更靠前的一个',
 
 		'rank.instruction': '把下方候选<b>拖入</b>上方排名格来决定（左上为第 1 名）',
