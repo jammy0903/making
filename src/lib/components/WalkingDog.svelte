@@ -113,4 +113,9 @@
 			transition: none;
 		}
 	}
+	/* 확장 설치자에겐 하우스 광고 숨김: 이미 자기 강아지가 걸어다니므로 중복 방지.
+	   확장 content script 가 document_start 에 <html> 에 이 클래스를 심는다. */
+	:global(html.dog-walk-ext-installed) .walk-lane {
+		display: none;
+	}
 </style>
