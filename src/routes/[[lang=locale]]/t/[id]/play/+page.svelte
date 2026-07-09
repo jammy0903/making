@@ -6,6 +6,7 @@
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
+	import { SITE_HOST } from '$lib/site';
 	import RankBoard from '$lib/components/RankBoard.svelte';
 	import { useT, getLocale, localePath } from '$lib/i18n';
 
@@ -218,7 +219,7 @@
 		{/if}
 
 		<!-- PDF 전용 푸터 -->
-		<div class="pdf-footer print-only">codeinsight.online · {t('app.title')}</div>
+		<div class="pdf-footer print-only">{SITE_HOST} · {t('app.title')}</div>
 	</div>
 
 	<div class="no-print" style="display:grid; gap:10px; margin-top:20px">

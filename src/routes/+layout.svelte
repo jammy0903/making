@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { SITE } from '$lib/site';
 	import { page } from '$app/state';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import WalkingDog from '$lib/components/WalkingDog.svelte';
@@ -18,8 +19,6 @@
 	let { children } = $props();
 
 	injectAnalytics(); // Vercel Web Analytics (유입 측정)
-
-	const SITE = 'https://codeinsight.online';
 
 	// 로케일은 URL 로 결정 (/ = ko, /en, /zh). 크로스-로케일 전환은 전체 리로드라 컨텍스트는 초기값 고정으로 안전.
 	const initialLocale: Locale = (page.params.lang as Locale) ?? defaultLocale;

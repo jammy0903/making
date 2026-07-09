@@ -4,12 +4,12 @@
 	import { pruneSeededSamples, listUserTopics, deleteTopic } from '$lib/storage';
 	import { type Topic } from '$lib/domain';
 	import { useT, localePath, defaultLocale, type Locale } from '$lib/i18n';
+	import { SITE } from '$lib/site';
 
 	const t = useT();
 	let { data } = $props();
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
-	const SITE = 'https://codeinsight.online';
 	// 홈 SEO 메타(로케일별) — messages.ts 를 건드리지 않도록 여기서 정의
 	const homeTitle: Record<Locale, string> = {
 		ko: '순위 월드컵 - 이상형 월드컵 만들기·음식·동물·연예인 순위',

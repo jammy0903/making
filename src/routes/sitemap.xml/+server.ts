@@ -1,6 +1,5 @@
 import { publicTopics } from '$lib/publicTopics';
-
-const SITE = 'https://codeinsight.online';
+import { SITE } from '$lib/site';
 
 /** 동적 sitemap.xml — 홈 + 모든 공개(샘플) 주제 URL */
 export const prerender = true;
