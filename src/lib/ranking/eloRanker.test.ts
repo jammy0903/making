@@ -25,12 +25,13 @@ function playByOracle(ranker: EloRanker<Item>): Item[] {
 }
 
 describe('defaultEloTarget', () => {
-	it('N≤1 은 0, 그 외 ≈ N·log₂N', () => {
+	it('N≤1 은 0, 그 외 후보당 ~(log₂N+1)판 = N·(⌈log₂N⌉+1)/2', () => {
 		expect(defaultEloTarget(0)).toBe(0);
 		expect(defaultEloTarget(1)).toBe(0);
-		expect(defaultEloTarget(2)).toBe(2); // max(1, ceil(2*1))
-		expect(defaultEloTarget(4)).toBe(8); // ceil(4*2)
-		expect(defaultEloTarget(16)).toBe(64); // ceil(16*4)
+		expect(defaultEloTarget(2)).toBe(2); // rounds=2 → ceil(2*2/2)
+		expect(defaultEloTarget(4)).toBe(6); // rounds=3 → ceil(4*3/2)
+		expect(defaultEloTarget(10)).toBe(25); // rounds=5 → ceil(10*5/2)
+		expect(defaultEloTarget(16)).toBe(40); // rounds=5 → ceil(16*5/2)
 	});
 });
 
@@ -43,6 +44,25 @@ describe('EloRanker — 순위 복원(충분한 비교 시)', () => {
 			expect(result.map((x) => x.rank)).toEqual(
 				[...Array(n).keys()].reverse() // n-1, n-2, …, 0 (강한 순)
 			);
+		});
+	}
+});
+
+describe('EloRanker — 기본(가벼운) 목표에서도 순위 품질 유지', () => {
+	// 기본 목표는 N·log₂N 보다 낮지만, 일관된 오라클이면 순위 상관이 높아야 한다.
+	for (const n of [8, 10]) {
+		it(`N=${n}: 기본 목표로도 스피어만 발-거리(어긋난 총량)가 작다`, () => {
+			const ranker = new EloRanker(mk(n), { seed: 5 }); // 기본 목표(가벼움)
+			const result = playByOracle(ranker);
+			// 진짜 순위: rank 큰 순(강→약). result 는 그 순서에 가까워야 한다.
+			const truthOrder = [...Array(n).keys()].reverse(); // [n-1, …, 0]
+			let footrule = 0;
+			result.forEach((item, pos) => {
+				footrule += Math.abs(truthOrder.indexOf(item.rank) - pos);
+			});
+			// 완전 무작위면 ≈ n²/3. 여기선 그 1/4 미만이어야(충분히 정확).
+			expect(footrule).toBeLessThan((n * n) / 4);
+			expect(result[0].rank).toBe(n - 1); // 최소한 1위는 맞힌다
 		});
 	}
 });

@@ -6,6 +6,7 @@
 	import { EloRanker } from '$lib/ranking/eloRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
+	import { analyzeConsistency } from '$lib/ranking/consistency';
 	import RankBoard from '$lib/components/RankBoard.svelte';
 	import RankResult from '$lib/components/RankResult.svelte';
 	import { useT, getLocale, localePath } from '$lib/i18n';
@@ -35,6 +36,9 @@
 	let pairShownAt = 0; // 현재 쌍이 화면에 뜬 시각(performance.now)
 	let compareLog = $state.raw<CompareLog[]>([]);
 	const hesitation = $derived(summarize(compareLog));
+	// 취향 일관성/순환(§5-2). 이름은 현재 주제 후보에서 조회.
+	const nameById = $derived(new Map((topic?.candidates ?? []).map((c) => [c.id, c.name])));
+	const consistency = $derived(analyzeConsistency(compareLog, (id) => nameById.get(id) ?? id));
 
 	// 자리비움(AFK): 한 대결을 2분간 안 고르면 타이머를 멈추고 오버레이 표시.
 	// 자리비운 시간이 망설임으로 잘못 잡히지 않게, 복귀 시 시계를 재시작한다.
@@ -158,7 +162,7 @@
 	<div class="empty">{t('topic.notFound')} <a href={localePath(getLocale(), "/")}>{t("nav.home")}</a></div>
 {:else if ranking}
 	<!-- ===== 결과 (화면 + PDF 렌더링은 RankResult 로 분리) ===== -->
-	<RankResult {topic} {ranking} {hesitation} {today} onRestart={restart} />
+	<RankResult {topic} {ranking} {hesitation} {consistency} {today} onRestart={restart} />
 {:else if mode === 'sort'}
 	<!-- ===== 순위 월드컵(비교) ===== -->
 	<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 6px">

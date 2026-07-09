@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Candidate, Topic } from '$lib/domain';
 	import type { HesitationSummary } from '$lib/ranking/hesitation';
+	import type { ConsistencySummary } from '$lib/ranking/consistency';
 	import { SITE, SITE_HOST } from '$lib/site';
 	import { encodeRanking } from '$lib/share/rankingCodec';
 	import { useT, getLocale, localePath } from '$lib/i18n';
@@ -9,6 +10,7 @@
 		topic,
 		ranking,
 		hesitation,
+		consistency,
 		today = '',
 		onRestart,
 		shared = false
@@ -17,6 +19,8 @@
 		ranking: Candidate[];
 		/** 망설임(반응시간) 요약. 없거나(공유 뷰) count<=1 이면 리포트 숨김. */
 		hesitation?: HesitationSummary;
+		/** 취향 일관성/순환(§5-2). 없거나(공유 뷰·드래그) 비교 0이면 숨김. */
+		consistency?: ConsistencySummary;
 		/** PDF 헤더 날짜(클라이언트에서 설정). 없으면 생략. */
 		today?: string;
 		/** 다시 하기 — 부모가 랭킹 상태를 초기화. 없으면(공유 뷰) 버튼 숨김. */
@@ -26,6 +30,9 @@
 	} = $props();
 
 	const t = useT();
+	// 로케일은 초기화 때 캡처. getLocale()(getContext)를 copyShareLink 같은 이벤트
+	// 핸들러에서 부르면 Svelte 5 가 lifecycle_outside_component 에러를 던진다.
+	const locale = getLocale();
 	const medal = (i: number) => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`);
 	const exportPdf = () => window.print();
 
@@ -37,7 +44,7 @@
 		const indices = ranking.map((c) => idxOf.get(c.id) ?? -1);
 		if (indices.some((i) => i < 0)) return; // 후보 불일치(방어) → 링크 생성 안 함
 		const enc = encodeRanking(indices);
-		const url = SITE + localePath(getLocale(), `/r/${topic.id}/${enc}`);
+		const url = SITE + localePath(locale, `/r/${topic.id}/${enc}`);
 		try {
 			await navigator.clipboard.writeText(url);
 		} catch {
@@ -112,6 +119,35 @@
 		</div>
 	{/if}
 
+	<!-- 취향 일관성 리포트(§5-2): 비교가 있었던 sort 모드에서만. -->
+	{#if consistency && consistency.comparedPairs > 0}
+		<div
+			class="card consistency-report"
+			style="margin-top:16px; padding:14px; display:grid; gap:8px; font-size:14px"
+		>
+			<strong>{t('result.consistency.title')}</strong>
+			{#if consistency.contradictions === 0}
+				<span>{t('result.consistency.perfect')}</span>
+			{:else}
+				<span
+					>{t('result.consistency.summary', {
+						score: consistency.score,
+						n: consistency.contradictions
+					})}</span
+				>
+				{#each consistency.cycles.slice(0, 3) as cy}
+					<span
+						>{t('result.consistency.cycle', {
+							a: cy.names[0],
+							b: cy.names[1],
+							c: cy.names[2]
+						})}</span
+					>
+				{/each}
+			{/if}
+		</div>
+	{/if}
+
 	<!-- PDF 전용 푸터 -->
 	<div class="pdf-footer print-only">{SITE_HOST} · {t('app.title')}</div>
 </div>
@@ -119,7 +155,7 @@
 <div class="no-print" style="display:grid; gap:10px; margin-top:20px">
 	{#if shared}
 		<!-- 공유된 결과 뷰: 이 주제를 직접 플레이하러 가는 CTA -->
-		<a class="btn btn-primary btn-block" href={localePath(getLocale(), `/t/${topic.id}/play`)}
+		<a class="btn btn-primary btn-block" href={localePath(locale, `/t/${topic.id}/play`)}
 			>{t('result.playThis')}</a
 		>
 	{:else}
@@ -133,6 +169,6 @@
 		{#if onRestart}
 			<button class="btn" style="flex:1" onclick={onRestart}>{t('result.restart')}</button>
 		{/if}
-		<a class="btn" style="flex:1" href={localePath(getLocale(), '/')}>{t('nav.home')}</a>
+		<a class="btn" style="flex:1" href={localePath(locale, '/')}>{t('nav.home')}</a>
 	</div>
 </div>

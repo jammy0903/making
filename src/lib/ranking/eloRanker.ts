@@ -45,10 +45,16 @@ function shuffle<T>(arr: readonly T[], seed: number): T[] {
 	return a;
 }
 
-/** 기본 목표 비교 횟수 ≈ N·log₂(N)(병합정렬 추정치와 같은 규모, 진행률·피로도 균형). */
+/**
+ * 기본 목표 비교 횟수. 후보 1명이 대략 (log₂N + 1) 판을 치르는 분량:
+ *   총 = N·(⌈log₂N⌉+1)/2.
+ * N·log₂N(과다, 10명이면 34판) 보다 가볍게 잡아 피로도를 줄인다(10명 ≈ 25판 →
+ * 병합정렬 체감과 비슷). 순위 정확도와 클릭 수의 절충 — 필요하면 targetComparisons 로 조정.
+ */
 export function defaultEloTarget(n: number): number {
 	if (n <= 1) return 0;
-	return Math.max(n - 1, Math.ceil(n * Math.log2(n)));
+	const roundsPerCandidate = Math.ceil(Math.log2(n)) + 1;
+	return Math.max(n - 1, Math.ceil((n * roundsPerCandidate) / 2));
 }
 
 export class EloRanker<T> implements RankSession<T> {
