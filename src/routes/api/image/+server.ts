@@ -29,7 +29,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 		return json({ images });
 	} catch (e) {
-		const message = e instanceof Error ? e.message : '알 수 없는 오류';
-		throw error(502, message);
+		// HF 원문 에러는 서버 로그로만, 외부엔 일반 메시지(정보 노출 방지)
+		console.error('[image] 생성 실패:', e);
+		throw error(502, '이미지 생성에 실패했습니다.');
 	}
 };

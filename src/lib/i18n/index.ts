@@ -18,7 +18,12 @@ export function translate(
 	vars?: Record<string, string | number>
 ): string {
 	const dict = messages[locale] ?? messages[defaultLocale];
-	let s = dict[key] ?? messages[defaultLocale][key] ?? key;
+	let s = dict[key] ?? messages[defaultLocale][key];
+	if (s === undefined) {
+		// 누락을 조용히 삼키지 않는다: 경고 후 키 문자열로 폴백
+		console.warn(`[i18n] 누락된 번역 키: "${key}" (locale=${locale})`);
+		return key;
+	}
 	if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
 	return s;
 }

@@ -51,7 +51,6 @@
 
 	const modeLabel: Record<string, string> = {
 		sort: t('mode.worldcup'),
-		worldcup: t('mode.worldcup'),
 		drag: t('mode.drag')
 	};
 

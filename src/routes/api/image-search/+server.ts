@@ -14,14 +14,18 @@ export const GET: RequestHandler = async ({ url }) => {
 	const opts: ImageSearchOptions = {};
 	const count = url.searchParams.get('count');
 	const safe = url.searchParams.get('safe');
-	if (count) opts.count = Number(count);
+	if (count) {
+		const n = Number(count);
+		if (Number.isFinite(n) && n > 0) opts.count = Math.min(Math.floor(n), 50);
+	}
 	if (safe === 'off' || safe === 'moderate' || safe === 'strict') opts.safe = safe;
 
 	try {
 		const results = await searchImages(q, opts);
 		return json({ results });
 	} catch (e) {
-		const message = e instanceof Error ? e.message : '알 수 없는 오류';
-		throw error(502, message);
+		// 원문 에러(엔드포인트·토큰 상태 등)는 서버 로그로만, 외부엔 일반 메시지
+		console.error('[image-search] 검색 실패:', e);
+		throw error(502, '이미지 검색에 실패했습니다.');
 	}
 };

@@ -24,7 +24,14 @@ function readAll(): Topic[] {
 
 function writeAll(topics: Topic[]): void {
 	if (!browser) return;
-	localStorage.setItem(KEY, JSON.stringify(topics));
+	try {
+		localStorage.setItem(KEY, JSON.stringify(topics));
+	} catch (e) {
+		// base64 data URL 이미지를 저장하므로 QuotaExceededError 가 현실적으로 발생.
+		// 조용히 삼키지 않고 로그 + 명확한 예외로 드러낸다.
+		console.error('[storage] 주제 저장 실패(용량 초과 가능):', e);
+		throw new Error('저장 공간이 부족해 주제를 저장하지 못했습니다.');
+	}
 }
 
 /**

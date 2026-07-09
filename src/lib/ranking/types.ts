@@ -7,8 +7,8 @@ export interface Candidate {
 	image?: string;
 }
 
-/** 세 가지 순위 산출 모드 */
-export type RankMode = 'sort' | 'worldcup' | 'drag';
+/** 순위 산출 모드: 둘씩 비교(sort) · 드래그 배치(drag) */
+export type RankMode = 'sort' | 'drag';
 
 /** 다음에 물어볼 한 쌍 */
 export interface Pair<T> {
