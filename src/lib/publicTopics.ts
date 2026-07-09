@@ -13,12 +13,6 @@ export interface PublicTopic extends Topic {
 
 function toPublicTopic(s: SampleTopic, locale: Locale): PublicTopic {
 	const slug = s.slug; // 슬러그는 데이터 자체에 있음(samples.ts). 위치결합 없음.
-	// 후보[]↔이미지[] 인덱스 결합 안전장치: 개수 불일치를 조용히 넘기지 않고 드러낸다.
-	if (s.images && s.images.length !== s.candidates.length) {
-		console.warn(
-			`[publicTopics] '${slug}' 후보(${s.candidates.length})와 이미지(${s.images.length}) 개수 불일치 — 인덱스 정합을 확인하세요.`
-		);
-	}
 	// 로케일 번역 적용(en/zh). 없으면 ko 원본.
 	const tr = locale === defaultLocale ? undefined : topicTranslations[slug]?.[locale];
 	const title = tr?.title ?? s.title;
@@ -29,10 +23,11 @@ function toPublicTopic(s: SampleTopic, locale: Locale): PublicTopic {
 		title,
 		description,
 		defaultMode: s.defaultMode,
-		candidates: s.candidates.map((name, i) => ({
+		// 이름·사진이 후보 객체 한 단위에 묶여 있음 → 인덱스 병렬 배열 결합 없음.
+		candidates: s.candidates.map((c, i) => ({
 			id: `${slug}-${i}`,
-			name: tr?.candidates?.[i] ?? name, // 번역 후보 있으면 사용, 없으면 원어
-			image: s.images?.[i] || undefined
+			name: tr?.candidates?.[i] ?? c.name, // 번역 후보 있으면 사용, 없으면 원어
+			image: c.image || undefined
 		})),
 		createdAt: 0
 	};
