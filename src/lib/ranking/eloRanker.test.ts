@@ -76,19 +76,57 @@ describe('EloRanker — 완료·형태', () => {
 		expect(new Set(result.map((x) => x.id)).size).toBe(8); // 중복 없음
 	});
 
-	it('progress: asked 는 목표까지 증가하고 done 이 뒤집힌다', () => {
+	it('progress: done 이 뒤집히고 asked 는 목표(상한)를 넘지 않는다', () => {
 		const ranker = new EloRanker(mk(4), { seed: 1 });
 		const target = ranker.progress().estimatedTotal;
 		expect(ranker.progress().done).toBe(false);
 		playByOracle(ranker);
 		const p = ranker.progress();
 		expect(p.done).toBe(true);
-		expect(p.asked).toBeGreaterThanOrEqual(target);
+		expect(p.asked).toBeGreaterThanOrEqual(3); // 최소 N-1
+		expect(p.asked).toBeLessThanOrEqual(target); // 조기 종료로 상한 이하
 	});
 
 	it('N≤1 은 비교 없이 즉시 완료', () => {
 		expect(new EloRanker(mk(1)).result()).toHaveLength(1);
 		expect(new EloRanker(mk(0)).result()).toHaveLength(0);
+	});
+});
+
+describe('EloRanker — 확신도 조기 종료(§5-5 되먹임)', () => {
+	function playConf(ranker: EloRanker<Item>, confidence: number): number {
+		let p = ranker.next();
+		let asked = 0;
+		while (p) {
+			ranker.answer(p.a.rank > p.b.rank ? p.a : p.b, confidence);
+			asked++;
+			p = ranker.next();
+		}
+		return asked;
+	}
+
+	it('확신(빠른 선택)이 높으면 중립보다 더 적은 비교로 끝난다', () => {
+		const n = 12;
+		const confident = playConf(new EloRanker(mk(n), { seed: 1 }), 1);
+		const neutral = playConf(new EloRanker(mk(n), { seed: 1 }), 0.5);
+		expect(confident).toBeLessThan(neutral);
+	});
+
+	it('조기 종료해도 일관된 오라클이면 1위는 맞고 상한 이하', () => {
+		const n = 10;
+		const ranker = new EloRanker(mk(n), { seed: 2 });
+		const target = ranker.progress().estimatedTotal;
+		const asked = playConf(ranker, 1);
+		expect(asked).toBeLessThanOrEqual(target);
+		expect(ranker.result()![0].rank).toBe(n - 1);
+	});
+
+	it('confidenceSaving:0 이면 반응시간 무관, 항상 목표까지 간다', () => {
+		const n = 8;
+		const ranker = new EloRanker(mk(n), { seed: 1, confidenceSaving: 0 });
+		const target = ranker.progress().estimatedTotal;
+		const asked = playConf(ranker, 1);
+		expect(asked).toBe(target);
 	});
 });
 

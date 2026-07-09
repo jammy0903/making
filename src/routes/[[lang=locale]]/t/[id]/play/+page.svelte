@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { getTopic } from '$lib/storage';
 	import type { Candidate, Topic, RankMode } from '$lib/domain';
-	import { EloRanker } from '$lib/ranking/eloRanker';
+	import { EloRanker, confidenceFromReactionMs } from '$lib/ranking/eloRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
 	import { analyzeConsistency } from '$lib/ranking/consistency';
@@ -112,7 +112,11 @@
 		if (picking || away) return; // 애니 중·자리비움 중 선택 방지(= 로그 이중 집계 방지)
 		clearAwayTimer(); // 골랐으니 자리비움 타이머 해제
 		// 반응시간은 애니(setTimeout) 지연 전, 진입 즉시 확정. 원본 ms 그대로 저장.
+		// 빠른 선택 = 확신 → Elo 갱신을 크게 + 목표 비교 횟수를 줄인다(§5-5).
+		let confidence = 0.5;
 		if (pair && pairShownAt) {
+			const ms = performance.now() - pairShownAt;
+			confidence = confidenceFromReactionMs(ms);
 			const other = pair.a.id === c.id ? pair.b : pair.a;
 			compareLog = [
 				...compareLog,
@@ -121,7 +125,7 @@
 					loserId: other.id,
 					winnerName: c.name,
 					loserName: other.name,
-					ms: performance.now() - pairShownAt
+					ms
 				}
 			];
 		}
@@ -129,7 +133,7 @@
 		// 고른 카드를 약 1초간 강조(커짐)한 뒤 다음 비교로 진행
 		const delay = reducedMotion() ? PICK_ANIM_REDUCED_MS : PICK_ANIM_MS;
 		setTimeout(() => {
-			ranker?.answer(c);
+			ranker?.answer(c, confidence);
 			picking = null;
 			refresh();
 		}, delay);

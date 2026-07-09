@@ -1,7 +1,7 @@
 import type { Pair, Progress, RankSession } from './types';
 
 /**
- * Elo 온라인 레이팅 기반 순위 세션 (설계서 §5-1, growth-plan §5-1).
+ * Elo 온라인 레이팅 기반 순위 세션 (설계서 §5-1, growth-plan §5-1·§5-5).
  *
  * 병합정렬과 달리 **추이성을 가정하지 않는다.** 매 선택을 승/패로 보고 두 후보의
  * 레이팅을 증분 갱신하며, 다음 쌍은 **레이팅이 가장 비슷한(=예측 불가한) 후보끼리**
@@ -9,6 +9,10 @@ import type { Pair, Progress, RankSession } from './types';
  * 엔진은 (a) 비교 횟수에 비례한 신뢰도, (b) 점수(레이팅)→상위%·강도, (c) 순환 취향
  * 탐지(§5-2)의 기반을 얻는다. 병합정렬은 모순 쌍을 아예 안 물어 순환을 구조적으로
  * 탐지할 수 없다 — 그래서 엔진을 교체한다.
+ *
+ * **반응시간 되먹임(§5-5):** answer 에 확신도(빠른 선택=1, 고뇌=0)를 주면
+ *  (1) 확신이 클수록 레이팅을 크게 갱신(정보량 반영), (2) 세션 평균 확신이 높으면
+ *  목표 비교 횟수 자체를 줄인다 → **결단력 있는 사람은 더 적게 비교하고 끝난다.**
  *
  * answer(winner) 의 winner 는 직전 next() 가 준 쌍의 한 항목이어야 하며 참조(===)로
  * 판별한다. 후보는 고유 객체 참조로 넘길 것.
@@ -21,16 +25,34 @@ export interface EloRankerOptions {
 	initialRating?: number;
 	/** K-factor(한 판당 레이팅 변동 폭). 기본 32. */
 	k?: number;
-	/** 총 목표 비교 횟수. 미지정 시 ≈ N·log₂(N)(병합정렬과 비슷한 분량). */
+	/** 기본(=상한) 목표 비교 횟수. 미지정 시 defaultEloTarget. */
 	targetComparisons?: number;
+	/**
+	 * 확신도로 줄일 수 있는 목표의 최대 비율(0~1, §5-5). 세션 평균 확신이 1이면 목표를
+	 * `target·(1-saving)` 까지 낮춘다(결단력 있는 사용자 = 더 적은 비교). 기본 0.35.
+	 * 0 이면 반응시간이 횟수에 영향 없음(항상 target).
+	 */
+	confidenceSaving?: number;
 }
 
-/** undo 용 로그 한 줄. 갱신 전 레이팅을 담아 되돌릴 수 있게 한다. */
+/**
+ * 반응시간(ms)을 확신도 0~1 로 변환(§5-5). 빠를수록 확신(1), 오래 고민할수록 낮음(→0.1).
+ * 0 밑으로는 안 내려 최소한의 레이팅 갱신은 유지한다.
+ */
+export function confidenceFromReactionMs(ms: number): number {
+	const FAST = 1000; // 이 이하는 즉답(확신 1)
+	const SLOW = 7000; // 이 이상은 고뇌(확신 하한)
+	const c = (SLOW - ms) / (SLOW - FAST);
+	return Math.max(0.1, Math.min(1, c));
+}
+
+/** undo 용 로그 한 줄. 갱신 전 레이팅·확신을 담아 되돌릴 수 있게 한다. */
 interface LogEntry {
 	winner: number; // 후보 인덱스
 	loser: number;
 	wBefore: number; // 갱신 전 winner 레이팅
 	lBefore: number; // 갱신 전 loser 레이팅
+	conf: number; // 이 판의 확신도(undo 시 평균에서 차감)
 }
 
 /** 외부 랜덤 의존 없이 seed 로 결정적으로 섞기(LCG) — mergeRanker 와 동일 방식. */
@@ -62,8 +84,10 @@ export class EloRanker<T> implements RankSession<T> {
 	private readonly rating: number[]; // 인덱스별 레이팅
 	private readonly count: number[]; // 인덱스별 비교 횟수
 	private readonly k: number;
-	private readonly target: number;
+	private readonly baseTarget: number;
+	private readonly saving: number;
 	private asked = 0;
+	private sumConf = 0; // 확신도 누적(평균 = sumConf/asked)
 	private log: LogEntry[] = [];
 	private current: { i: number; j: number } | null = null; // 직전 next() 가 고른 쌍
 	private lastPair: [number, number] | null = null; // 즉시 같은 쌍 반복 완화용
@@ -74,7 +98,8 @@ export class EloRanker<T> implements RankSession<T> {
 		this.rating = new Array<number>(n).fill(opts.initialRating ?? 1500);
 		this.count = new Array<number>(n).fill(0);
 		this.k = opts.k ?? 32;
-		this.target = opts.targetComparisons ?? defaultEloTarget(n);
+		this.baseTarget = opts.targetComparisons ?? defaultEloTarget(n);
+		this.saving = Math.max(0, Math.min(1, opts.confidenceSaving ?? 0.35));
 	}
 
 	next(): Pair<T> | null {
@@ -87,7 +112,12 @@ export class EloRanker<T> implements RankSession<T> {
 		return pick ? { a: this.items[pick.i], b: this.items[pick.j] } : null;
 	}
 
-	answer(winner: T): void {
+	/**
+	 * @param winner 직전 next() 쌍에서 사용자가 고른 항목
+	 * @param confidence 확신도 0~1(반응시간 기반, §5-5). 높을수록 레이팅을 크게 갱신하고,
+	 *   세션 평균이 높으면 목표 비교 횟수를 줄인다. 미지정 시 0.5(중립).
+	 */
+	answer(winner: T, confidence = 0.5): void {
 		if (!this.current) throw new Error('비교할 쌍이 없습니다 (answer 전에 next 확인).');
 		const { i, j } = this.current;
 		const winnerIsI = this.items[i] === winner;
@@ -98,22 +128,28 @@ export class EloRanker<T> implements RankSession<T> {
 		const l = winnerIsI ? j : i;
 		const wBefore = this.rating[w];
 		const lBefore = this.rating[l];
-		this.log.push({ winner: w, loser: l, wBefore, lBefore });
+		const conf = Math.max(0, Math.min(1, confidence));
 
+		// 확신도로 K 를 가중: 중립(0.5)=k, 즉답(1)=1.5k, 고뇌(0)=0.5k.
+		const kEff = this.k * (0.5 + conf);
 		// Elo 갱신(제로섬): winner 가 얻는 만큼 loser 가 잃는다.
 		const expW = 1 / (1 + Math.pow(10, (lBefore - wBefore) / 400)); // winner 승리 기대확률
-		const delta = this.k * (1 - expW);
+		const delta = kEff * (1 - expW);
 		this.rating[w] = wBefore + delta;
 		this.rating[l] = lBefore - delta;
 		this.count[w] += 1;
 		this.count[l] += 1;
 		this.asked += 1;
+		this.sumConf += conf;
+
+		this.log.push({ winner: w, loser: l, wBefore, lBefore, conf });
 		this.lastPair = [Math.min(i, j), Math.max(i, j)];
 		this.current = null;
 	}
 
 	progress(): Progress {
-		return { asked: this.asked, estimatedTotal: this.target, done: this.isDone() };
+		// estimatedTotal 은 진행바용 기준값(상한). 확신 높으면 이보다 일찍 끝난다.
+		return { asked: this.asked, estimatedTotal: this.baseTarget, done: this.isDone() };
 	}
 
 	result(): T[] | null {
@@ -125,7 +161,7 @@ export class EloRanker<T> implements RankSession<T> {
 		return this.log.length > 0;
 	}
 
-	/** 직전 선택을 취소하고 레이팅·카운트를 그 이전으로 되돌린다. */
+	/** 직전 선택을 취소하고 레이팅·카운트·확신누적을 그 이전으로 되돌린다. */
 	undo(): void {
 		const e = this.log.pop();
 		if (!e) return;
@@ -134,6 +170,7 @@ export class EloRanker<T> implements RankSession<T> {
 		this.count[e.winner] -= 1;
 		this.count[e.loser] -= 1;
 		this.asked -= 1;
+		this.sumConf -= e.conf;
 		this.current = null;
 		const prev = this.log[this.log.length - 1];
 		this.lastPair = prev
@@ -160,7 +197,19 @@ export class EloRanker<T> implements RankSession<T> {
 	// ---- 내부 ----
 
 	private isDone(): boolean {
-		return this.asked >= this.target;
+		return this.asked >= this.effectiveTarget();
+	}
+
+	/**
+	 * 확신도로 조정된 목표 비교 횟수(§5-5). 세션 평균 확신이 높을수록 목표를 낮춘다:
+	 *   target·(1 − saving·avgConf), 최소 N-1. 확신 정보가 없으면(avgConf=0.5) 중간.
+	 */
+	private effectiveTarget(): number {
+		const n = this.items.length;
+		if (n <= 1) return 0;
+		const avgConf = this.asked > 0 ? this.sumConf / this.asked : 0.5;
+		const eff = Math.round(this.baseTarget * (1 - this.saving * avgConf));
+		return Math.max(n - 1, eff);
 	}
 
 	/** 레이팅 내림차순 인덱스 순서(동률은 원래 인덱스순으로 안정 정렬). */
@@ -169,7 +218,7 @@ export class EloRanker<T> implements RankSession<T> {
 	}
 
 	/**
-	 * 다음에 물어볼 쌍을 고른다 — **현재 순위에서 인접한(=경계가 불확실한) 쌍** 중 하나.
+	 * 다음에 물어볼 쌍 — **현재 순위에서 인접한(=경계가 불확실한) 쌍** 중 하나.
 	 * 인접쌍만 비교하면 (a) 가장 헷갈리는 경계를 우선 해소해 순위가 빨리 수렴하고,
 	 * (b) 사용자에겐 "계속 고민되는 매치업만 나온다"는 재미가 된다.
 	 *   - 1순위: 레이팅 격차가 가장 작은 인접쌍(가장 불확실).
