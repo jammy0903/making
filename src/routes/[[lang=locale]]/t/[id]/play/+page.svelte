@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { getTopic } from '$lib/storage';
 	import type { Candidate, Topic, RankMode } from '$lib/domain';
-	import { MergeRanker } from '$lib/ranking/mergeRanker';
+	import { EloRanker } from '$lib/ranking/eloRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
 	import RankBoard from '$lib/components/RankBoard.svelte';
@@ -20,7 +20,7 @@
 	// 순위 월드컵(비교) 상태
 	// pair 는 $state.raw 로 둔다: $state 의 깊은 프록시가 후보 객체를 감싸면
 	// 엔진 내부 원본과 참조(===)가 달라져 answer() 가 실패하기 때문.
-	let ranker: MergeRanker<Candidate> | null = null;
+	let ranker: EloRanker<Candidate> | null = null;
 	let pair = $state.raw<Pair<Candidate> | null>(null);
 	let asked = $state(0);
 	let estTotal = $state(0);
@@ -77,7 +77,7 @@
 		mode = q === 'drag' ? 'drag' : 'sort';
 
 		if (mode === 'sort') {
-			ranker = new MergeRanker(tp.candidates, { seed: randomSeed() });
+			ranker = new EloRanker(tp.candidates, { seed: randomSeed() });
 			refresh();
 		}
 		// drag 모드는 RankBoard 가 자체 상태를 관리
@@ -144,7 +144,7 @@
 		away = false;
 		clearAwayTimer();
 		if (mode === 'sort' && topic) {
-			ranker = new MergeRanker(topic.candidates, { seed: randomSeed() });
+			ranker = new EloRanker(topic.candidates, { seed: randomSeed() });
 			refresh();
 		}
 		// drag 모드는 RankBoard 가 새로 마운트되며 초기화됨
