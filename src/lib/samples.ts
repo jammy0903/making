@@ -797,7 +797,15 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'리우데자네이루',
 			'마추픽추',
 			'산토리니',
-			'바르셀로나'
+			'바르셀로나',
+			'서울',
+			'두바이',
+			'이스탄불',
+			'베네치아',
+			'베이징',
+			'카이로',
+			'아그라',
+			'북극광'
 		],
 		images: [
 			'/gen/travel-destination-00.webp', // 교토
@@ -811,7 +819,15 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 			'/gen/travel-destination-08.webp', // 리우데자네이루
 			'/gen/travel-destination-09.webp', // 마추픽추
 			'/gen/travel-destination-10.webp', // 산토리니
-			'/gen/travel-destination-11.webp' // 바르셀로나
+			'/gen/travel-destination-11.webp', // 바르셀로나
+			'/gen/travel-destination-12.webp', // 서울
+			'/gen/travel-destination-13.webp', // 두바이
+			'/gen/travel-destination-14.webp', // 이스탄불
+			'/gen/travel-destination-15.webp', // 베네치아
+			'/gen/travel-destination-16.webp', // 베이징
+			'/gen/travel-destination-17.webp', // 카이로
+			'/gen/travel-destination-18.webp', // 아그라
+			'/gen/travel-destination-19.webp' // 북극광
 		]
 	},
 	{
