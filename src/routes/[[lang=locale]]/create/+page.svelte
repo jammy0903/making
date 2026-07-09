@@ -7,7 +7,14 @@
 	import { useT, getLocale, localePath } from '$lib/i18n';
 
 	const t = useT();
+	// 로케일은 초기화 시점에 캡처한다. getLocale()(getContext) 을 save() 같은 이벤트
+	// 핸들러에서 부르면 Svelte 5 가 "getContext 는 초기화 중에만" 에러를 던져 goto 가 막힌다.
+	const locale = getLocale();
 	const MAX = 256;
+	// 최소 후보 수: 고뇌 리포트(최고 고뇌 vs 0초컷)가 성립하려면 비교가 2번 이상 필요하다.
+	// 머지소트에서 비교 2번은 후보 3명이면 보장되지만, 리포트가 여유 있게(비교 4~5번)
+	// 나오도록 4명을 최소로 둔다.
+	const MIN_CANDIDATES = 4;
 
 	interface Row {
 		id: string;
@@ -18,7 +25,7 @@
 	let title = $state('');
 	let description = $state('');
 	let mode = $state<RankMode>('sort');
-	let rows = $state<Row[]>([blank(), blank()]);
+	let rows = $state<Row[]>(Array.from({ length: MIN_CANDIDATES }, blank));
 	let error = $state('');
 	let searchRowId = $state<string | null>(null); // 검색 모달을 연 행 id
 
@@ -61,8 +68,8 @@
 		const candidates = rows
 			.map((r) => ({ id: r.id, name: r.name.trim(), image: r.image }))
 			.filter((c) => c.name.length > 0);
-		if (candidates.length < 2) {
-			error = t('create.errCandidates');
+		if (candidates.length < MIN_CANDIDATES) {
+			error = t('create.errCandidates', { n: MIN_CANDIDATES });
 			return;
 		}
 		const topic: Topic = {
@@ -74,7 +81,7 @@
 			createdAt: Date.now()
 		};
 		saveTopic(topic);
-		goto(localePath(getLocale(), `/t/${topic.id}`));
+		goto(localePath(locale, `/t/${topic.id}`));
 	}
 
 	const filled = $derived(rows.filter((r) => r.name.trim().length > 0).length);

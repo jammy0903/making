@@ -37,7 +37,7 @@ export const messages = {
 		'create.searchPhoto': '사진 검색',
 		'create.addCandidate': '+ 후보 추가',
 		'create.errTitle': '주제 제목을 입력해 주세요.',
-		'create.errCandidates': '후보를 이름과 함께 2명 이상 추가해 주세요.',
+		'create.errCandidates': '후보를 이름과 함께 {n}명 이상 추가해 주세요.',
 		'create.errImage': '이미지를 처리하지 못했어요. 다른 파일을 시도해 주세요.',
 		'create.save': '주제 저장하고 플레이',
 
@@ -118,7 +118,7 @@ export const messages = {
 		'create.searchPhoto': 'Search photo',
 		'create.addCandidate': '+ Add candidate',
 		'create.errTitle': 'Please enter a topic title.',
-		'create.errCandidates': 'Add at least 2 candidates with names.',
+		'create.errCandidates': 'Add at least {n} candidates with names.',
 		'create.errImage': "Couldn't process the image. Try another file.",
 		'create.save': 'Save & play',
 
@@ -199,7 +199,7 @@ export const messages = {
 		'create.searchPhoto': '搜索照片',
 		'create.addCandidate': '+ 添加候选',
 		'create.errTitle': '请输入主题标题。',
-		'create.errCandidates': '请至少添加 2 个带名称的候选。',
+		'create.errCandidates': '请至少添加 {n} 个带名称的候选。',
 		'create.errImage': '无法处理该图片，请换一个文件。',
 		'create.save': '保存并开始',
 

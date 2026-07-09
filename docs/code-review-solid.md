@@ -15,7 +15,9 @@
 - [x] **#1 주제 데이터 3중 위치 결합** — `SampleTopic`에 `slug` 필드 추가(34개 주제에 삽입), `publicTopics.ts`의 `SLUGS` 위치결합 배열 제거하고 `s.slug` 직접 사용. 출력 불변 검증 완료(34개 slug 순서·id·후보id·3개 로케일 동일).
 - [~] **#2 candidates[]↔images[] 인덱스 결합** — (Option 1 경량 처리) 로드 시 후보/이미지 개수 불일치를 `console.warn`으로 드러내는 안전장치 추가. 현재 데이터 경고 0 확인. 전면 `{name,image}` 객체화는 별도 작업으로 보류.
 - [x] **#3 미사용 dragReorder + 드래그 이중 구현** — 커밋 `021f49d`에서 `dragReorder.ts` 삭제됨. 이중 구현 해소(RankBoard가 유일 구현). 남은 건 RankBoard 자체 명령형 드래그의 내부 개선뿐인데, 유일 소비자라 재사용 액션 추출은 YAGNI로 보류.
-- [ ] #5 play 페이지 책임 과다
+- [x] #5 play 페이지 책임 과다 — 결과 화면(+PDF 렌더)을 `RankResult.svelte`로 분리(play 347→270줄). 브라우저에서 create→sort 플레이→결과 화면 실제 검증(메달·순위·고뇌 리포트·버튼 정상 렌더).
+- [x] **(신규 발견) create 저장 후 이동 안 되는 버그** — `save()` 핸들러에서 `getLocale()`(getContext) 호출 → Svelte 5 `lifecycle_outside_component` 에러로 `goto()` 도달 실패(토픽은 저장되나 화면 안 넘어감). 로케일을 초기화 시점에 캡처해 해결. 브라우저 재현·수정 검증 완료.
+- [x] **(신규) 최소 후보 4명 강제** — 2명이면 비교 1번뿐이라 고뇌 리포트의 "최고 고뇌 = 0초컷"이 같은 대결이 됨. `MIN_CANDIDATES=4`(create 검증·초기 4칸), 에러메시지 `{n}` 보간, 리포트는 `count>1`일 때만 표시(방어). 브라우저에서 두 대결이 다르게 나옴을 확인.
 - [x] #6 RankMode 유령 값 — 커밋 `021f49d`에서 `'worldcup'` 제거, `RankMode = 'sort' | 'drag'`.
 - [x] #7 home SEO 문구 i18n 우회 — `homeTitle`/`homeDesc` 하드코딩 제거, `home.seo.title`·`home.seo.description` 키를 3개 로케일 messages 에 추가하고 `t()`로 통합. `MessageKey`가 로케일 누락 방지. 출력 동등성 3개 로케일 바이트 동일 검증.
 - [x] #8 messages 로케일별 중복 — `MessageKey` union 타입(ko 원천) + en/zh 키 누락 컴파일 검증(`_MissingKeys`) 추가. `translate`·`useT` 키 파라미터를 `MessageKey`로 좁힘. 오타·로케일 키 누락 둘 다 컴파일 타임 차단(음성 테스트로 실증). 27/27 테스트 통과.

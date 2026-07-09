@@ -6,8 +6,8 @@
 	import { MergeRanker } from '$lib/ranking/mergeRanker';
 	import type { Pair } from '$lib/ranking/types';
 	import { summarize, type CompareLog } from '$lib/ranking/hesitation';
-	import { SITE_HOST } from '$lib/site';
 	import RankBoard from '$lib/components/RankBoard.svelte';
+	import RankResult from '$lib/components/RankResult.svelte';
 	import { useT, getLocale, localePath } from '$lib/i18n';
 
 	const t = useT();
@@ -150,11 +150,6 @@
 		// drag 모드는 RankBoard 가 새로 마운트되며 초기화됨
 	}
 
-	function exportPdf() {
-		window.print();
-	}
-
-	const medal = (i: number) => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`);
 </script>
 
 {#if !loaded}
@@ -162,79 +157,8 @@
 {:else if !topic}
 	<div class="empty">{t('topic.notFound')} <a href={localePath(getLocale(), "/")}>{t("nav.home")}</a></div>
 {:else if ranking}
-	<!-- ===== 결과 ===== -->
-	<div class="print-area">
-		<!-- 화면용 제목 -->
-		<h2 class="no-print" style="margin:8px 0 4px">🏆 {topic.title} — {t('result.suffix')}</h2>
-		<p class="muted no-print" style="margin:0 0 16px">{t('result.done')}</p>
-
-		<!-- PDF 전용 헤더 -->
-		<div class="pdf-header print-only">
-			<div class="pdf-title">🏆 {topic.title}</div>
-			<div class="pdf-sub">{t('result.suffix')}{today ? ` · ${today}` : ''}</div>
-			<div class="pdf-rule"></div>
-		</div>
-
-		<ol class="rank-list" style="list-style:none; margin:0; padding:0; display:grid; gap:8px">
-			{#each ranking as c, i (c.id)}
-				<li
-					class="card rank-row {i < 3 ? 'top' : ''}"
-					style="padding:10px 14px; display:flex; align-items:center; gap:12px; {i < 3
-						? 'border-color: var(--accent)'
-						: ''}"
-				>
-					<span style="font-size:20px; width:32px; text-align:center">{medal(i)}</span>
-					{#if c.image}
-						<img
-							src={c.image}
-							alt=""
-							style="width:40px; height:40px; border-radius:0; object-fit:cover"
-						/>
-					{/if}
-					<strong style="font-size:16px">{c.name}</strong>
-				</li>
-			{/each}
-		</ol>
-
-		<!-- 고뇌 리포트: 화면 + PDF 모두 표시. 비교가 없던 드래그 모드면 숨김. -->
-		{#if hesitation.count > 0}
-			<div
-				class="card hesitation-report"
-				style="margin-top:16px; padding:14px; display:grid; gap:8px; font-size:14px"
-			>
-				<strong>{t('result.hesitation.title')}</strong>
-				{#if hesitation.mostAgonized}
-					<span
-						>{t('result.hesitation.agonized', {
-							a: hesitation.mostAgonized.winnerName,
-							b: hesitation.mostAgonized.loserName,
-							s: hesitation.mostAgonized.seconds
-						})}</span
-					>
-				{/if}
-				{#if hesitation.instant}
-					<span
-						>{t('result.hesitation.instant', {
-							a: hesitation.instant.winnerName,
-							b: hesitation.instant.loserName,
-							s: hesitation.instant.seconds
-						})}</span
-					>
-				{/if}
-			</div>
-		{/if}
-
-		<!-- PDF 전용 푸터 -->
-		<div class="pdf-footer print-only">{SITE_HOST} · {t('app.title')}</div>
-	</div>
-
-	<div class="no-print" style="display:grid; gap:10px; margin-top:20px">
-		<button class="btn btn-primary btn-block" onclick={exportPdf}>{t('result.exportPdf')}</button>
-		<div style="display:flex; gap:10px">
-			<button class="btn" style="flex:1" onclick={restart}>{t('result.restart')}</button>
-			<a class="btn" style="flex:1" href={localePath(getLocale(), "/")}>{t("nav.home")}</a>
-		</div>
-	</div>
+	<!-- ===== 결과 (화면 + PDF 렌더링은 RankResult 로 분리) ===== -->
+	<RankResult {topic} {ranking} {hesitation} {today} onRestart={restart} />
 {:else if mode === 'sort'}
 	<!-- ===== 순위 월드컵(비교) ===== -->
 	<div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 6px">
