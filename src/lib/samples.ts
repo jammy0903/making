@@ -7,6 +7,8 @@ import type { RankMode } from './domain';
  * - 음식·사물 등 비인물 주제는 일반 상식 기반으로 구성.
  */
 export interface SampleTopic {
+	/** 로케일 무관 ASCII 슬러그. SEO URL·결정적 id·번역 조회 키. 데이터의 정체성. */
+	slug: string;
 	title: string;
 	description: string;
 	defaultMode: RankMode;
@@ -18,6 +20,7 @@ export interface SampleTopic {
 export const SAMPLE_TOPICS: SampleTopic[] = [
 	// ── PIKU 인기 상위: 인물/캐릭터 (실제 랭킹 상위 후보) ──
 	{
+		slug: 'girl-idol',
 		title: '💃 여자 아이돌 이상형 월드컵',
 		description: '요즘 세대 걸그룹 (PIKU 인기 상위)',
 		defaultMode: 'sort',
@@ -47,6 +50,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'boy-idol',
 		title: '🕺 남자 아이돌 이상형 월드컵',
 		description: '대세 남자 아이돌 (PIKU 인기 상위)',
 		defaultMode: 'sort',
@@ -76,6 +80,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'actress',
 		title: '🎬 여자 배우 이상형 월드컵',
 		description: '이쁜 여자 배우 (PIKU 인기 상위)',
 		defaultMode: 'sort',
@@ -105,6 +110,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'actor',
 		title: '🎥 남자 배우 이상형 월드컵',
 		description: '멋진 남자 배우 (PIKU 인기 상위)',
 		defaultMode: 'sort',
@@ -134,6 +140,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'anime-girl',
 		title: '🌸 애니 여자 캐릭터 월드컵',
 		description: '최애 애니 여캐를 뽑아보자',
 		defaultMode: 'sort',
@@ -163,6 +170,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'anime-boy',
 		title: '⚔️ 애니·게임 남자 캐릭터 월드컵',
 		description: '귀엽고 멋진 남캐 월드컵',
 		defaultMode: 'sort',
@@ -194,6 +202,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 
 	// ── 음식 계열 (PIKU 최다 인기 장르) ──
 	{
+		slug: 'best-food',
 		title: '🍔 최애 음식 이상형 월드컵',
 		description: '여러분의 최애 음식은?',
 		defaultMode: 'sort',
@@ -235,6 +244,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'ramen',
 		title: '🍜 최강 라면 월드컵',
 		description: '최고의 라면을 가려보자',
 		defaultMode: 'sort',
@@ -268,6 +278,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'convenience-store-food',
 		title: '🏪 편의점 음식 월드컵',
 		description: '편의점에서 손이 가는 그것',
 		defaultMode: 'sort',
@@ -287,6 +298,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'bunsik',
 		title: '🍢 분식 월드컵',
 		description: '분식집 최애 메뉴',
 		defaultMode: 'sort',
@@ -305,6 +317,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'delivery-food',
 		title: '🛵 배달음식 월드컵',
 		description: '오늘 뭐 시켜 먹지?',
 		defaultMode: 'sort',
@@ -324,6 +337,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'korean-stew',
 		title: '🍲 국물요리 월드컵',
 		description: '뜨끈한 국물의 최강자',
 		defaultMode: 'sort',
@@ -353,12 +367,14 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'gukbap',
 		title: '🍚 국밥 월드컵',
 		description: '해장엔 역시 국밥',
 		defaultMode: 'sort',
 		candidates: ['돼지국밥', '순대국밥', '소고기국밥', '콩나물국밥', '뼈해장국', '설렁탕', '곰탕', '육개장']
 	},
 	{
+		slug: 'world-food',
 		title: '🌍 세계 음식 월드컵',
 		description: '전 세계 요리 중 최애는?',
 		defaultMode: 'sort',
@@ -392,6 +408,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'chicken-brand',
 		title: '🐔 치킨 브랜드 월드컵',
 		description: '최애 치킨 브랜드',
 		defaultMode: 'sort',
@@ -427,6 +444,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'pie-snack',
 		title: '🥧 파이과자 월드컵',
 		description: '촉촉한 파이류 최강자',
 		defaultMode: 'sort',
@@ -444,6 +462,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'bag-snack',
 		title: '🍿 봉지과자 월드컵',
 		description: '뜯으면 순삭되는 봉지과자',
 		defaultMode: 'sort',
@@ -460,6 +479,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'potato-snack',
 		title: '🥔 감자과자 월드컵',
 		description: '감자칩 계열 최강자',
 		defaultMode: 'sort',
@@ -475,6 +495,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'sweet-snack',
 		title: '🍫 단과자 월드컵',
 		description: '달달한 과자 최강자',
 		defaultMode: 'sort',
@@ -491,6 +512,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'salty-snack',
 		title: '🧂 짠과자 월드컵',
 		description: '짭짤한 과자 최강자',
 		defaultMode: 'sort',
@@ -507,12 +529,14 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'ice-cream',
 		title: '🍦 아이스크림 월드컵',
 		description: '더울 때 생각나는 그것',
 		defaultMode: 'sort',
 		candidates: ['월드콘', '메로나', '죠스바', '스크류바', '빠삐코', '수박바', '비비빅', '설레임', '붕어싸만코', '돼지바']
 	},
 	{
+		slug: 'dessert',
 		title: '🍩 디저트 월드컵',
 		description: '달콤한 디저트 최강자',
 		defaultMode: 'sort',
@@ -531,6 +555,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'bread',
 		title: '🥐 빵 월드컵',
 		description: '빵집 가면 담는 그 빵',
 		defaultMode: 'sort',
@@ -549,6 +574,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'street-food',
 		title: '🍡 길거리 간식 월드컵',
 		description: '학교 앞 그 맛',
 		defaultMode: 'sort',
@@ -567,6 +593,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'rice-cake',
 		title: '🍘 떡 월드컵',
 		description: '쫀득한 떡의 최강자',
 		defaultMode: 'drag',
@@ -585,6 +612,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 
 	// ── 음료 ──
 	{
+		slug: 'cafe-drink',
 		title: '☕ 카페 월드컵',
 		description: '최애 카페 브랜드는?',
 		defaultMode: 'sort',
@@ -676,12 +704,14 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'soda',
 		title: '🥤 탄산음료 월드컵',
 		description: '톡 쏘는 최애 음료',
 		defaultMode: 'sort',
 		candidates: ['콜라', '사이다', '환타', '밀키스', '마운틴듀', '웰치스', '닥터페퍼', '스프라이트', '펩시', '칠성사이다']
 	},
 	{
+		slug: 'alcohol',
 		title: '🍺 술 월드컵',
 		description: '오늘의 술은?',
 		defaultMode: 'sort',
@@ -690,6 +720,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 
 	// ── 과일·동물·기타 ──
 	{
+		slug: 'fruit',
 		title: '🍓 과일 월드컵',
 		description: '가장 좋아하는 과일',
 		defaultMode: 'sort',
@@ -723,6 +754,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'baby-animal',
 		title: '🐣 새끼동물 이상형 월드컵',
 		description: '가장 귀여운 아기동물을 뽑아보세요',
 		defaultMode: 'sort',
@@ -764,6 +796,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'pet',
 		title: '🐾 반려동물 월드컵',
 		description: '함께 살고 싶은 친구는?',
 		defaultMode: 'sort',
@@ -782,6 +815,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'travel-destination',
 		title: '✈️ 가고 싶은 여행지 월드컵',
 		description: '지금 당장 떠난다면',
 		defaultMode: 'sort',
@@ -831,6 +865,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'mbti',
 		title: '🔮 MBTI 월드컵',
 		description: '내 스타일 유형은?',
 		defaultMode: 'sort',
@@ -872,6 +907,7 @@ export const SAMPLE_TOPICS: SampleTopic[] = [
 		]
 	},
 	{
+		slug: 'season',
 		title: '🌸 최고의 계절',
 		description: '너의 선택은?',
 		defaultMode: 'drag',

@@ -7,8 +7,7 @@
  * ⚠️ 비공식 스크래핑: Bing 이 마크업을 바꾸면 파싱이 깨질 수 있고, 과도하게 호출하면
  *    레이트리밋에 걸릴 수 있다. 결과 이미지는 저작권이 있으니 개인용(월드컵) 범위로만 사용.
  */
-const UA =
-	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
+import { BROWSER_UA } from './http';
 
 export interface ImageSearchOptions {
 	/** 가져올 최대 개수 (기본 20) */
@@ -54,7 +53,7 @@ export async function searchImages(
 	const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&form=HDRSC2&first=1`;
 
 	const res = await fetch(url, {
-		headers: { 'User-Agent': UA, Cookie: SAFE_COOKIE[opts.safe ?? 'moderate'] },
+		headers: { 'User-Agent': BROWSER_UA, Cookie: SAFE_COOKIE[opts.safe ?? 'moderate'] },
 		signal: AbortSignal.timeout(15000)
 	});
 	if (!res.ok) throw new Error(`Bing 이미지 검색 오류: HTTP ${res.status}`);

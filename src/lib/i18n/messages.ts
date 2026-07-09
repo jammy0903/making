@@ -1,7 +1,7 @@
 import type { Locale } from './index';
 
 /** UI 문구 사전. 키는 화면/영역별 그룹. {var} 는 실행 시 치환. */
-export const messages: Record<Locale, Record<string, string>> = {
+export const messages = {
 	ko: {
 		'app.title': '순위 월드컵',
 		'nav.home': '홈으로',
@@ -12,6 +12,9 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'home.empty': '아직 만든 주제가 없어요.<br />위 버튼으로 첫 주제를 만들어 보세요.',
 		'home.play': '▶ 플레이',
 		'home.notEnough': '후보 부족',
+		'home.seo.title': '순위 월드컵 - 이상형 월드컵 만들기·음식·동물·연예인 순위',
+		'home.seo.description':
+			'이상형 월드컵처럼 둘 중 하나를 골라 전체 순위를 정하는 놀이터. 음식·새끼동물·아이돌 등 다양한 월드컵을 즐기고 나만의 월드컵도 만들어요.',
 
 		'mode.worldcup': '순위 월드컵',
 		'mode.drag': '직접 순위',
@@ -90,6 +93,9 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'home.empty': "You haven't made any topics yet.<br />Use the button above to create your first one.",
 		'home.play': '▶ Play',
 		'home.notEnough': 'Need more',
+		'home.seo.title': 'Ranking Worldcup - Make Your Own Ideal Type Tournament',
+		'home.seo.description':
+			'Pick one of two to rank everything, ideal-type worldcup style. Play food, baby animal, idol tournaments and create your own.',
 
 		'mode.worldcup': 'Ranking Worldcup',
 		'mode.drag': 'Manual ranking',
@@ -168,6 +174,9 @@ export const messages: Record<Locale, Record<string, string>> = {
 		'home.empty': '还没有创建任何主题。<br />用上方按钮创建第一个吧。',
 		'home.play': '▶ 开始',
 		'home.notEnough': '候选不足',
+		'home.seo.title': '排名世界杯 - 制作理想型世界杯·美食·动物·明星排名',
+		'home.seo.description':
+			'像理想型世界杯一样二选一，决出完整排名。畅玩美食、萌宠、偶像等世界杯，也能创建自己的世界杯。',
 
 		'mode.worldcup': '排名世界杯',
 		'mode.drag': '手动排名',
@@ -235,4 +244,14 @@ export const messages: Record<Locale, Record<string, string>> = {
 
 		'ad.dogWalk': '遛狗 — 用打字前进的 Chrome 扩展'
 	}
-};
+} satisfies Record<Locale, Record<string, string>>;
+
+/** 모든 로케일이 가져야 할 번역 키(ko 를 원천으로). 호출부 `t('key')` 오타를 컴파일 타임에 차단. */
+export type MessageKey = keyof (typeof messages)['ko'];
+
+// en·zh 가 ko 와 같은 키 집합인지 컴파일 타임 검증: 누락 키가 있으면 아래 대입에서 타입 에러가 난다.
+type _MissingKeys =
+	| Exclude<MessageKey, keyof (typeof messages)['en']>
+	| Exclude<MessageKey, keyof (typeof messages)['zh']>;
+const _assertNoMissingKeys: [_MissingKeys] extends [never] ? true : _MissingKeys = true;
+void _assertNoMissingKeys;

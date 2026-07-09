@@ -4,7 +4,7 @@
  * - 로케일은 페이지 로드마다 고정(전환 시 쿠키 저장 후 새로고침) → SSR 안전, 리액티브 스토어 불필요.
  */
 import { getContext, setContext } from 'svelte';
-import { messages } from './messages';
+import { messages, type MessageKey } from './messages';
 
 export const locales = ['ko', 'en', 'zh'] as const;
 export type Locale = (typeof locales)[number];
@@ -14,7 +14,7 @@ export const localeNames: Record<Locale, string> = { ko: '한국어', en: 'Engli
 /** 키 → 번역. 없으면 기본 로케일 → 키 자체로 폴백. {var} 치환 지원. */
 export function translate(
 	locale: Locale,
-	key: string,
+	key: MessageKey,
 	vars?: Record<string, string | number>
 ): string {
 	const dict = messages[locale] ?? messages[defaultLocale];
@@ -38,7 +38,7 @@ export function getLocale(): Locale {
 /** 컴포넌트에서: const t = useT(); t('key', {n: 3}) */
 export function useT() {
 	const l = getLocale();
-	return (key: string, vars?: Record<string, string | number>) => translate(l, key, vars);
+	return (key: MessageKey, vars?: Record<string, string | number>) => translate(l, key, vars);
 }
 
 /** 경로에 로케일 prefix 를 붙인다. ko(기본)는 prefix 없음, en/zh 는 /en /zh. */
@@ -50,9 +50,10 @@ export function localePath(locale: Locale, path: string): string {
 /** pathname 에서 로케일 prefix 와 나머지 순수 경로를 분리. */
 export function splitLocale(pathname: string): { locale: Locale; rest: string } {
 	const seg = pathname.split('/')[1];
-	if (seg === 'en' || seg === 'zh') {
+	// 기본 로케일(ko)은 prefix 없음. 나머지 로케일만 URL prefix 로 인식(locales 에서 유도).
+	if (seg && seg !== defaultLocale && (locales as readonly string[]).includes(seg)) {
 		const rest = pathname.slice(seg.length + 1);
-		return { locale: seg, rest: rest || '/' };
+		return { locale: seg as Locale, rest: rest || '/' };
 	}
 	return { locale: defaultLocale, rest: pathname || '/' };
 }
@@ -60,11 +61,9 @@ export function splitLocale(pathname: string): { locale: Locale; rest: string } 
 /** Accept-Language(우선) + IP 국가(보정)로 로케일 결정. US→en, CN→zh, KR→ko, 그 외→en. */
 export function pickLocale(acceptLanguage: string | null, country?: string | null): Locale {
 	const al = (acceptLanguage ?? '').toLowerCase();
-	// Accept-Language 의 첫 언어 태그로 판단
+	// Accept-Language 의 첫 언어 태그로 판단(locales 에서 유도)
 	const first = al.split(',')[0]?.trim() ?? '';
-	if (first.startsWith('zh')) return 'zh';
-	if (first.startsWith('ko')) return 'ko';
-	if (first.startsWith('en')) return 'en';
+	for (const l of locales) if (first.startsWith(l)) return l;
 	// 브라우저 언어로 못 정하면 IP 국가로 보정
 	const c = (country ?? '').toUpperCase();
 	if (c === 'CN' || c === 'TW' || c === 'HK' || c === 'SG') return 'zh';

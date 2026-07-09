@@ -40,19 +40,15 @@
 		const file = input.files?.[0];
 		if (!file) return;
 		try {
-			row.image = await resizeImageToDataUrl(file);
-			rows = rows; // 반응성 트리거
+			const image = await resizeImageToDataUrl(file);
+			rows = rows.map((r) => (r.id === row.id ? { ...r, image } : r));
 		} catch {
 			error = t('create.errImage');
 		}
 	}
 
 	function applySearchImage(dataUrl: string) {
-		const row = rows.find((r) => r.id === searchRowId);
-		if (row) {
-			row.image = dataUrl;
-			rows = rows; // 반응성 트리거
-		}
+		rows = rows.map((r) => (r.id === searchRowId ? { ...r, image: dataUrl } : r));
 	}
 
 	function save() {

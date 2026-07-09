@@ -4,13 +4,13 @@
  * 브라우저는 검색 결과의 외부 이미지 URL 을 CORS·핫링크 차단 때문에 직접 못 읽는다.
  * 서버가 대신 받아(UA 지정) 바이트를 넘겨주면, 클라이언트가 리사이즈해 data URL 로 저장할 수 있다.
  *
- * ⚠️ SSRF 방지를 위해 http(s) + 이미지 content-type 만 허용한다.
+ * ⚠️ SSRF 방지: http(s) 프로토콜 + 공개 대역 호스트(내부망 IP 차단) +
+ *    이미지 content-type 만 허용한다.
  */
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-
-const UA =
-	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
+import { assertPublicUrl } from '$lib/server/ssrf';
+import { BROWSER_UA } from '$lib/server/http';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const target = url.searchParams.get('url');
@@ -25,11 +25,17 @@ export const GET: RequestHandler = async ({ url }) => {
 	if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
 		throw error(400, 'http(s) URL 만 허용됩니다.');
 	}
+	// 내부망(localhost·사설·링크로컬·메타데이터) 호스트 차단
+	try {
+		await assertPublicUrl(parsed);
+	} catch (e) {
+		throw error(400, e instanceof Error ? e.message : '차단된 URL 입니다.');
+	}
 
 	let res: Response;
 	try {
 		res = await fetch(parsed, {
-			headers: { 'User-Agent': UA, Referer: `${parsed.protocol}//${parsed.host}/` },
+			headers: { 'User-Agent': BROWSER_UA, Referer: `${parsed.protocol}//${parsed.host}/` },
 			signal: AbortSignal.timeout(15000)
 		});
 	} catch {

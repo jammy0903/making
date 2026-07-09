@@ -10,17 +10,9 @@
 	let { data } = $props();
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
-	// 홈 SEO 메타(로케일별) — messages.ts 를 건드리지 않도록 여기서 정의
-	const homeTitle: Record<Locale, string> = {
-		ko: '순위 월드컵 - 이상형 월드컵 만들기·음식·동물·연예인 순위',
-		en: 'Ranking Worldcup - Make Your Own Ideal Type Tournament',
-		zh: '排名世界杯 - 制作理想型世界杯·美食·动物·明星排名'
-	};
-	const homeDesc: Record<Locale, string> = {
-		ko: '이상형 월드컵처럼 둘 중 하나를 골라 전체 순위를 정하는 놀이터. 음식·새끼동물·아이돌 등 다양한 월드컵을 즐기고 나만의 월드컵도 만들어요.',
-		en: 'Pick one of two to rank everything, ideal-type worldcup style. Play food, baby animal, idol tournaments and create your own.',
-		zh: '像理想型世界杯一样二选一，决出完整排名。畅玩美食、萌宠、偶像等世界杯，也能创建自己的世界杯。'
-	};
+	// 홈 SEO 메타는 다른 UI 문구와 동일하게 i18n(messages.ts)에서 관리
+	const homeTitle = $derived(t('home.seo.title'));
+	const homeDesc = $derived(t('home.seo.description'));
 	// 홈 ItemList 구조화 데이터
 	const itemListLd = $derived(
 		JSON.stringify({
@@ -90,10 +82,10 @@
 </script>
 
 <svelte:head>
-	<title>{homeTitle[locale]}</title>
-	<meta name="description" content={homeDesc[locale]} />
-	<meta property="og:title" content={homeTitle[locale]} />
-	<meta property="og:description" content={homeDesc[locale]} />
+	<title>{homeTitle}</title>
+	<meta name="description" content={homeDesc} />
+	<meta property="og:title" content={homeTitle} />
+	<meta property="og:description" content={homeDesc} />
 </svelte:head>
 
 <!-- eslint-disable-next-line svelte/no-at-html-tags -->

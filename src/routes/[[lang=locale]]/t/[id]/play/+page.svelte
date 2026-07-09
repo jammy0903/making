@@ -39,6 +39,12 @@
 	// 자리비움(AFK): 한 대결을 2분간 안 고르면 타이머를 멈추고 오버레이 표시.
 	// 자리비운 시간이 망설임으로 잘못 잡히지 않게, 복귀 시 시계를 재시작한다.
 	const AFK_MS = 120_000; // 2분 무응답 → 자리비움
+	// 고른 카드 강조 애니메이션 지속(ms). 모션 최소화 설정이면 짧게.
+	const PICK_ANIM_MS = 900;
+	const PICK_ANIM_REDUCED_MS = 150;
+	// 랭킹 초기 순서 셔플 시드 상한(정수) + 생성 헬퍼
+	const SEED_MAX = 1e9;
+	const randomSeed = () => Math.floor(Math.random() * SEED_MAX);
 	let away = $state(false);
 	let awayTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -71,7 +77,7 @@
 		mode = q === 'drag' ? 'drag' : 'sort';
 
 		if (mode === 'sort') {
-			ranker = new MergeRanker(tp.candidates, { seed: Math.floor(Math.random() * 1e9) });
+			ranker = new MergeRanker(tp.candidates, { seed: randomSeed() });
 			refresh();
 		}
 		// drag 모드는 RankBoard 가 자체 상태를 관리
@@ -117,7 +123,7 @@
 		}
 		picking = c.id;
 		// 고른 카드를 약 1초간 강조(커짐)한 뒤 다음 비교로 진행
-		const delay = reducedMotion() ? 150 : 900;
+		const delay = reducedMotion() ? PICK_ANIM_REDUCED_MS : PICK_ANIM_MS;
 		setTimeout(() => {
 			ranker?.answer(c);
 			picking = null;
@@ -138,7 +144,7 @@
 		away = false;
 		clearAwayTimer();
 		if (mode === 'sort' && topic) {
-			ranker = new MergeRanker(topic.candidates, { seed: Math.floor(Math.random() * 1e9) });
+			ranker = new MergeRanker(topic.candidates, { seed: randomSeed() });
 			refresh();
 		}
 		// drag 모드는 RankBoard 가 새로 마운트되며 초기화됨

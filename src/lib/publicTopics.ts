@@ -1,4 +1,4 @@
-import { SAMPLE_TOPICS } from './samples';
+import { SAMPLE_TOPICS, type SampleTopic } from './samples';
 import type { Topic } from './domain';
 import { defaultLocale, type Locale } from './i18n';
 import { topicTranslations } from './i18n/topics';
@@ -11,49 +11,14 @@ export interface PublicTopic extends Topic {
 	slug: string;
 }
 
-/**
- * ASCII 슬러그 (SAMPLE_TOPICS 순서와 1:1). 로케일 무관한 키워드 슬러그(SEO·공유 친화).
- */
-const SLUGS: string[] = [
-	'girl-idol',
-	'boy-idol',
-	'actress',
-	'actor',
-	'anime-girl',
-	'anime-boy',
-	'best-food',
-	'ramen',
-	'convenience-store-food',
-	'bunsik',
-	'delivery-food',
-	'korean-stew',
-	'gukbap',
-	'world-food',
-	'chicken-brand',
-	'pie-snack',
-	'bag-snack',
-	'potato-snack',
-	'sweet-snack',
-	'salty-snack',
-	'ice-cream',
-	'dessert',
-	'bread',
-	'street-food',
-	'rice-cake',
-	'cafe-drink',
-	'soda',
-	'alcohol',
-	'fruit',
-	'baby-animal',
-	'pet',
-	'travel-destination',
-	'mbti',
-	'season'
-];
-
-function toPublicTopic(index: number, locale: Locale): PublicTopic {
-	const s = SAMPLE_TOPICS[index];
-	const slug = SLUGS[index] ?? `topic-${index}`;
+function toPublicTopic(s: SampleTopic, locale: Locale): PublicTopic {
+	const slug = s.slug; // 슬러그는 데이터 자체에 있음(samples.ts). 위치결합 없음.
+	// 후보[]↔이미지[] 인덱스 결합 안전장치: 개수 불일치를 조용히 넘기지 않고 드러낸다.
+	if (s.images && s.images.length !== s.candidates.length) {
+		console.warn(
+			`[publicTopics] '${slug}' 후보(${s.candidates.length})와 이미지(${s.images.length}) 개수 불일치 — 인덱스 정합을 확인하세요.`
+		);
+	}
 	// 로케일 번역 적용(en/zh). 없으면 ko 원본.
 	const tr = locale === defaultLocale ? undefined : topicTranslations[slug]?.[locale];
 	const title = tr?.title ?? s.title;
@@ -79,7 +44,7 @@ const cache = new Map<Locale, PublicTopic[]>();
 export function publicTopics(locale: Locale = defaultLocale): PublicTopic[] {
 	let list = cache.get(locale);
 	if (!list) {
-		list = SAMPLE_TOPICS.map((_, i) => toPublicTopic(i, locale));
+		list = SAMPLE_TOPICS.map((s) => toPublicTopic(s, locale));
 		cache.set(locale, list);
 	}
 	return list;
