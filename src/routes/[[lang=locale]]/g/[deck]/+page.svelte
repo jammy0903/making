@@ -152,7 +152,7 @@
 	.cond {
 		font-size: 15px;
 		line-height: 1.45;
-		color: var(--accent-ink, var(--ink));
+		color: var(--ink);
 		padding-left: 2px;
 	}
 
