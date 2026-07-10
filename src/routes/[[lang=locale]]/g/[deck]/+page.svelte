@@ -46,9 +46,19 @@
 	// 완주 시 익명 로그 기록 + 상위 N%(B-2). 실패해도 게임엔 영향 없음.
 	let rank = $state<PlayRank | null>(null);
 
+	// 갈아탈 때 "아까움" 한 순간(B-3): 두고 가는 편을 짧게 붙잡는다.
+	let switchNote = $state('');
+	let switchTimer: ReturnType<typeof setTimeout> | null = null;
+
 	function pick(s: SideIndex) {
+		const prev = choices.length ? choices[choices.length - 1] : null;
 		const next = [...choices, s];
 		choices = next;
+		if (prev !== null && s !== prev) {
+			switchNote = `${sideName(prev)} 두고 가는 거야…?`;
+			if (switchTimer) clearTimeout(switchTimer);
+			switchTimer = setTimeout(() => (switchNote = ''), 1300);
+		}
 		if (next.length >= ROUNDS && deck) {
 			recordPlay(deck.id, next, computeResult(deck, next)).then((r) => (rank = r));
 		}
@@ -56,6 +66,8 @@
 	function restart() {
 		choices = [];
 		rank = null;
+		switchNote = '';
+		if (switchTimer) clearTimeout(switchTimer);
 	}
 
 	// 결과 카드용 파생값
@@ -128,6 +140,9 @@
 	</div>
 {:else if !done && acc}
 	<!-- 플레이: 두 사이드 세로 스택. 패널 자체가 선택 버튼. 라벨·점수 없음(B-2). -->
+	{#if switchNote}
+		<div class="switch-note" role="status">💔 {switchNote}</div>
+	{/if}
 	{#if vsChoices}
 		<p class="challenge">누군가 이 주제로 비교를 걸었어요. 끝까지 가보자! 🆚</p>
 	{/if}
@@ -381,6 +396,40 @@
 		font-size: 13px;
 		color: var(--muted);
 		word-break: break-all;
+	}
+
+	.switch-note {
+		position: fixed;
+		left: 50%;
+		top: 42%;
+		transform: translate(-50%, -50%);
+		background: var(--ink);
+		color: var(--surface);
+		padding: 10px 18px;
+		border: 3px solid var(--line);
+		box-shadow: var(--shadow);
+		font-weight: 700;
+		font-size: 15px;
+		z-index: 20;
+		pointer-events: none;
+		animation: switch-pop 1.3s ease forwards;
+	}
+	@keyframes switch-pop {
+		0% {
+			opacity: 0;
+			transform: translate(-50%, -40%) scale(0.9);
+		}
+		15% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1);
+		}
+		78% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, -56%);
+		}
 	}
 
 	.challenge {
