@@ -2,14 +2,13 @@
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
 	import { DECKS } from '$lib/game/decks';
+	import { search } from '$lib/search.svelte';
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
-	// 검색: 주제(제목·편 이름)로도, 조건 문구로도 필터.
-	let q = $state('');
-
+	// 검색어는 상단바(헤더) 입력창과 공유(search.q). 주제·조건 둘 다 필터.
 	const results = $derived.by(() => {
-		const query = q.trim().toLowerCase();
+		const query = search.q.trim().toLowerCase();
 		return DECKS.map((deck) => {
 			// 주제 매칭(제목·양편 이름)
 			const inTopic = [deck.title, deck.a.name, deck.b.name]
@@ -44,20 +43,8 @@
 	<p class="muted">고른 쪽에 조건이 하나씩 붙어요. <b>그런데 이제</b>… 끝까지 버틸 수 있나요?</p>
 </section>
 
-<div class="search">
-	<input
-		type="search"
-		bind:value={q}
-		placeholder="주제나 조건으로 검색 (예: 좀비, 방귀, 카레)"
-		aria-label="주제·조건 검색"
-	/>
-	{#if q}
-		<button type="button" class="clear" onclick={() => (q = '')} aria-label="검색어 지우기">✕</button>
-	{/if}
-</div>
-
 {#if results.length === 0}
-	<p class="no-result">‘{q}’에 해당하는 주제·조건이 없어요.</p>
+	<p class="no-result">‘{search.q}’에 해당하는 주제·조건이 없어요.</p>
 {:else}
 	<ul class="grid">
 		{#each results as { deck, condHint } (deck.id)}
@@ -84,35 +71,8 @@
 <style>
 	.intro {
 		max-width: 640px;
-		margin: 4px auto 20px;
-		text-align: center;
-	}
-	.search {
-		position: relative;
-		max-width: 440px;
 		margin: 0 auto 20px;
-	}
-	.search input {
-		width: 100%;
-		font: inherit;
-		font-size: 15px;
-		padding: 12px 40px 12px 14px;
-		border: 3px solid var(--line);
-		background: var(--surface);
-		color: var(--ink);
-		box-shadow: var(--shadow);
-	}
-	.search .clear {
-		position: absolute;
-		right: 10px;
-		top: 50%;
-		transform: translateY(-50%);
-		border: none;
-		background: transparent;
-		color: var(--muted);
-		font-size: 16px;
-		cursor: pointer;
-		padding: 4px;
+		text-align: center;
 	}
 	.no-result {
 		text-align: center;

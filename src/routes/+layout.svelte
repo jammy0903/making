@@ -6,6 +6,7 @@
 	import { page } from '$app/state';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import { logVisit } from '$lib/supabase';
+	import { search } from '$lib/search.svelte';
 	import {
 		setLocaleContext,
 		useT,
@@ -96,6 +97,25 @@
 		>
 	{/if}
 	<h1 class="app-title">{t('app.title')}</h1>
+	{#if isHome}
+		<div class="header-search">
+			<span class="hs-icon" aria-hidden="true">🔍</span>
+			<input
+				type="search"
+				bind:value={search.q}
+				placeholder="주제·조건 검색"
+				aria-label="주제·조건 검색"
+			/>
+			{#if search.q}
+				<button
+					type="button"
+					class="hs-clear"
+					onclick={() => (search.q = '')}
+					aria-label="검색어 지우기">✕</button
+				>
+			{/if}
+		</div>
+	{/if}
 	<select class="lang-select" aria-label={t('lang.label')} value={locale} onchange={switchLang}>
 		{#each locales as l (l)}
 			<option value={l}>{localeNames[l]}</option>
@@ -114,7 +134,7 @@
 
 <style>
 	.lang-select {
-		margin-left: auto;
+		margin-left: 8px;
 		font: inherit;
 		font-size: 13px;
 		padding: 6px 8px;
@@ -123,5 +143,48 @@
 		background: var(--surface);
 		color: var(--ink);
 		cursor: pointer;
+	}
+	/* 상단바 검색(홈에서만). 제목과 언어선택 사이 남는 공간을 채운다. */
+	.header-search {
+		position: relative;
+		flex: 1;
+		margin-left: auto;
+		max-width: 320px;
+	}
+	.header-search input {
+		width: 100%;
+		font: inherit;
+		font-size: 14px;
+		padding: 7px 30px 7px 34px;
+		border: 3px solid var(--line);
+		background: var(--surface);
+		color: var(--ink);
+	}
+	.hs-icon {
+		position: absolute;
+		left: 10px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 14px;
+		pointer-events: none;
+		opacity: 0.7;
+	}
+	/* 브라우저 기본 검색 지우기(✕) 숨김 — 커스텀 ✕만 사용(중복 방지). */
+	.header-search input::-webkit-search-cancel-button {
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	.header-search .hs-clear {
+		position: absolute;
+		right: 6px;
+		top: 50%;
+		transform: translateY(-50%);
+		border: none;
+		background: transparent;
+		color: var(--muted);
+		font-size: 14px;
+		cursor: pointer;
+		padding: 4px;
+		line-height: 1;
 	}
 </style>
