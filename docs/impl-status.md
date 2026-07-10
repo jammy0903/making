@@ -18,7 +18,7 @@
 | `docs/game-design.md` | **정본 게임 스펙** (A 규칙 · B UX · C 콘텐츠 · D 결과·공유 · E 데이터 · F MVP) |
 | `docs/balance-game-plan.md` | 피벗 근거·의사결정 히스토리 |
 | `docs/consultation-2026-07.md` | 외부 자문 반영 · 개선 로드맵 체크리스트(A/B/C) |
-| `docs/game-topic-types.md` | **주제 유형 분류 체계**(속성/인물/상황/획득/가치) · 유형별 재미·문구 규칙 · 논문 근거 |
+| `docs/game-topic-types.md` | **주제 유형 분류 체계 v2**(속성/인물/상황/획득/가치) · CLT 기반 문체·에스컬레이션 전환 · 바이럴 변수·혼합·페널티 독립성 · 논문 근거 |
 | `docs/impl-status.md` | (이 문서) 구현 진행·다음 스텝 |
 
 ## 2. 게임 핵심 (요약)
