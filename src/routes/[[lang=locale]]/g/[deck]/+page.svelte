@@ -179,6 +179,10 @@
 			{@const s = si === 0 ? deck.a : deck.b}
 			<button class="panel" onclick={() => pick(si)}>
 				<span class="panel-head"><span class="emoji">{s.emoji}</span> {s.name}</span>
+				<!-- 완화책(merit): 있으면 상시 노출. 전제가 가혹한 덱의 숨통(그래도 ~). -->
+				{#if s.merit}
+					<span class="merit"><span class="merit-tag">그래도</span> {s.merit}</span>
+				{/if}
 				<!-- 누적 표시(생략 없음): 감수한 조건이 판마다 쌓여 보인다. 최신만 강조. -->
 				<div class="cond-list">
 					{#each acc[si] as p, i (p.strength)}
@@ -387,6 +391,20 @@
 	}
 	.emoji {
 		font-size: 1.1em;
+	}
+	/* 완화책(merit): 페널티(빨강 계열) 대비 초록 톤 숨통. 상시 노출. */
+	.merit {
+		font-size: 13px;
+		line-height: 1.45;
+		padding: 5px 8px;
+		background: var(--soft);
+		border-left: 3px solid #2e9e5b;
+		color: var(--ink);
+	}
+	.merit-tag {
+		font-size: 11px;
+		font-weight: 700;
+		color: #2e9e5b;
 	}
 	/* 누적 조건 리스트: 판마다 한 줄씩 쌓인다(생략 없음). */
 	.cond-list {
