@@ -7,6 +7,7 @@
 		computeResult,
 		decodeChoices,
 		encodeChoices,
+		headlineTail,
 		ROUNDS,
 		type SideIndex
 	} from '$lib/game/engine';
@@ -184,7 +185,7 @@
 				{#if headline}
 					<span class="endured">「{headline}」</span><br />
 				{/if}
-				그래도 <span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b> 못 버리는 사람
+				그래도 <span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b> {headlineTail(deck)}
 			</p>
 		{/if}
 

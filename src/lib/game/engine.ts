@@ -6,7 +6,7 @@
  * - 1판(i=0): 맨몸, 순수 취향. 2판부터 판 시작 시 **직전에 고른 내 편**에 그 판 강도(=판 번호) 페널티가 붙는다.
  * - 강도 = 판 번호(A-2). 반대편은 안 건드림, 누적 리셋 없음(페널티-온리).
  */
-import type { Deck, Penalty } from './decks';
+import { TYPE_CONFIG, type Deck, type Penalty, type ResultFraming } from './decks';
 
 export const ROUNDS = 10;
 export type SideIndex = 0 | 1;
@@ -120,6 +120,64 @@ export function computeResult(deck: Deck, choices: SideIndex[]): RoundResult {
 	};
 }
 
+/**
+ * 결과 문안을 유형 프레이밍(§9)별로 갈래친다. 상태는 4가지로 공통:
+ * indecisive / rooted(스위치 0) / shallow(버린 편 얕음) / leaned(버린 편도 갔지만 기욺).
+ * `strategy`(상황형)는 스위치=재계산이라 문구가 잠정적 — Phase 3에서 결과 로직과 함께 확정.
+ */
+interface VerdictStrings {
+	indecisive: string;
+	rooted: (pref: string) => string;
+	shallow: (burned: string) => string;
+	leaned: (pref: string, burned: string) => string;
+}
+
+const FRAMING_VERDICTS: Record<ResultFraming, VerdictStrings> = {
+	preference: {
+		indecisive: '한 쪽에 정착 못 하고 계속 갈아탄 유형.',
+		rooted: (p) => `아무것도 못 흔든 ${p} 근본.`,
+		shallow: (b) => `${b}엔 애초에 정이 없었네.`,
+		leaned: (p, b) => `${b}도 여기까진 갔지만, 결국 ${p} 쪽으로 마음이 기울었네.`
+	},
+	tolerance: {
+		indecisive: '누구랑도 오래 못 버티고 갈아탄 유형.',
+		rooted: (p) => `${p}이면 뭐든 견디고 사는 사람.`,
+		shallow: (b) => `${b}은 진작에 못 견뎠네.`,
+		leaned: (p, b) => `${b}도 꽤 견뎠지만, 결국 ${p} 쪽을 안고 가기로 했네.`
+	},
+	desire: {
+		indecisive: '이것도 저것도 못 놓고 계속 갈아탄 유형.',
+		rooted: (p) => `끝까지 ${p}을 원한 사람.`,
+		shallow: (b) => `${b}은 별로 안 당겼네.`,
+		leaned: (p, b) => `${b}도 탐났지만, 결국 ${p}을 원했네.`
+	},
+	values: {
+		indecisive: '어느 가치도 못 정하고 계속 갈아탄 유형.',
+		rooted: (p) => `${p}을 끝까지 지킨 사람.`,
+		shallow: (b) => `${b}은 애초에 우선순위가 아니었네.`,
+		leaned: (p, b) => `${b}도 고민됐지만, 결국 ${p}이 더 중요했네.`
+	},
+	strategy: {
+		indecisive: '상황마다 판단이 갈린 유형.',
+		rooted: (p) => `끝까지 ${p}으로 밀어붙인 타입.`,
+		shallow: (b) => `${b}은 금방 접었네.`,
+		leaned: (p, b) => `${b}도 시도했지만, 결국 ${p} 쪽으로 갔네.`
+	}
+};
+
+/** 결과 헤드라인 꼬리(§9 결과 프레이밍). "그래도 <편> ___" 뒤에 붙는다. */
+const FRAMING_HEADLINE_TAIL: Record<ResultFraming, string> = {
+	preference: '못 버리는 사람',
+	tolerance: '견디고 사는 사람',
+	desire: '원하는 사람',
+	values: '지키는 사람',
+	strategy: '밀어붙이는 타입'
+};
+
+export function headlineTail(deck: Deck): string {
+	return FRAMING_HEADLINE_TAIL[TYPE_CONFIG[deck.type].framing];
+}
+
 function verdictLine(
 	deck: Deck,
 	pref: SideIndex,
@@ -130,8 +188,9 @@ function verdictLine(
 ): string {
 	const prefName = side(deck, pref).name;
 	const burnedName = side(deck, burned).name;
-	if (indecisive) return '한 쪽에 정착 못 하고 계속 갈아탄 유형.';
-	if (switches === 0) return `아무것도 못 흔든 ${prefName} 근본.`;
-	if (holdMax[burned] <= 3) return `${burnedName}엔 애초에 정이 없었네.`;
-	return `${burnedName}도 여기까진 갔지만, 결국 ${prefName} 쪽으로 마음이 기울었네.`;
+	const v = FRAMING_VERDICTS[TYPE_CONFIG[deck.type].framing];
+	if (indecisive) return v.indecisive;
+	if (switches === 0) return v.rooted(prefName);
+	if (holdMax[burned] <= 3) return v.shallow(burnedName);
+	return v.leaned(prefName, burnedName);
 }

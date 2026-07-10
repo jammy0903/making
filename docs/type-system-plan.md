@@ -23,12 +23,14 @@
 - [x] 테스트 — `decks.test.ts`(4): 모든 덱 유효 `type` / `TYPE_CONFIG` 5유형 전부 / 프레이밍·문체 필드
 - [x] `pnpm test`(14) && `pnpm check`(0 err) && `pnpm build` 통과 → 커밋
 
-## Phase 1 · 결과 프레이밍 유형 분기
+## Phase 1 · 결과 프레이밍 유형 분기 ✅ 완료 (2026-07-10)
 
-- [ ] `verdictLine`을 `deck.type`별로 분기 — 취향(속성)·관용(인물)·욕망(획득)·가치관(가치) (§9 결과 프레이밍 행)
-- [ ] 결과 카드 UI 문안이 유형 프레이밍 반영 (`g/[deck]/+page.svelte`)
-- [ ] 테스트 — 유형별 verdict 문안 분기 검증
-- [ ] 검증 → 커밋
+- [x] `verdictLine`을 `deck.type`별로 분기 — `FRAMING_VERDICTS[framing]`: 취향(속성)·관용(인물)·욕망(획득)·가치관(가치)·성향(상황, 잠정) (§9)
+- [x] 헤드라인 꼬리도 프레이밍화 — `headlineTail(deck)`: "못 버리는 사람"/"견디고 사는 사람"/"원하는 사람"/"지키는 사람"/"밀어붙이는 타입"
+- [x] 결과 카드 UI 문안 반영 — `g/[deck]/+page.svelte` 헤드라인이 `headlineTail(deck)` 사용
+- [x] 테스트 — 속성=취향/인물=관용 verdict 분기, headlineTail 유형별 상이, 같은 시퀀스·다른 유형 문안 상이 (engine.test.ts +3)
+- [x] `pnpm test`(17) && `pnpm check`(0) && `pnpm build` 통과 → 커밋
+- 미해결(후속): `compareLine`의 "취향 갈렸네"는 아직 preference 고정 문구 — B-1 비교 페이지 다국어/프레이밍 손볼 때 함께.
 
 ## Phase 2 · 획득형 덱 추가 (첫 신규 유형, 로직 수술 불필요)
 

@@ -7,10 +7,12 @@ import {
 	computeResult,
 	encodeChoices,
 	decodeChoices,
+	headlineTail,
 	type SideIndex
 } from './engine';
 
-const deck = getDeck('summer-winter')!;
+const deck = getDeck('summer-winter')!; // 속성형(preference)
+const person = getDeck('marriage')!; // 인물형(tolerance)
 
 describe('penaltyForRound', () => {
 	it('1판은 맨몸(null)', () => {
@@ -69,6 +71,24 @@ describe('computeResult', () => {
 		expect(r.switches).toBe(9);
 		expect(r.indecisive).toBe(true);
 		expect(r.verdict).toContain('갈아탄');
+	});
+});
+
+describe('유형 프레이밍 분기 (Phase 1)', () => {
+	it('속성형은 취향 프레이밍(근본/버리는), 인물형은 관용 프레이밍(견디는)', () => {
+		const solid = Array(10).fill(0) as SideIndex[]; // 스위치 0 → rooted
+		expect(computeResult(deck, solid).verdict).toContain('근본');
+		expect(computeResult(person, solid).verdict).toContain('견디고 사는');
+	});
+
+	it('headlineTail이 유형별로 다르다', () => {
+		expect(headlineTail(deck)).toBe('못 버리는 사람'); // preference
+		expect(headlineTail(person)).toBe('견디고 사는 사람'); // tolerance
+	});
+
+	it('같은 선택 시퀀스라도 유형이 다르면 결과 문안이 다르다', () => {
+		const seq = [0, 0, 0, 0, 0, 1, 1, 1, 0, 0] as SideIndex[];
+		expect(computeResult(deck, seq).verdict).not.toBe(computeResult(person, seq).verdict);
 	});
 });
 
