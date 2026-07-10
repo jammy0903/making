@@ -28,21 +28,9 @@
 	const acc = $derived(deck && !done ? accumulated(deck, choices) : null);
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
 
-	// 위치 편향 제거: 판마다 위·아래 표시 순서를 섞는다(자문 A-2).
-	// 결과 로직엔 미사용(결정론 유지) — 고정 스크램블 5:5, 선택 기록은 여전히 사이드ID.
-	const DISPLAY_ORDER: SideIndex[][] = [
-		[0, 1],
-		[1, 0],
-		[1, 0],
-		[0, 1],
-		[0, 1],
-		[1, 0],
-		[0, 1],
-		[1, 0],
-		[1, 0],
-		[0, 1]
-	];
-	const order = $derived(DISPLAY_ORDER[choices.length % DISPLAY_ORDER.length]);
+	// 카드 위치 고정(사용자 요청): 매 판 deck.a 위·deck.b 아래로 고정. 스크램블 없음.
+	// (자문 A-2 위치 편향 랜덤화는 플레이 감각상 철회 — 뭘 눌러도 자리가 안 바뀌게.)
+	const order: SideIndex[] = [0, 1];
 
 	// 완주 시 익명 로그 기록 + 상위 N%(B-2). 실패해도 게임엔 영향 없음.
 	let rank = $state<PlayRank | null>(null);

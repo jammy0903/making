@@ -10,9 +10,25 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		}
 	});
 
-	it('현재 2덱은 각각 속성형·인물형', () => {
+	it('현재 덱 유형: 여름=속성, 결혼=인물, 초능력=획득', () => {
 		expect(DECKS.find((d) => d.id === 'summer-winter')?.type).toBe('attribute');
 		expect(DECKS.find((d) => d.id === 'marriage')?.type).toBe('person');
+		expect(DECKS.find((d) => d.id === 'superpower')?.type).toBe('acquisition');
+	});
+
+	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
+		for (const deck of DECKS) {
+			expect(deck.a.penalties).toHaveLength(9);
+			expect(deck.b.penalties).toHaveLength(9);
+			expect(deck.a.penalties.map((p) => p.strength)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		}
+	});
+
+	it('획득형(초능력) 문체는 부작용형 ≤20자 (§5-3)', () => {
+		const sp = DECKS.find((d) => d.id === 'superpower')!;
+		for (const p of [...sp.a.penalties, ...sp.b.penalties]) {
+			expect(p.text.length).toBeLessThanOrEqual(20);
+		}
 	});
 
 	it('TYPE_CONFIG에 5유형이 모두 존재하고 framing/penaltyStyle을 가진다', () => {
