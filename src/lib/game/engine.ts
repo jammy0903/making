@@ -43,6 +43,17 @@ export function accumulated(deck: Deck, choices: SideIndex[]): [Penalty[], Penal
 	return acc;
 }
 
+/** 선택 시퀀스를 URL 안전 문자열로(공유·비교용). 0/1 문자열. */
+export function encodeChoices(choices: SideIndex[]): string {
+	return choices.map((c) => (c === 0 ? '0' : '1')).join('');
+}
+
+/** 공유 문자열 → 완주(10판) 선택 시퀀스. 형식이 안 맞으면 null. */
+export function decodeChoices(s: string | null | undefined): SideIndex[] | null {
+	if (!s || !/^[01]{10}$/.test(s)) return null;
+	return s.split('').map((ch) => (ch === '1' ? 1 : 0) as SideIndex);
+}
+
 export interface RoundResult {
 	pref: SideIndex;
 	burned: SideIndex;

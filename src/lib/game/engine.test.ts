@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { getDeck } from './decks';
-import { penaltyForRound, penaltyAddedAt, accumulated, computeResult, type SideIndex } from './engine';
+import {
+	penaltyForRound,
+	penaltyAddedAt,
+	accumulated,
+	computeResult,
+	encodeChoices,
+	decodeChoices,
+	type SideIndex
+} from './engine';
 
 const deck = getDeck('summer-winter')!;
 
@@ -60,5 +68,21 @@ describe('computeResult', () => {
 		expect(r.switches).toBe(9);
 		expect(r.indecisive).toBe(true);
 		expect(r.verdict).toContain('갈아탄');
+	});
+});
+
+describe('encodeChoices / decodeChoices', () => {
+	it('10판 시퀀스를 왕복 인코딩', () => {
+		const choices = [0, 1, 1, 0, 1, 0, 0, 1, 0, 1] as SideIndex[];
+		const s = encodeChoices(choices);
+		expect(s).toBe('0110100101');
+		expect(decodeChoices(s)).toEqual(choices);
+	});
+	it('형식이 안 맞으면 null(완주 10판만 허용)', () => {
+		expect(decodeChoices(null)).toBeNull();
+		expect(decodeChoices('')).toBeNull();
+		expect(decodeChoices('0110')).toBeNull(); // 길이 부족
+		expect(decodeChoices('01101001012')).toBeNull(); // 길이 초과
+		expect(decodeChoices('011010010x')).toBeNull(); // 잘못된 문자
 	});
 });

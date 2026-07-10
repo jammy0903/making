@@ -2,7 +2,14 @@
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
 	import { getDeck } from '$lib/game/decks';
-	import { accumulated, computeResult, ROUNDS, type SideIndex } from '$lib/game/engine';
+	import {
+		accumulated,
+		computeResult,
+		decodeChoices,
+		encodeChoices,
+		ROUNDS,
+		type SideIndex
+	} from '$lib/game/engine';
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 	const deck = $derived(getDeck(page.params.deck ?? ''));
@@ -52,6 +59,50 @@
 				: null
 			: null
 	);
+
+	// 결과 비교(B-1): URL ?vs=<상대 10선택>이 있으면 같은 덱으로 상대 결과를 재현해 비교.
+	const vsChoices = $derived(deck ? decodeChoices(page.url.searchParams.get('vs')) : null);
+	const vsResult = $derived(deck && vsChoices ? computeResult(deck, vsChoices) : null);
+
+	function sideName(s: SideIndex): string {
+		return deck ? (s === 0 ? deck.a : deck.b).name : '';
+	}
+
+	// 나 vs 상대 한 줄 비교(같은 덱이라 선호편·버틴 깊이가 직접 비교됨).
+	const compareLine = $derived.by(() => {
+		if (!result || !vsResult) return '';
+		const meName = sideName(result.pref);
+		const youName = sideName(vsResult.pref);
+		if (result.indecisive && vsResult.indecisive) return '둘 다 이쪽저쪽 못 정한 결정장애.';
+		if (result.indecisive) return `나는 결정장애, 상대는 확고한 ${youName}.`;
+		if (vsResult.indecisive) return `나는 확고한 ${meName}, 상대는 결정장애.`;
+		if (result.pref === vsResult.pref) {
+			const meDepth = result.holdMax[result.pref];
+			const youDepth = vsResult.holdMax[vsResult.pref];
+			if (meDepth === youDepth) return `둘 다 ${meName}, 버틴 깊이도 강도 ${meDepth}로 똑같아.`;
+			const deeper = meDepth > youDepth ? '내' : '상대';
+			const hi = Math.max(meDepth, youDepth);
+			const lo = Math.min(meDepth, youDepth);
+			return `둘 다 ${meName}! ${deeper}가 강도 ${hi}까지, 다른 쪽은 ${lo}에서 손절.`;
+		}
+		return `취향 갈렸네 — 나는 ${meName}, 상대는 ${youName}.`;
+	});
+
+	// 공유 링크: 완주 시 내 선택을 ?vs=로 실어 현재 주소를 공유.
+	const shareUrl = $derived(
+		done && deck ? `${page.url.origin}${page.url.pathname}?vs=${encodeChoices(choices)}` : ''
+	);
+	let shareMsg = $state('');
+	async function share() {
+		if (!shareUrl) return;
+		try {
+			await navigator.clipboard.writeText(shareUrl);
+			shareMsg = '링크 복사됨! 친구에게 보내 비교해보세요';
+		} catch {
+			// 클립보드 차단 환경(비보안 컨텍스트 등) — 링크를 그대로 노출해 직접 복사하게.
+			shareMsg = shareUrl;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -65,6 +116,9 @@
 	</div>
 {:else if !done && acc}
 	<!-- 플레이: 두 사이드 세로 스택. 패널 자체가 선택 버튼. 라벨·점수 없음(B-2). -->
+	{#if vsChoices}
+		<p class="challenge">누군가 이 주제로 비교를 걸었어요. 끝까지 가보자! 🆚</p>
+	{/if}
 	<div class="progress" aria-hidden="true">
 		{#each Array(ROUNDS) as _, i (i)}
 			<span class="dot" class:filled={i < choices.length}></span>
@@ -121,10 +175,39 @@
 			<p class="verdict">{result.verdict}</p>
 		</div>
 
+		{#if vsResult}
+			<!-- 결과 비교(B-1): 같은 덱을 플레이한 상대와 나란히. -->
+			<div class="vs-block">
+				<div class="vs-title">🆚 상대와 비교</div>
+				<div class="vs-grid">
+					<div class="vs-col">
+						<span class="vs-who">나</span>
+						<span class="vs-pref">
+							{#if result.indecisive}결정장애{:else}{prefSide.emoji} {prefSide.name}{/if}
+						</span>
+						<span class="vs-depth">버틴 깊이 {result.holdMax[result.pref]}</span>
+					</div>
+					<div class="vs-col">
+						<span class="vs-who">상대</span>
+						<span class="vs-pref">
+							{#if vsResult.indecisive}결정장애{:else}{(vsResult.pref === 0 ? deck.a : deck.b)
+									.emoji} {(vsResult.pref === 0 ? deck.a : deck.b).name}{/if}
+						</span>
+						<span class="vs-depth">버틴 깊이 {vsResult.holdMax[vsResult.pref]}</span>
+					</div>
+				</div>
+				<p class="vs-line">{compareLine}</p>
+			</div>
+		{/if}
+
 		<div class="result-actions">
 			<button class="btn btn-primary" onclick={restart}>다시 하기</button>
 			<a class="btn" href={localePath(locale, '/')}>다른 주제</a>
 		</div>
+		<button class="btn btn-share" onclick={share}>🔗 결과 공유 · 친구와 비교</button>
+		{#if shareMsg}
+			<p class="share-msg">{shareMsg}</p>
+		{/if}
 	</div>
 {/if}
 
@@ -263,5 +346,72 @@
 	}
 	.result-actions .btn {
 		flex: 1;
+	}
+	.btn-share {
+		width: 100%;
+		margin-top: 10px;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border: 3px solid var(--line);
+	}
+	.share-msg {
+		margin: 10px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+		word-break: break-all;
+	}
+
+	.challenge {
+		max-width: 560px;
+		margin: 0 auto 12px;
+		padding: 10px 14px;
+		text-align: center;
+		font-size: 14px;
+		font-weight: 700;
+		background: var(--soft);
+		border: 3px solid var(--line);
+	}
+
+	.vs-block {
+		margin-top: 18px;
+		border-top: 3px solid var(--line);
+		padding-top: 16px;
+		text-align: left;
+	}
+	.vs-title {
+		font-weight: 700;
+		margin-bottom: 10px;
+	}
+	.vs-grid {
+		display: flex;
+		gap: 10px;
+	}
+	.vs-col {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 12px;
+		border: 2px solid var(--line);
+		background: var(--surface);
+		text-align: center;
+	}
+	.vs-who {
+		font-size: 12px;
+		color: var(--muted);
+	}
+	.vs-pref {
+		font-size: 16px;
+		font-weight: 800;
+	}
+	.vs-depth {
+		font-size: 13px;
+		color: var(--muted);
+	}
+	.vs-line {
+		margin: 12px 0 0;
+		font-size: 15px;
+		font-weight: 700;
+		text-align: center;
 	}
 </style>
