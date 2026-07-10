@@ -82,5 +82,7 @@
 
 - 강도곡선 세부(§A-3 커브볼 배치) · 과한 연출 구체화(§B-3 후보) · 저작 도구(손저작→UGC) · 주제 확장.
 - 외부 자문 반영 진행: A그룹(문장형 라벨·위치 랜덤화·조건 접힘·오실레이션 유형·1판 가중치) **구현 완료**.
-  B-1(결과 비교 페이지, `?vs=` 서버리스) **구현 완료**. B-2~B-5(상위 N%·아까움 연출·3막 재배치·데이터 윤리)는
-  착수 대기. → `docs/consultation-2026-07.md`.
+  B-1(결과 비교 `?vs=`)·B-2(상위 N% Supabase RPC)·B-5(데이터 윤리) **구현 완료**.
+  B-3(아까움 연출)·B-4(3막 재배치)는 착수 대기. → `docs/consultation-2026-07.md`.
+- Supabase 연동 라이브: `@supabase/supabase-js`, `src/lib/supabase.ts`, RPC `record_play`(migrations 0002).
+  `.env`의 `PUBLIC_SUPABASE_*` 필요(로컬 채워짐). **Vercel 배포 시 동일 env 등록 필요.**

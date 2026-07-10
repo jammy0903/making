@@ -10,6 +10,10 @@
 		ROUNDS,
 		type SideIndex
 	} from '$lib/game/engine';
+	import { recordPlay, type PlayRank } from '$lib/supabase';
+
+	// 상위 N% 배지는 표본이 이만큼 쌓였을 때만 노출(초반 무의미한 수치 방지).
+	const MIN_RANK_SAMPLE = 5;
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 	const deck = $derived(getDeck(page.params.deck ?? ''));
@@ -39,11 +43,19 @@
 	];
 	const order = $derived(DISPLAY_ORDER[choices.length % DISPLAY_ORDER.length]);
 
+	// 완주 시 익명 로그 기록 + 상위 N%(B-2). 실패해도 게임엔 영향 없음.
+	let rank = $state<PlayRank | null>(null);
+
 	function pick(s: SideIndex) {
-		choices = [...choices, s];
+		const next = [...choices, s];
+		choices = next;
+		if (next.length >= ROUNDS && deck) {
+			recordPlay(deck.id, next, computeResult(deck, next)).then((r) => (rank = r));
+		}
 	}
 	function restart() {
 		choices = [];
+		rank = null;
 	}
 
 	// 결과 카드용 파생값
@@ -159,6 +171,11 @@
 				{/if}
 				그래도 <span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b> 못 버리는 사람
 			</p>
+		{/if}
+
+		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive}
+			<!-- 상위 N%(B-2): 같은 편 중 버틴 깊이 백분위. 표본 부족하면 숨김. -->
+			<p class="rank-badge">🏆 {prefSide.name} 중 <b>상위 {rank.percentile}%</b></p>
 		{/if}
 
 		<div class="depth">
@@ -297,6 +314,11 @@
 	.endured {
 		color: var(--accent);
 		font-weight: 700;
+	}
+	.rank-badge {
+		margin: -8px 0 18px;
+		font-size: 15px;
+		color: var(--accent);
 	}
 	.depth {
 		text-align: left;
