@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DECKS, TYPE_CONFIG, type DeckType } from './decks';
+import { DECKS, TYPE_CONFIG, getDeck, penaltyStyleOf, type Deck, type DeckType } from './decks';
 
 const ALL_TYPES: DeckType[] = ['attribute', 'person', 'scenario', 'acquisition', 'value'];
 
@@ -50,5 +50,19 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 	it('인물형은 긴 에피소드(long), 속성형은 짧은 조건(short)', () => {
 		expect(TYPE_CONFIG.person.penaltyStyle).toBe('long');
 		expect(TYPE_CONFIG.attribute.penaltyStyle).toBe('short');
+	});
+});
+
+describe('penaltyStyleOf 리졸버 (Phase 4)', () => {
+	it('오버라이드 없으면 유형 기본값을 쓴다', () => {
+		expect(penaltyStyleOf(getDeck('marriage')!)).toBe('long'); // person
+		expect(penaltyStyleOf(getDeck('summer-winter')!)).toBe('short'); // attribute
+		expect(penaltyStyleOf(getDeck('zombie')!)).toBe('short'); // scenario
+	});
+
+	it('덱별 penaltyStyleOverride가 유형 기본값을 덮어쓴다', () => {
+		const base = getDeck('summer-winter')!; // 기본 short
+		const overridden: Deck = { ...base, penaltyStyleOverride: 'long' };
+		expect(penaltyStyleOf(overridden)).toBe('long');
 	});
 });

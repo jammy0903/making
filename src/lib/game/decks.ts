@@ -234,3 +234,11 @@ export const DECKS: Deck[] = [
 export function getDeck(id: string): Deck | undefined {
 	return DECKS.find((d) => d.id === id);
 }
+
+/**
+ * 덱의 실제 문체(§4 CLT). 덱별 `penaltyStyleOverride`가 있으면 그것,
+ * 없으면 유형 기본값 `TYPE_CONFIG[type].penaltyStyle`. UI 레이아웃 분기(Phase 4)가 소비.
+ */
+export function penaltyStyleOf(deck: Deck): PenaltyStyle {
+	return deck.penaltyStyleOverride ?? TYPE_CONFIG[deck.type].penaltyStyle;
+}

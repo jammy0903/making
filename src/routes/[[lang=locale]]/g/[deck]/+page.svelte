@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
-	import { getDeck } from '$lib/game/decks';
+	import { getDeck, penaltyStyleOf } from '$lib/game/decks';
 	import {
 		accumulated,
 		computeResult,
@@ -18,6 +18,8 @@
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 	const deck = $derived(getDeck(page.params.deck ?? ''));
+	// 문체(§4 CLT): 긴 에피소드형(인물)은 문단처럼, 짧은 조건형은 punchy 라벨로 레이아웃 차등(Phase 4).
+	const isLongStyle = $derived(deck ? penaltyStyleOf(deck) === 'long' : false);
 
 	// 플레이 상태 — 고른 사이드 배열(0=a, 1=b). 메커니즘/점수는 화면에 숨김(B-2).
 	let choices = $state<SideIndex[]>([]);
@@ -141,7 +143,7 @@
 		{/each}
 	</div>
 
-	<div class="board">
+	<div class="board" class:long={isLongStyle}>
 		{#each order as si (si)}
 			{@const s = si === 0 ? deck.a : deck.b}
 			<button class="panel" onclick={() => pick(si)}>
@@ -293,6 +295,15 @@
 		line-height: 1.45;
 		color: var(--ink);
 		padding-left: 2px;
+	}
+	/* 긴 에피소드형(인물): 문장이 길어 문단처럼 읽히도록 줄간격·자간을 늘리고 살짝 작게. */
+	.board.long .panel {
+		padding: 22px;
+		gap: 10px;
+	}
+	.board.long .cond {
+		font-size: 14.5px;
+		line-height: 1.6;
 	}
 	.cond-fold {
 		font-size: 13px;

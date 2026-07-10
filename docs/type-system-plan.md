@@ -42,19 +42,22 @@
 - [x] 브라우저 검증(localhost:5173): 홈 노출·페널티 렌더·조건접힘·완주 결과 확인 → 커밋
 - [x] **추가 요청 반영**: 카드 위·아래 위치 **고정**(자문 A-2 스크램블 철회). `+page.svelte`의 `DISPLAY_ORDER` 제거, `order = [0,1]` 고정
 
-## Phase 3 · 상황형 결과 로직 재설계 (로직 수술 필요)
+## Phase 3 · 상황형 결과 로직 재설계 ✅ 완료 (2026-07-10)
 
-- [ ] `computeResult` 상황형 경로 — 스위치를 "포기"가 아닌 "전략 재계산"으로 재해석 (indecisive 판정 분리)
-- [ ] 결과 프레이밍 = "성향/전략 스타일"("끝까지 밀고 가는 타입" vs "상황 보고 전환하는 타입")
-- [ ] 상황형 덱(예: 좀비 도망 vs 싸움) — 문체 중간(행동 결과, §5-3 ≤25자)
-- [ ] 테스트 — 상황형 스위치가 indecisive로 오판되지 않음
-- [ ] 검증 → 커밋
+- [x] `computeResult` 상황형 경로 — `ResultMode`(preference|strategy) 도입. 스위치를 "포기"가 아닌 "전략 재계산"으로 재해석. `indecisive`(preference)와 `adaptive`(strategy) 분리
+- [x] 결과 프레이밍 = 전략 스타일 — `strategyVerdict`: 스위치 0="우직한 타입"/소수="실속 타입"/다수="적응형". UI에 adaptive 헤드라인 분기, 상위 N% 배지는 adaptive 시 숨김
+- [x] 상황형 덱 `zombie`(도망 vs 싸움) — 문체 ≤25자. 문구는 **뇌절 톤(병맛·gross)** 으로(§idea-bank), 외부사건 금지·좌우 대칭 유지
+- [x] 테스트 — 오실레이션(스위치 9)이 상황형에선 indecisive 아님·adaptive임 검증(engine.test +3)
+- [x] `pnpm test`(23) && `pnpm check`(0) && `pnpm build` 통과 → 커밋·푸시(b838dda)
 
-## Phase 4 · UI 레이아웃 유형 분기 (문체 길이 대응)
+## Phase 4 · UI 레이아웃 유형 분기 (문체 길이 대응) ✅ 완료 (2026-07-10)
 
-- [ ] 짧은 조건형(속성/가치) vs 긴 에피소드형(인물) 카드 레이아웃 차등
-- [ ] `penaltyStyleOverride` 반영 (§4 CLT 오버라이드)
-- [ ] 문구 길이 가이드(§5-3) 린트/가드 (선택)
+- [x] `penaltyStyleOf(deck)` 리졸버 신설 — `penaltyStyleOverride ?? TYPE_CONFIG[type].penaltyStyle`. 지금까지 정의만 되고 안 쓰이던 필드를 실제 소비
+- [x] 카드 레이아웃 차등 — `.board.long`(인물형) = 문단형(줄간격 1.6·여백↑·14.5px), 짧은 조건형(속성/상황/획득/가치)은 기존 punchy 유지
+- [x] `penaltyStyleOverride` 반영 — 리졸버 경유로 덱별 오버라이드가 UI까지 전달
+- [x] 테스트 — 리졸버 오버라이드 우선·유형 기본값(decks.test +2)
+- [ ] 문구 길이 가이드(§5-3) 린트/가드 — **보류(선택)**. 현재는 상황형 ≤25자 테스트만 존재
+- [x] `pnpm test`(25) && `pnpm check`(0) && `pnpm build` 통과
 
 ## 상시 · 신규 덱 콘텐츠 파이프라인 (§10-③)
 
