@@ -10,10 +10,11 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		}
 	});
 
-	it('현재 덱 유형: 여름=속성, 결혼=인물, 초능력=획득', () => {
+	it('현재 덱 유형: 여름=속성, 결혼=인물, 초능력=획득, 좀비=상황', () => {
 		expect(DECKS.find((d) => d.id === 'summer-winter')?.type).toBe('attribute');
 		expect(DECKS.find((d) => d.id === 'marriage')?.type).toBe('person');
 		expect(DECKS.find((d) => d.id === 'superpower')?.type).toBe('acquisition');
+		expect(DECKS.find((d) => d.id === 'zombie')?.type).toBe('scenario');
 	});
 
 	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
@@ -28,6 +29,13 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		const sp = DECKS.find((d) => d.id === 'superpower')!;
 		for (const p of [...sp.a.penalties, ...sp.b.penalties]) {
 			expect(p.text.length).toBeLessThanOrEqual(20);
+		}
+	});
+
+	it('상황형(좀비) 문체는 행동 결과 ≤25자 (§5-3)', () => {
+		const z = DECKS.find((d) => d.id === 'zombie')!;
+		for (const p of [...z.a.penalties, ...z.b.penalties]) {
+			expect(p.text.length).toBeLessThanOrEqual(25);
 		}
 	});
 

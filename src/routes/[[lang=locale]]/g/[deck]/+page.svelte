@@ -168,6 +168,11 @@
 				<span class="endured">이쪽저쪽 재기만 하다</span><br />
 				어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
 			</p>
+		{:else if result.adaptive}
+			<p class="result-headline">
+				<span class="endured">상황마다 최선을 골라</span><br />
+				유연하게 갈아탄 <b>적응형</b> 유형
+			</p>
 		{:else}
 			<p class="result-headline">
 				{#if headline}
@@ -177,7 +182,7 @@
 			</p>
 		{/if}
 
-		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive}
+		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive && !result.adaptive}
 			<!-- 상위 N%(B-2): 같은 편 중 버틴 깊이 백분위. 표본 부족하면 숨김. -->
 			<p class="rank-badge">🏆 {prefSide.name} 중 <b>상위 {rank.percentile}%</b></p>
 		{/if}

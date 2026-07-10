@@ -19,21 +19,29 @@ export type PenaltyStyle = 'short' | 'long';
 /** 결과 카드 프레이밍 키(§9 결과 프레이밍 행). Phase 1에서 verdictLine 분기에 사용. */
 export type ResultFraming = 'preference' | 'tolerance' | 'strategy' | 'desire' | 'values';
 
+/**
+ * 결과 해석 모드(§3 결과 로직 충돌).
+ * - `preference`: 현시선호. 버틴 깊이=진짜 취향, 잦은 스위치=결정장애(속성/인물/획득/가치).
+ * - `strategy`: 전략 스타일. 스위치=상황 재계산이지 포기가 아님 → 잦은 스위치=적응형(상황형).
+ */
+export type ResultMode = 'preference' | 'strategy';
+
 export interface TypeConfig {
 	framing: ResultFraming;
 	penaltyStyle: PenaltyStyle;
+	resultMode: ResultMode;
 }
 
 /**
- * 유형별 기본 설정. 값은 Phase 1~에서 실제 분기 로직이 소비한다(지금은 스켈레톤).
+ * 유형별 기본 설정. 결과 로직·문체·프레이밍이 여기서 갈린다.
  * 덱별로 `penaltyStyleOverride`가 penaltyStyle을 덮어쓸 수 있다(§4 CLT 오버라이드).
  */
 export const TYPE_CONFIG: Record<DeckType, TypeConfig> = {
-	attribute: { framing: 'preference', penaltyStyle: 'short' },
-	person: { framing: 'tolerance', penaltyStyle: 'long' },
-	scenario: { framing: 'strategy', penaltyStyle: 'short' }, // 중간 길이 — Phase 3에서 확정
-	acquisition: { framing: 'desire', penaltyStyle: 'short' }, // 중간~짧(부작용형)
-	value: { framing: 'values', penaltyStyle: 'short' }
+	attribute: { framing: 'preference', penaltyStyle: 'short', resultMode: 'preference' },
+	person: { framing: 'tolerance', penaltyStyle: 'long', resultMode: 'preference' },
+	scenario: { framing: 'strategy', penaltyStyle: 'short', resultMode: 'strategy' }, // 중간 길이(≤25자)
+	acquisition: { framing: 'desire', penaltyStyle: 'short', resultMode: 'preference' }, // 중간~짧(부작용형)
+	value: { framing: 'values', penaltyStyle: 'short', resultMode: 'preference' }
 };
 
 export interface Penalty {
@@ -179,6 +187,45 @@ export const DECKS: Deck[] = [
 				'쓸 때마다 속 뒤집혀 토해도',
 				'목적지가 몇 미터씩 어긋나도',
 				'한번 쓰면 하루종일 손이 떨려도'
+			])
+		}
+	},
+	{
+		id: 'zombie',
+		title: '좀비 사태: 도망친다 vs 싸운다',
+		icon: '🧟',
+		type: 'scenario',
+		a: {
+			name: '도망',
+			emoji: '🏃',
+			// 상황형(§2 유형3): 그 행동을 계속했을 때 자연스러운 대가. 외부 사건 금지, ≤25자.
+			// 도망을 고수할수록 나빠지는 방향(§5-2 동시 성립). 뇌절 톤(병맛·gross·처절코믹).
+			penalties: pens([
+				'신발 한 짝만 신고 뛰어도',
+				'뛰다 방귀가 계속 새어 나가도',
+				'똥이 마려운데 참고 뛰어도',
+				'코피가 멈추질 않고 흘러도',
+				'발톱이 하나씩 빠져나가도',
+				'사흘째 굶어 헛것이 보여도',
+				'바지가 흘러내려 붙잡고 뛰어도',
+				'오줌을 지린 채로 계속 뛰어도',
+				'다리가 후들려 기어서 도망쳐도'
+			])
+		},
+		b: {
+			name: '싸움',
+			emoji: '⚔️',
+			// 싸움을 고수할수록 나빠지는 방향. 도망과 대칭(둘 다 갈수록 궁지 → 팽팽). 뇌절 톤.
+			penalties: pens([
+				'휘두르다 어깨가 빠져도',
+				'좀비 침이 얼굴에 튀어도',
+				'손톱이 뒤집혀 까져도',
+				'썩은 내에 헛구역질이 나도',
+				'좀비 내장이 온몸에 튀어도',
+				'무기 부러져 맨주먹으로 쳐도',
+				'한 대 물려 근질근질해져도',
+				'팔이 후들려 헛방만 날려도',
+				'물린 자리가 거뭇하게 번져도'
 			])
 		}
 	}

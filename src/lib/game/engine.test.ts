@@ -13,6 +13,7 @@ import {
 
 const deck = getDeck('summer-winter')!; // 속성형(preference)
 const person = getDeck('marriage')!; // 인물형(tolerance)
+const scenario = getDeck('zombie')!; // 상황형(strategy)
 
 describe('penaltyForRound', () => {
 	it('1판은 맨몸(null)', () => {
@@ -71,6 +72,32 @@ describe('computeResult', () => {
 		expect(r.switches).toBe(9);
 		expect(r.indecisive).toBe(true);
 		expect(r.verdict).toContain('갈아탄');
+	});
+});
+
+describe('상황형 전략 모드 (Phase 3)', () => {
+	const oscillate = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1] as SideIndex[]; // 스위치 9회
+
+	it('preference 모드에선 잦은 스위치 = 결정장애(indecisive)', () => {
+		const r = computeResult(deck, oscillate);
+		expect(r.mode).toBe('preference');
+		expect(r.indecisive).toBe(true);
+		expect(r.adaptive).toBe(false);
+	});
+
+	it('strategy 모드(상황형)에선 잦은 스위치가 결정장애가 아니라 적응형(adaptive)', () => {
+		const r = computeResult(scenario, oscillate);
+		expect(r.mode).toBe('strategy');
+		expect(r.switches).toBe(9);
+		expect(r.indecisive).toBe(false); // ★ 상황형 스위치는 결정장애로 오판되지 않는다
+		expect(r.adaptive).toBe(true);
+		expect(r.verdict).toContain('적응형');
+	});
+
+	it('상황형에서 한 전략 고수 = 우직한 타입(적응형 아님)', () => {
+		const r = computeResult(scenario, Array(10).fill(0) as SideIndex[]);
+		expect(r.adaptive).toBe(false);
+		expect(r.verdict).toContain('우직한');
 	});
 });
 
