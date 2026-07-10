@@ -29,6 +29,10 @@
 	{/each}
 </ul>
 
+<p class="suggest-cta">
+	<a href={localePath(locale, '/suggest')}>💡 새 주제·조건 신청하기</a>
+</p>
+
 <style>
 	.intro {
 		max-width: 640px;
@@ -72,5 +76,16 @@
 	.vs {
 		opacity: 0.6;
 		margin: 0 2px;
+	}
+	.suggest-cta {
+		text-align: center;
+		margin: 24px auto 0;
+	}
+	.suggest-cta a {
+		color: var(--muted);
+		font-size: 14px;
+		text-decoration: none;
+		border-bottom: 2px dotted var(--muted);
+		padding-bottom: 1px;
 	}
 </style>

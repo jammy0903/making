@@ -40,6 +40,53 @@ export interface PlayRank {
 	sample: number;
 }
 
+/** 세션 uuid를 밖에서도 쓸 수 있게(관리자 로그인 시 자기 세션 제외용). */
+export function getSessionId(): string {
+	return sessionId();
+}
+
+/** 방문 기록(고유 방문자 집계용). 실패는 조용히 무시 — 통계 부수효과일 뿐. */
+export async function logVisit(): Promise<void> {
+	const sb = getSupabase();
+	if (!sb) return;
+	const sid = sessionId();
+	if (!sid) return;
+	try {
+		await sb.rpc('log_visit', { p_session_id: sid });
+	} catch (e) {
+		console.warn('[logVisit]', e);
+	}
+}
+
+/**
+ * 주제/조건 신청 접수. 성공하면 true.
+ * @param kind 'topic'(새 주제) | 'condition'(조건 문구 제안)
+ */
+export async function submitRequest(
+	kind: 'topic' | 'condition',
+	title: string,
+	body: string
+): Promise<boolean> {
+	const sb = getSupabase();
+	if (!sb) return false;
+	try {
+		const { error } = await sb.rpc('submit_request', {
+			p_kind: kind,
+			p_title: title,
+			p_body: body,
+			p_session_id: sessionId()
+		});
+		if (error) {
+			console.warn('[submitRequest]', error.message);
+			return false;
+		}
+		return true;
+	} catch (e) {
+		console.warn('[submitRequest]', e);
+		return false;
+	}
+}
+
 /**
  * 완주한 플레이를 기록하고 상위 N%를 돌려받는다.
  * 실패(환경 미설정·네트워크·RLS)면 null → 결과 카드에서 배지만 숨기고 나머지는 그대로.
