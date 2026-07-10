@@ -147,9 +147,8 @@
 	/* 상단바 검색(홈에서만). 제목과 언어선택 사이 남는 공간을 채운다. */
 	.header-search {
 		position: relative;
-		flex: 1;
-		margin-left: auto;
-		max-width: 320px;
+		flex: 1 1 auto;
+		max-width: 360px;
 	}
 	.header-search input {
 		width: 100%;
