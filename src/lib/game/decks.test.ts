@@ -20,6 +20,7 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		expect(DECKS.find((d) => d.id === 'gross-food')?.type).toBe('attribute');
 		expect(DECKS.find((d) => d.id === 'salary')?.type).toBe('value');
 		expect(DECKS.find((d) => d.id === 'kakao')?.type).toBe('person');
+		expect(DECKS.find((d) => d.id === 'salty-bland')?.type).toBe('attribute');
 	});
 
 	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
