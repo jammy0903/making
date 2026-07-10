@@ -38,6 +38,9 @@
 
 	const done = $derived(choices.length >= ROUNDS);
 	const roundNum = $derived(choices.length + 1); // 1-based, 결정 중인 판
+	// 직전에 고른 사이드(없으면 null). 메리트는 "안 고른 쪽"에서 유혹으로 뜬다
+	// — 버린 저쪽엔 그래도 탈출구가 있다며 갈아타게 만드는 장치(잔디가 더 파래 보임).
+	const lastPick = $derived<SideIndex | null>(choices.length ? choices[choices.length - 1] : null);
 	// 현재 판에서 각 사이드에 쌓인 페널티(이번 판 새 페널티 포함)
 	const acc = $derived(deck && !done ? accumulated(deck, choices) : null);
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
@@ -179,8 +182,8 @@
 			{@const s = si === 0 ? deck.a : deck.b}
 			<button class="panel" onclick={() => pick(si)}>
 				<span class="panel-head"><span class="emoji">{s.emoji}</span> {s.name}</span>
-				<!-- 완화책(merit): 있으면 상시 노출. 전제가 가혹한 덱의 숨통(그래도 ~). -->
-				{#if s.merit}
+				<!-- 완화책(merit): 직전에 '안 고른' 쪽에만 뜬다. 버린 저쪽의 탈출구로 갈아타게 유혹. -->
+				{#if s.merit && lastPick !== null && lastPick !== si}
 					<span class="merit"><span class="merit-tag">그래도</span> {s.merit}</span>
 				{/if}
 				<!-- 누적 표시(생략 없음): 감수한 조건이 판마다 쌓여 보인다. 최신만 강조. -->
