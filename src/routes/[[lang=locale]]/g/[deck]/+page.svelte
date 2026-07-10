@@ -179,15 +179,14 @@
 			{@const s = si === 0 ? deck.a : deck.b}
 			<button class="panel" onclick={() => pick(si)}>
 				<span class="panel-head"><span class="emoji">{s.emoji}</span> {s.name}</span>
-				{#if acc[si].length > 2}
-					<!-- 이전 조건 접힘: 인지 부하 완화(자문 A-3). 최신 조건만 강조. -->
-					<span class="cond-fold">이미 {acc[si].length - 1}개 감수 중…</span>
-					<span class="cond cond-new">그런데 이제 {acc[si][acc[si].length - 1].text}</span>
-				{:else}
-					{#each acc[si] as p (p.strength)}
-						<span class="cond">그런데 이제 {p.text}</span>
+				<!-- 누적 표시(생략 없음): 감수한 조건이 판마다 쌓여 보인다. 최신만 강조. -->
+				<div class="cond-list">
+					{#each acc[si] as p, i (p.strength)}
+						<span class="cond" class:cond-new={i === acc[si].length - 1}>
+							<span class="gr">그런데 이제</span> {p.text}.
+						</span>
 					{/each}
-				{/if}
+				</div>
 			</button>
 		{/each}
 	</div>
@@ -321,7 +320,7 @@
 					<div class="ps-story-title">내가 «{prefSide.name}» 편에서 버틴 것들</div>
 					<ul class="ps-conds">
 						{#each resultAcc[result.pref] as p (p.strength)}
-							<li>그런데 이제 {p.text}</li>
+							<li>그런데 이제 {p.text}.</li>
 						{/each}
 						{#if resultAcc[result.pref].length === 0}
 							<li class="ps-none">— (첫 판에 바로 갈아탔어요)</li>
@@ -389,28 +388,40 @@
 	.emoji {
 		font-size: 1.1em;
 	}
+	/* 누적 조건 리스트: 판마다 한 줄씩 쌓인다(생략 없음). */
+	.cond-list {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
 	.cond {
-		font-size: 15px;
-		line-height: 1.45;
+		font-size: 14px;
+		line-height: 1.4;
 		color: var(--ink);
-		padding-left: 2px;
+		padding: 4px 8px;
+		border-left: 3px solid var(--line);
 	}
-	/* 긴 에피소드형(인물): 문장이 길어 문단처럼 읽히도록 줄간격·자간을 늘리고 살짝 작게. */
-	.board.long .panel {
-		padding: 22px;
-		gap: 10px;
-	}
-	.board.long .cond {
-		font-size: 14.5px;
-		line-height: 1.6;
-	}
-	.cond-fold {
-		font-size: 13px;
+	/* "그런데 이제" 반복은 작게·연하게 두고 조건 문구를 앞세운다. */
+	.gr {
+		font-size: 11px;
 		color: var(--muted);
-		padding-left: 2px;
+		font-weight: 600;
 	}
+	/* 이번 판에 새로 붙은 조건만 강조(색 채움 + 굵게). */
 	.cond-new {
 		font-weight: 700;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-left-color: var(--accent-ink);
+	}
+	.cond-new .gr {
+		color: var(--accent-ink);
+		opacity: 0.75;
+	}
+	/* 긴 에피소드형(인물): 조건 문장이 길어 살짝 크게·여유 있게. */
+	.board.long .cond {
+		font-size: 14.5px;
+		line-height: 1.55;
 	}
 
 	.result {
