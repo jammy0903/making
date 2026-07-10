@@ -317,17 +317,23 @@
 
 		<div class="result-actions">
 			{#if sharedView}
-				<button class="btn btn-primary" onclick={restart}>나도 해보기</button>
+				<button class="btn btn-primary btn-act" onclick={restart}>
+					<span class="ba-ic">🙋</span> 나도 해보기
+				</button>
 			{:else}
-				<button class="btn btn-primary" onclick={restart}>다시 하기</button>
+				<button class="btn btn-primary btn-act" onclick={restart}>
+					<span class="ba-ic">🔄</span> 다시 하기
+				</button>
 			{/if}
-			<a class="btn" href={localePath(locale, '/')}>다른 주제</a>
+			<a class="btn btn-act btn-other" href={localePath(locale, '/')}>
+				<span class="ba-ic">🎲</span> 다른 주제
+			</a>
 		</div>
 
 		<div class="share-box">
 			<div class="share-row">
 				<button class="rbtn" onclick={shareResult} title="결과 링크 공유">
-					<span class="rbtn-face">🔗</span><em>링크</em>
+					<span class="rbtn-face">🔗</span><em>내 결과 공유</em>
 				</button>
 				<button class="rbtn rbtn-ig" onclick={shareImage} disabled={imgBusy} title="인스타용 이미지">
 					<span class="rbtn-face">📷</span><em>{imgBusy ? '…' : '이미지'}</em>
@@ -627,6 +633,20 @@
 	.result-actions .btn {
 		flex: 1;
 	}
+	/* 액션 버튼 꾸밈: 아이콘 + 살짝 큰 글씨. 눌리는 맛(neobrutalist)은 기본 .btn 유지. */
+	.btn-act {
+		font-size: 15px;
+		font-weight: 800;
+		gap: 7px;
+	}
+	.ba-ic {
+		font-size: 1.15em;
+		line-height: 1;
+	}
+	/* '다른 주제'는 보조 액션 — 은은한 틴트 배경으로 결과 링크 버튼들과 구분. */
+	.btn-other {
+		background: var(--soft);
+	}
 	.share-box {
 		margin-top: 14px;
 	}
@@ -669,7 +689,12 @@
 	.rbtn em {
 		font-style: normal;
 		font-size: 11px;
+		font-weight: 700;
 		color: var(--muted);
+		max-width: 66px;
+		text-align: center;
+		line-height: 1.2;
+		word-break: keep-all;
 	}
 	/* 인스타 버튼만 그라데이션으로 강조. */
 	.rbtn-ig .rbtn-face {
