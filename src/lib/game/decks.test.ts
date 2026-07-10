@@ -16,6 +16,7 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		expect(DECKS.find((d) => d.id === 'superpower')?.type).toBe('acquisition');
 		expect(DECKS.find((d) => d.id === 'zombie')?.type).toBe('scenario');
 		expect(DECKS.find((d) => d.id === 'cursed-power')?.type).toBe('acquisition');
+		expect(DECKS.find((d) => d.id === 'dirty-partner')?.type).toBe('person');
 	});
 
 	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
