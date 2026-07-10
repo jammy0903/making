@@ -19,14 +19,15 @@ describe('penaltyForRound', () => {
 	it('강도 = 판 번호: N판엔 강도-N 카드', () => {
 		expect(penaltyForRound(deck, 0, 2)?.strength).toBe(2);
 		expect(penaltyForRound(deck, 0, 10)?.strength).toBe(10);
-		expect(penaltyForRound(deck, 0, 2)?.text).toBe('아이스크림이 남들보다 3초 빨리 녹아도');
+		// 강도-N 카드 = penalties[N-2] (문구 내용과 무관하게 매핑만 검증)
+		expect(penaltyForRound(deck, 0, 2)?.text).toBe(deck.a.penalties[0].text);
 	});
 });
 
 describe('penaltyAddedAt / accumulated', () => {
 	it('이번 판 페널티는 직전에 고른 내 편에 붙는다', () => {
-		// 1판 여름(0) 선택 → 2판 시작 시 여름에 강도2 붙음
-		expect(penaltyAddedAt(deck, [0], 1)?.text).toBe('아이스크림이 남들보다 3초 빨리 녹아도');
+		// 1판 여름(0) 선택 → 2판 시작 시 여름에 강도2(=penalties[0]) 붙음
+		expect(penaltyAddedAt(deck, [0], 1)?.text).toBe(deck.a.penalties[0].text);
 	});
 	it('스위치해도 떠난 편 누적은 보존 + 강도는 판 번호 고정(리셋 없음)', () => {
 		// 1·2·3판 = 여름·여름·겨울. 여름엔 강도2·3이 남고(보존),
