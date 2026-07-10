@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
 	import { getDeck, penaltyStyleOf } from '$lib/game/decks';
+	import { saveResult } from '$lib/game/savedResults';
 	import {
 		accumulated,
 		computeResult,
@@ -23,6 +25,16 @@
 
 	// 플레이 상태 — 고른 사이드 배열(0=a, 1=b). 메커니즘/점수는 화면에 숨김(B-2).
 	let choices = $state<SideIndex[]>([]);
+
+	// 공유된 결과 보기(?r=): 열면 남의 결과 카드가 바로 뜬다(플레이 없이 읽기전용).
+	let sharedView = $state(false);
+	onMount(() => {
+		const r = decodeChoices(page.url.searchParams.get('r'));
+		if (r) {
+			choices = r;
+			sharedView = true;
+		}
+	});
 
 	const done = $derived(choices.length >= ROUNDS);
 	const roundNum = $derived(choices.length + 1); // 1-based, 결정 중인 판
@@ -52,11 +64,13 @@
 		}
 		if (next.length >= ROUNDS && deck) {
 			recordPlay(deck.id, next, computeResult(deck, next)).then((r) => (rank = r));
+			saveResult(deck.id, encodeChoices(next)); // 내 결과 저장(영구 아님)
 		}
 	}
 	function restart() {
 		choices = [];
 		rank = null;
+		sharedView = false;
 		switchNote = '';
 		if (switchTimer) clearTimeout(switchTimer);
 	}
@@ -103,20 +117,37 @@
 		return `취향 갈렸네 — 나는 ${meName}, 상대는 ${youName}.`;
 	});
 
-	// 공유 링크: 완주 시 내 선택을 ?vs=로 실어 현재 주소를 공유.
-	const shareUrl = $derived(
-		done && deck ? `${page.url.origin}${page.url.pathname}?vs=${encodeChoices(choices)}` : ''
+	// 완주 결과의 누적 조건(각 편이 버틴 것들). 결과 카드·PDF의 "스토리"용.
+	const resultAcc = $derived(done && deck ? accumulated(deck, choices) : null);
+
+	// 공유 링크 2종:
+	// - 결과 링크(?r=): 열면 내 결과 카드가 바로 보임(읽기전용). = 저장/공유의 핵심.
+	// - 도전 링크(?vs=): 상대가 같은 주제를 플레이하고 나와 비교.
+	const code = $derived(done && deck ? encodeChoices(choices) : '');
+	const base = $derived(`${page.url.origin}${page.url.pathname}`);
+	const resultUrl = $derived(code ? `${base}?r=${code}` : '');
+	const vsUrl = $derived(code ? `${base}?vs=${code}` : '');
+
+	// 인쇄(PDF) 상단 날짜.
+	const printDate = $derived(
+		new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
 	);
+
 	let shareMsg = $state('');
-	async function share() {
-		if (!shareUrl) return;
+	async function copyLink(url: string, ok: string) {
+		if (!url) return;
 		try {
-			await navigator.clipboard.writeText(shareUrl);
-			shareMsg = '링크 복사됨! 친구에게 보내 비교해보세요';
+			await navigator.clipboard.writeText(url);
+			shareMsg = ok;
 		} catch {
-			// 클립보드 차단 환경(비보안 컨텍스트 등) — 링크를 그대로 노출해 직접 복사하게.
-			shareMsg = shareUrl;
+			shareMsg = url; // 클립보드 차단 환경 — 링크 그대로 노출해 직접 복사.
 		}
+	}
+	const shareResult = () => copyLink(resultUrl, '내 결과 링크 복사됨! 친구에게 보내면 내 결과를 그대로 봐요');
+	const shareVs = () => copyLink(vsUrl, '비교 도전 링크 복사됨! 친구가 같은 주제로 겨뤄요');
+
+	function printPdf() {
+		if (typeof window !== 'undefined') window.print();
 	}
 </script>
 
@@ -229,14 +260,82 @@
 		{/if}
 
 		<div class="result-actions">
-			<button class="btn btn-primary" onclick={restart}>다시 하기</button>
+			{#if sharedView}
+				<button class="btn btn-primary" onclick={restart}>나도 해보기</button>
+			{:else}
+				<button class="btn btn-primary" onclick={restart}>다시 하기</button>
+			{/if}
 			<a class="btn" href={localePath(locale, '/')}>다른 주제</a>
 		</div>
-		<button class="btn btn-share" onclick={share}>🔗 결과 공유 · 친구와 비교</button>
-		{#if shareMsg}
-			<p class="share-msg">{shareMsg}</p>
-		{/if}
+
+		<div class="share-box">
+			<button class="btn btn-share" onclick={shareResult}>🔗 내 결과 링크 공유</button>
+			<div class="share-sub">
+				<button class="btn btn-mini" onclick={shareVs}>🆚 비교 도전장</button>
+				<button class="btn btn-mini" onclick={printPdf}>🖨️ PDF로 저장</button>
+			</div>
+			{#if !sharedView}
+				<p class="save-note">이 결과는 이 브라우저에 저장돼 있어요. 링크를 복사해두면 어디서든 다시 볼 수 있어요.</p>
+			{/if}
+			{#if shareMsg}
+				<p class="share-msg">{shareMsg}</p>
+			{/if}
+		</div>
 	</div>
+
+	<!-- ── PDF/인쇄 전용 결과 증서(화면엔 안 보임, 인쇄 시에만) ────────── -->
+	<section class="print-sheet" aria-hidden="true">
+		<div class="ps-frame">
+			<div class="ps-brand">그런데이제 · 결과 증서</div>
+			<div class="ps-topic">{deck.icon} {deck.title}</div>
+
+			<div class="ps-verdict">
+				{#if result.indecisive}
+					어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
+				{:else if result.adaptive}
+					상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
+				{:else}
+					그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
+				{/if}
+			</div>
+			{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive && !result.adaptive}
+				<div class="ps-rank">🏆 {prefSide.name} 중 상위 {rank.percentile}%</div>
+			{/if}
+
+			<div class="ps-depth">
+				{#each [deck.a, deck.b] as s, si (si)}
+					<div class="ps-bar-row">
+						<span class="ps-bar-label">{s.emoji} {s.name}</span>
+						<span class="ps-bar-track">
+							<span class="ps-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+						</span>
+						<span class="ps-bar-num">강도 {result.holdMax[si]}</span>
+					</div>
+				{/each}
+			</div>
+
+			<p class="ps-line">{result.verdict}</p>
+
+			{#if resultAcc}
+				<div class="ps-story">
+					<div class="ps-story-title">내가 «{prefSide.name}» 편에서 버틴 것들</div>
+					<ul class="ps-conds">
+						{#each resultAcc[result.pref] as p (p.strength)}
+							<li>그런데 이제 {p.text}</li>
+						{/each}
+						{#if resultAcc[result.pref].length === 0}
+							<li class="ps-none">— (첫 판에 바로 갈아탔어요)</li>
+						{/if}
+					</ul>
+				</div>
+			{/if}
+
+			<div class="ps-footer">
+				<span>{printDate}</span>
+				<span>codeinsight.online</span>
+			</div>
+		</div>
+	</section>
 {/if}
 
 <style>
@@ -396,11 +495,35 @@
 		color: var(--accent-ink);
 		border: 3px solid var(--line);
 	}
+	.share-box {
+		margin-top: 10px;
+	}
+	.share-sub {
+		display: flex;
+		gap: 10px;
+		margin-top: 10px;
+	}
+	.btn-mini {
+		flex: 1;
+		font-size: 14px;
+		padding: 10px;
+	}
+	.save-note {
+		margin: 12px 0 0;
+		font-size: 12px;
+		color: var(--muted);
+		line-height: 1.5;
+	}
 	.share-msg {
 		margin: 10px 0 0;
 		font-size: 13px;
 		color: var(--muted);
 		word-break: break-all;
+	}
+
+	/* 인쇄 증서: 화면에선 숨김, 인쇄 시에만 노출(아래 @media print). */
+	.print-sheet {
+		display: none;
 	}
 
 	.switch-note {
@@ -489,5 +612,147 @@
 		font-size: 15px;
 		font-weight: 700;
 		text-align: center;
+	}
+
+	/* ───────── 인쇄(PDF) 전용 ───────── */
+	@media print {
+		/* 화면 UI는 전부 숨기고 증서만 남긴다. */
+		:global(.app-header),
+		:global(.ad),
+		:global(.lang-select),
+		.result-actions,
+		.share-box,
+		.switch-note {
+			display: none !important;
+		}
+		:global(body),
+		:global(.wrap) {
+			margin: 0 !important;
+			padding: 0 !important;
+			background: #fff !important;
+		}
+		.result.card {
+			display: none !important;
+		}
+		.print-sheet {
+			display: block !important;
+		}
+		@page {
+			margin: 12mm;
+		}
+	}
+
+	.ps-frame {
+		border: 3px solid #6d5efc;
+		border-radius: 14px;
+		padding: 28px 30px;
+		color: #17151f;
+		font-family: inherit;
+		box-shadow: inset 0 0 0 6px #efe9ff;
+	}
+	.ps-brand {
+		text-align: center;
+		font-size: 13px;
+		letter-spacing: 2px;
+		color: #6d5efc;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+	.ps-topic {
+		text-align: center;
+		font-size: 26px;
+		font-weight: 800;
+		margin: 8px 0 18px;
+	}
+	.ps-verdict {
+		text-align: center;
+		font-size: 19px;
+		line-height: 1.5;
+		background: #f4f1ff;
+		border: 2px solid #d9cffb;
+		border-radius: 10px;
+		padding: 16px;
+	}
+	.ps-verdict b {
+		color: #6d5efc;
+	}
+	.ps-rank {
+		text-align: center;
+		font-weight: 800;
+		margin-top: 12px;
+		color: #b8860b;
+	}
+	.ps-depth {
+		margin: 22px 0 6px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.ps-bar-row {
+		display: grid;
+		grid-template-columns: 120px 1fr 70px;
+		align-items: center;
+		gap: 10px;
+		font-size: 15px;
+	}
+	.ps-bar-label {
+		font-weight: 700;
+	}
+	.ps-bar-track {
+		height: 16px;
+		background: #eee;
+		border: 2px solid #17151f;
+		border-radius: 999px;
+		overflow: hidden;
+	}
+	.ps-bar-fill {
+		display: block;
+		height: 100%;
+		background: #6d5efc;
+	}
+	.ps-bar-num {
+		text-align: right;
+		font-weight: 700;
+		font-size: 13px;
+	}
+	.ps-line {
+		text-align: center;
+		font-weight: 700;
+		font-size: 16px;
+		margin: 18px 0;
+	}
+	.ps-story {
+		border-top: 2px dashed #d9cffb;
+		padding-top: 16px;
+	}
+	.ps-story-title {
+		font-weight: 800;
+		margin-bottom: 10px;
+	}
+	.ps-conds {
+		margin: 0;
+		padding-left: 4px;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		font-size: 14.5px;
+	}
+	.ps-conds li::before {
+		content: '✔ ';
+		color: #6d5efc;
+		font-weight: 800;
+	}
+	.ps-none::before {
+		content: '' !important;
+	}
+	.ps-footer {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 22px;
+		padding-top: 12px;
+		border-top: 2px solid #efe9ff;
+		font-size: 12px;
+		color: #7a7391;
 	}
 </style>
