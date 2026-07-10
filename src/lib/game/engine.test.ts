@@ -47,11 +47,18 @@ describe('computeResult', () => {
 		expect(r.holdMax[1]).toBe(10);
 	});
 
-	it('동점이면 마지막 판으로 타이브레이크', () => {
-		// 매 판 번갈아 → 버팀 0회, score 0-0 → 마지막(10판·index9) 선택이 선호편
+	it('1판 선택도 순수 취향 → 기본 가중치 1', () => {
+		const r = computeResult(deck, [0] as SideIndex[]);
+		expect(r.score).toEqual([1, 0]);
+		expect(r.pref).toBe(0);
+	});
+
+	it('매 판 갈아타면 결정장애(indecisive) 유형', () => {
+		// 스위치 4회↑ → 어느 쪽도 못 버틴 유형으로 판정
 		const choices = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1] as SideIndex[];
 		const r = computeResult(deck, choices);
-		expect(r.score).toEqual([0, 0]);
-		expect(r.pref).toBe(choices[9]);
+		expect(r.switches).toBe(9);
+		expect(r.indecisive).toBe(true);
+		expect(r.verdict).toContain('갈아탄');
 	});
 });

@@ -53,6 +53,8 @@ export interface RoundResult {
 	/** 편별 비용가중 감수 점수 */
 	score: [number, number];
 	switches: number;
+	/** 매 판 갈아타 어느 쪽도 못 버틴 유형(자문: 오실레이션 별도 결과) */
+	indecisive: boolean;
 	/** 결과 카드 하단 한 줄(손절 시점별 말투) */
 	verdict: string;
 }
@@ -66,6 +68,9 @@ export function computeResult(deck: Deck, choices: SideIndex[]): RoundResult {
 	const holdMax: [number, number] = [0, 0];
 	const enduredBySide: [Penalty[], Penalty[]] = [[], []];
 	let switches = 0;
+
+	// 1판(맨몸)도 순수 취향 정보 → 기본 가중치 1(자문 A-5: 1판 정보 살리기).
+	if (choices.length > 0) score[choices[0]] += 1;
 
 	for (let i = 1; i < choices.length; i++) {
 		const roundNum = i + 1;
@@ -81,10 +86,13 @@ export function computeResult(deck: Deck, choices: SideIndex[]): RoundResult {
 		}
 	}
 
+	// 매 판 갈아탄 유형: 어느 쪽도 제대로 못 버팀(자문 A-4).
+	const indecisive = switches >= 4;
+
 	let pref: SideIndex;
 	if (score[0] > score[1]) pref = 0;
 	else if (score[1] > score[0]) pref = 1;
-	else pref = choices[choices.length - 1]; // 동점 → 마지막 판 타이브레이크
+	else pref = choices[choices.length - 1]; // 동점 → 마지막 판 타이브레이크(방어적 폴백)
 	const burned: SideIndex = pref === 0 ? 1 : 0;
 
 	const enduredPref = [...enduredBySide[pref]].sort((a, b) => b.strength - a.strength);
@@ -96,7 +104,8 @@ export function computeResult(deck: Deck, choices: SideIndex[]): RoundResult {
 		holdMax,
 		score,
 		switches,
-		verdict: verdictLine(deck, pref, burned, holdMax, switches)
+		indecisive,
+		verdict: verdictLine(deck, pref, burned, holdMax, switches, indecisive)
 	};
 }
 
@@ -105,10 +114,12 @@ function verdictLine(
 	pref: SideIndex,
 	burned: SideIndex,
 	holdMax: [number, number],
-	switches: number
+	switches: number,
+	indecisive: boolean
 ): string {
 	const prefName = side(deck, pref).name;
 	const burnedName = side(deck, burned).name;
+	if (indecisive) return '한 쪽에 정착 못 하고 계속 갈아탄 유형.';
 	if (switches === 0) return `아무것도 못 흔든 ${prefName} 근본.`;
 	if (holdMax[burned] <= 3) return `${burnedName}엔 애초에 정이 없었네.`;
 	return `${burnedName}도 여기까진 갔지만, 결국 ${prefName} 쪽으로 마음이 기울었네.`;

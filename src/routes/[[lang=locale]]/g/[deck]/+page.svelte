@@ -16,6 +16,22 @@
 	const acc = $derived(deck && !done ? accumulated(deck, choices) : null);
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
 
+	// 위치 편향 제거: 판마다 위·아래 표시 순서를 섞는다(자문 A-2).
+	// 결과 로직엔 미사용(결정론 유지) — 고정 스크램블 5:5, 선택 기록은 여전히 사이드ID.
+	const DISPLAY_ORDER: SideIndex[][] = [
+		[0, 1],
+		[1, 0],
+		[1, 0],
+		[0, 1],
+		[0, 1],
+		[1, 0],
+		[0, 1],
+		[1, 0],
+		[1, 0],
+		[0, 1]
+	];
+	const order = $derived(DISPLAY_ORDER[choices.length % DISPLAY_ORDER.length]);
+
 	function pick(s: SideIndex) {
 		choices = [...choices, s];
 	}
@@ -56,12 +72,19 @@
 	</div>
 
 	<div class="board">
-		{#each [deck.a, deck.b] as s, si (si)}
-			<button class="panel" onclick={() => pick(si as SideIndex)}>
+		{#each order as si (si)}
+			{@const s = si === 0 ? deck.a : deck.b}
+			<button class="panel" onclick={() => pick(si)}>
 				<span class="panel-head"><span class="emoji">{s.emoji}</span> {s.name}</span>
-				{#each acc[si] as p (p.strength)}
-					<span class="cond">그런데 이제 {p.text}</span>
-				{/each}
+				{#if acc[si].length > 2}
+					<!-- 이전 조건 접힘: 인지 부하 완화(자문 A-3). 최신 조건만 강조. -->
+					<span class="cond-fold">이미 {acc[si].length - 1}개 감수 중…</span>
+					<span class="cond cond-new">그런데 이제 {acc[si][acc[si].length - 1].text}</span>
+				{:else}
+					{#each acc[si] as p (p.strength)}
+						<span class="cond">그런데 이제 {p.text}</span>
+					{/each}
+				{/if}
 			</button>
 		{/each}
 	</div>
@@ -70,12 +93,19 @@
 	<div class="result card">
 		<div class="result-badge">그런데 이제 · 결과</div>
 
-		<p class="result-headline">
-			{#if headline}
-				<span class="endured">「{headline}」</span><br />
-			{/if}
-			<span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b>을(를) 좋아하는 타입
-		</p>
+		{#if result.indecisive}
+			<p class="result-headline">
+				<span class="endured">이쪽저쪽 재기만 하다</span><br />
+				어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
+			</p>
+		{:else}
+			<p class="result-headline">
+				{#if headline}
+					<span class="endured">「{headline}」</span><br />
+				{/if}
+				그래도 <span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b> 못 버리는 사람
+			</p>
+		{/if}
 
 		<div class="depth">
 			<div class="depth-title">🌡️ 버틴 깊이</div>
@@ -154,6 +184,14 @@
 		line-height: 1.45;
 		color: var(--ink);
 		padding-left: 2px;
+	}
+	.cond-fold {
+		font-size: 13px;
+		color: var(--muted);
+		padding-left: 2px;
+	}
+	.cond-new {
+		font-weight: 700;
 	}
 
 	.result {
