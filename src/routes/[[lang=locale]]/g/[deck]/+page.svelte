@@ -153,6 +153,55 @@
 	function printPdf() {
 		if (typeof window !== 'undefined') window.print();
 	}
+
+	// ── 인스타 공유용 이미지(PNG) ─────────────────────────────
+	// 결과를 세로형(1080×1350, 인스타 피드 4:5) 카드로 렌더 → 모바일은 공유 시트(→인스타),
+	// 데스크톱은 다운로드. html-to-image는 필요할 때만 동적 import(초기 번들 경량화).
+	let igCardEl = $state<HTMLElement>();
+	let imgBusy = $state(false);
+	async function shareImage() {
+		if (!igCardEl || imgBusy) return;
+		imgBusy = true;
+		shareMsg = '';
+		try {
+			const { toPng } = await import('html-to-image');
+			const dataUrl = await toPng(igCardEl, {
+				width: 1080,
+				height: 1350,
+				pixelRatio: 1,
+				cacheBust: true,
+				backgroundColor: '#ffffff',
+				// 폰트 임베드 끄기: CDN(Galmuri) 스타일시트는 cross-origin이라 cssRules 접근이
+				// SecurityError로 터진다. 스킵하면 이미지엔 시스템 폰트로 렌더(한글·이모지 정상).
+				skipFonts: true,
+				// 카드는 화면 밖(position:fixed; left:-20000px)에 있어서, 복제본이 그 오프셋까지
+				// 물려받으면 캡처 캔버스가 백지가 된다. 캡처 시에만 원점으로 되돌린다.
+				style: { position: 'static', left: '0px', top: '0px' }
+			});
+			const blob = await (await fetch(dataUrl)).blob();
+			const file = new File([blob], 'geuronde-ije.png', { type: 'image/png' });
+			const nav = navigator as Navigator & {
+				canShare?: (d: { files: File[] }) => boolean;
+			};
+			if (nav.canShare?.({ files: [file] })) {
+				await navigator.share({ files: [file], title: deck?.title ?? '그런데이제' });
+				shareMsg = '공유 시트에서 인스타그램을 골라 올려보세요!';
+			} else {
+				const a = document.createElement('a');
+				a.href = dataUrl;
+				a.download = 'geuronde-ije.png';
+				a.click();
+				shareMsg = '이미지를 저장했어요! 인스타 스토리·피드에 올려보세요';
+			}
+		} catch (e) {
+			// 사용자가 공유 시트를 닫은 경우(AbortError)는 실패가 아님 — 조용히 넘김.
+			if ((e as Error)?.name !== 'AbortError') {
+				shareMsg = '이미지 생성에 실패했어요. 다시 시도해 주세요.';
+			}
+		} finally {
+			imgBusy = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -276,10 +325,19 @@
 		</div>
 
 		<div class="share-box">
-			<button class="btn btn-share" onclick={shareResult}>🔗 내 결과 링크 공유</button>
-			<div class="share-sub">
-				<button class="btn btn-mini" onclick={shareVs}>🆚 비교 도전장</button>
-				<button class="btn btn-mini" onclick={printPdf}>🖨️ PDF로 저장</button>
+			<div class="share-row">
+				<button class="rbtn" onclick={shareResult} title="결과 링크 공유">
+					<span class="rbtn-face">🔗</span><em>링크</em>
+				</button>
+				<button class="rbtn rbtn-ig" onclick={shareImage} disabled={imgBusy} title="인스타용 이미지">
+					<span class="rbtn-face">📷</span><em>{imgBusy ? '…' : '이미지'}</em>
+				</button>
+				<button class="rbtn" onclick={shareVs} title="비교 도전장">
+					<span class="rbtn-face">🆚</span><em>도전장</em>
+				</button>
+				<button class="rbtn" onclick={printPdf} title="PDF로 저장">
+					<span class="rbtn-face">🖨️</span><em>PDF</em>
+				</button>
 			</div>
 			{#if !sharedView}
 				<p class="save-note">이 결과는 이 브라우저에 저장돼 있어요. 링크를 복사해두면 어디서든 다시 볼 수 있어요.</p>
@@ -343,6 +401,54 @@
 			</div>
 		</div>
 	</section>
+
+	<!-- ── 인스타 공유용 이미지 카드(화면 밖 렌더 → html-to-image가 PNG로 캡처) ────── -->
+	<div class="ig-card" bind:this={igCardEl} aria-hidden="true">
+		<div class="ig-inner">
+			<div class="ig-brand">그런데이제</div>
+			<div class="ig-topic">{deck.icon} {deck.title}</div>
+
+			<div class="ig-verdict">
+				{#if result.indecisive}
+					어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
+				{:else if result.adaptive}
+					상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
+				{:else}
+					그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
+				{/if}
+			</div>
+
+			<div class="ig-depth">
+				{#each [deck.a, deck.b] as s, si (si)}
+					<div class="ig-bar-row">
+						<span class="ig-bar-label">{s.emoji} {s.name}</span>
+						<span class="ig-bar-track">
+							<span class="ig-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+						</span>
+						<span class="ig-bar-num">{result.holdMax[si]}</span>
+					</div>
+				{/each}
+			</div>
+
+			<p class="ig-line">{result.verdict}</p>
+
+			{#if resultAcc && !result.indecisive && !result.adaptive && resultAcc[result.pref].length}
+				<div class="ig-story">
+					<div class="ig-story-title">«{prefSide.name}» 편에서 버틴 것들</div>
+					<ul>
+						{#each resultAcc[result.pref].slice(-3) as p (p.strength)}
+							<li>그런데 이제 {p.text}.</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			<div class="ig-footer">
+				<span>{printDate}</span>
+				<span>codeinsight.online</span>
+			</div>
+		</div>
+	</div>
 {/if}
 
 <style>
@@ -521,25 +627,57 @@
 	.result-actions .btn {
 		flex: 1;
 	}
-	.btn-share {
-		width: 100%;
-		margin-top: 10px;
-		background: var(--accent);
-		color: var(--accent-ink);
-		border: 3px solid var(--line);
-	}
 	.share-box {
-		margin-top: 10px;
+		margin-top: 14px;
 	}
-	.share-sub {
+	/* 공유 액션 4개를 한 행의 원형 아이콘 버튼으로. */
+	.share-row {
 		display: flex;
-		gap: 10px;
-		margin-top: 10px;
+		justify-content: center;
+		gap: 16px;
 	}
-	.btn-mini {
-		flex: 1;
-		font-size: 14px;
-		padding: 10px;
+	.rbtn {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		border: none;
+		background: transparent;
+		cursor: pointer;
+		font: inherit;
+		color: var(--ink);
+		padding: 0;
+	}
+	/* 동그란 버튼면 — 이모지 아이콘이 들어가는 원. */
+	.rbtn-face {
+		width: 60px;
+		height: 60px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 25px;
+		background: var(--surface);
+		border: 3px solid var(--line);
+		box-shadow: var(--shadow);
+		transition: transform 0.06s ease;
+	}
+	.rbtn:active .rbtn-face {
+		transform: translate(2px, 2px);
+		box-shadow: none;
+	}
+	.rbtn em {
+		font-style: normal;
+		font-size: 11px;
+		color: var(--muted);
+	}
+	/* 인스타 버튼만 그라데이션으로 강조. */
+	.rbtn-ig .rbtn-face {
+		background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #8134af);
+	}
+	.rbtn:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 	.save-note {
 		margin: 12px 0 0;
@@ -557,6 +695,126 @@
 	/* 인쇄 증서: 화면에선 숨김, 인쇄 시에만 노출(아래 @media print). */
 	.print-sheet {
 		display: none;
+	}
+
+	/* ───────── 인스타 공유 이미지 카드(1080×1350, 4:5) ─────────
+	   화면 밖(left:-20000px)에 실제 렌더돼 있고, html-to-image가 이 노드를 PNG로 캡처.
+	   공유 이미지는 사용자 테마와 무관하게 항상 밝은 톤으로 보이도록 색을 고정한다. */
+	.ig-card {
+		position: fixed;
+		left: -20000px;
+		top: 0;
+		width: 1080px;
+		height: 1350px;
+		background: linear-gradient(160deg, #efe9ff 0%, #ffffff 58%);
+		color: #17151f;
+		overflow: hidden;
+	}
+	.ig-inner {
+		box-sizing: border-box;
+		height: 100%;
+		padding: 90px 80px;
+		display: flex;
+		flex-direction: column;
+	}
+	.ig-brand {
+		text-align: center;
+		font-size: 34px;
+		letter-spacing: 8px;
+		font-weight: 800;
+		color: #6d5efc;
+	}
+	.ig-topic {
+		text-align: center;
+		font-size: 58px;
+		font-weight: 800;
+		line-height: 1.25;
+		margin: 20px 0 44px;
+	}
+	.ig-verdict {
+		text-align: center;
+		font-size: 46px;
+		line-height: 1.5;
+		background: #fff;
+		border: 5px solid #d9cffb;
+		border-radius: 24px;
+		padding: 44px 40px;
+	}
+	.ig-verdict b {
+		color: #6d5efc;
+	}
+	.ig-depth {
+		margin: 52px 0 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 30px;
+	}
+	.ig-bar-row {
+		display: grid;
+		grid-template-columns: 340px 1fr 84px;
+		align-items: center;
+		gap: 24px;
+		font-size: 38px;
+	}
+	.ig-bar-label {
+		font-weight: 800;
+	}
+	.ig-bar-track {
+		height: 38px;
+		background: #eee;
+		border: 4px solid #17151f;
+		border-radius: 999px;
+		overflow: hidden;
+	}
+	.ig-bar-fill {
+		display: block;
+		height: 100%;
+		background: #6d5efc;
+	}
+	.ig-bar-num {
+		text-align: right;
+		font-weight: 800;
+		font-size: 34px;
+	}
+	.ig-line {
+		text-align: center;
+		font-weight: 800;
+		font-size: 40px;
+		margin: 44px 0;
+	}
+	.ig-story {
+		margin-top: auto;
+		border-top: 4px dashed #d9cffb;
+		padding-top: 34px;
+	}
+	.ig-story-title {
+		font-weight: 800;
+		font-size: 34px;
+		margin-bottom: 22px;
+	}
+	.ig-story ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		font-size: 32px;
+		line-height: 1.4;
+	}
+	.ig-story li::before {
+		content: '✔ ';
+		color: #6d5efc;
+		font-weight: 800;
+	}
+	.ig-footer {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 40px;
+		padding-top: 26px;
+		border-top: 3px solid #efe9ff;
+		font-size: 28px;
+		color: #7a7391;
 	}
 
 	.switch-note {
