@@ -19,6 +19,7 @@
 | `docs/balance-game-plan.md` | 피벗 근거·의사결정 히스토리 |
 | `docs/consultation-2026-07.md` | 외부 자문 반영 · 개선 로드맵 체크리스트(A/B/C) |
 | `docs/game-topic-types.md` | **주제 유형 분류 체계 v2**(속성/인물/상황/획득/가치) · CLT 기반 문체·에스컬레이션 전환 · 바이럴 변수·혼합·페널티 독립성 · 논문 근거 |
+| `docs/type-system-plan.md` | **유형 기반 게임 전환 체크리스트**(Phase 0 태그 인프라 → 1 결과 프레이밍 → 2 획득형 → 3 상황형 로직 → 4 UI) |
 | `docs/impl-status.md` | (이 문서) 구현 진행·다음 스텝 |
 
 ## 2. 게임 핵심 (요약)

@@ -7,6 +7,35 @@
  * 나중에 Supabase `decks` 테이블 로드로 교체(§E-1). 지금은 정적 데이터.
  */
 
+/**
+ * 주제 유형(docs/game-topic-types.md v2 §2). 유저가 선택 대상과 맺는 심리적 관계.
+ * 이 태그가 문체 길이·결과 프레이밍·UI를 분기시킨다(§10-①).
+ */
+export type DeckType = 'attribute' | 'person' | 'scenario' | 'acquisition' | 'value';
+
+/** 페널티 문체 기본 길이(§5-3). 짧은 조건 vs 긴 에피소드. */
+export type PenaltyStyle = 'short' | 'long';
+
+/** 결과 카드 프레이밍 키(§9 결과 프레이밍 행). Phase 1에서 verdictLine 분기에 사용. */
+export type ResultFraming = 'preference' | 'tolerance' | 'strategy' | 'desire' | 'values';
+
+export interface TypeConfig {
+	framing: ResultFraming;
+	penaltyStyle: PenaltyStyle;
+}
+
+/**
+ * 유형별 기본 설정. 값은 Phase 1~에서 실제 분기 로직이 소비한다(지금은 스켈레톤).
+ * 덱별로 `penaltyStyleOverride`가 penaltyStyle을 덮어쓸 수 있다(§4 CLT 오버라이드).
+ */
+export const TYPE_CONFIG: Record<DeckType, TypeConfig> = {
+	attribute: { framing: 'preference', penaltyStyle: 'short' },
+	person: { framing: 'tolerance', penaltyStyle: 'long' },
+	scenario: { framing: 'strategy', penaltyStyle: 'short' }, // 중간 길이 — Phase 3에서 확정
+	acquisition: { framing: 'desire', penaltyStyle: 'short' }, // 중간~짧(부작용형)
+	value: { framing: 'values', penaltyStyle: 'short' }
+};
+
 export interface Penalty {
 	/** 붙는 판 번호 = 강도 (2~10) */
 	strength: number;
@@ -25,6 +54,10 @@ export interface Deck {
 	id: string;
 	title: string;
 	icon: string;
+	/** 주제 유형(§2). 문체·결과 프레이밍·UI 분기의 기준. */
+	type: DeckType;
+	/** 유형 기본 문체를 덮어쓰는 덱별 오버라이드(§4 CLT). 없으면 TYPE_CONFIG[type] 사용. */
+	penaltyStyleOverride?: PenaltyStyle;
 	a: Side;
 	b: Side;
 }
@@ -39,6 +72,7 @@ export const DECKS: Deck[] = [
 		id: 'summer-winter',
 		title: '여름 vs 겨울',
 		icon: '🌡️',
+		type: 'attribute',
 		a: {
 			name: '여름',
 			emoji: '🌞',
@@ -76,6 +110,7 @@ export const DECKS: Deck[] = [
 		id: 'marriage',
 		title: '결혼한다면? 얼굴천재 vs 개그천재',
 		icon: '💍',
+		type: 'person',
 		a: {
 			name: '얼굴천재',
 			emoji: '🤩',
