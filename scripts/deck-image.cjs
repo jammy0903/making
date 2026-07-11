@@ -1,16 +1,16 @@
 /**
- * 덱 분할 이미지(좌=A편 | 우=B편) 전처리 → 압축 → Storage 업로드 → 덱 양편 emoji에 URL 설정.
+ * 덱 이미지 전처리 → 압축 → Storage(deck-images) 업로드 → DB 덱에 반영. (덱은 DB 정본 — decksRepo)
  *
- * 좌우로 쪼개 각 편을 정사각(512) 스마트크롭 + WebP(q80)로 압축한 뒤 공개 버킷 deck-images에
- * 올리고, 해당 덱(data.a.emoji / data.b.emoji)에 공개 URL을 박는다. (덱은 DB 정본 — decksRepo)
+ * 두 모드:
+ *   sides <deckId> <분할PNG>  좌|우 분할 이미지를 편별 정사각(512) 스마트크롭 → data.a.emoji/b.emoji
+ *   icon  <deckId> <PNG>      한 장을 원본 비율 유지(최대 800px) 압축 → data.icon (대표 아이콘)
+ * 둘 다 WebP(q80)로 압축한다.
  *
  * 사용법(프로젝트 루트에서):
- *   node scripts/deck-image.cjs <deckId> <분할PNG경로>
- * 예:
- *   node scripts/deck-image.cjs marriage ~/Downloads/얼굴천재개그천재.png
+ *   node scripts/deck-image.cjs icon  marriage ~/Downloads/marriage-cover.png
+ *   node scripts/deck-image.cjs sides marriage ~/Downloads/얼굴천재개그천재.png
  *
  * 필요 env(.env에서 자동 로드): PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
- * 대표 아이콘(data.icon)은 건드리지 않는다 — 필요하면 admin 편집기에서 따로 지정.
  */
 const fs = require('fs');
 const path = require('path');
@@ -20,7 +20,6 @@ const { randomUUID } = require('crypto');
 
 const BUCKET = 'deck-images';
 
-// .env 최소 파서(KEY=VALUE, 따옴표/주석 무시).
 function loadEnv() {
 	const p = path.join(__dirname, '..', '.env');
 	if (!fs.existsSync(p)) return;
@@ -30,6 +29,7 @@ function loadEnv() {
 	}
 }
 
+// 한쪽 반(a=좌, b=우)을 정사각 스마트크롭.
 async function half(file, side) {
 	const meta = await sharp(file).metadata();
 	const halfW = Math.floor(meta.width / 2);
@@ -42,11 +42,21 @@ async function half(file, side) {
 		.toBuffer();
 }
 
+// 전체 이미지: 원본 비율 유지, 최대 800px.
+async function whole(file) {
+	return sharp(file)
+		.resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+		.webp({ quality: 80 })
+		.toBuffer();
+}
+
 async function main() {
 	loadEnv();
-	const [deckId, srcFile] = process.argv.slice(2);
-	if (!deckId || !srcFile) {
-		console.error('사용법: node scripts/deck-image.cjs <deckId> <분할PNG경로>');
+	const [mode, deckId, srcFile] = process.argv.slice(2);
+	if (!['sides', 'icon'].includes(mode) || !deckId || !srcFile) {
+		console.error('사용법:');
+		console.error('  node scripts/deck-image.cjs icon  <deckId> <PNG>       # 전체→대표 아이콘');
+		console.error('  node scripts/deck-image.cjs sides <deckId> <분할PNG>   # 좌|우→양편 emoji');
 		process.exit(1);
 	}
 	const url = process.env.PUBLIC_SUPABASE_URL;
@@ -66,9 +76,6 @@ async function main() {
 		return sb.storage.from(BUCKET).getPublicUrl(name).data.publicUrl;
 	};
 
-	const aUrl = await upload(await half(srcFile, 'a'));
-	const bUrl = await upload(await half(srcFile, 'b'));
-
 	const { data: row, error: selErr } = await sb
 		.from('decks')
 		.select('data')
@@ -76,17 +83,24 @@ async function main() {
 		.single();
 	if (selErr) throw new Error(`덱 조회 실패(${deckId}): ${selErr.message}`);
 	const deck = row.data;
-	deck.a.emoji = aUrl;
-	deck.b.emoji = bUrl;
+
+	if (mode === 'icon') {
+		deck.icon = await upload(await whole(srcFile));
+		console.log(`${deckId}: 대표 아이콘 설정 → ${deck.icon}`);
+	} else {
+		deck.a.emoji = await upload(await half(srcFile, 'a'));
+		deck.b.emoji = await upload(await half(srcFile, 'b'));
+		console.log(`${deckId}: 양편 이미지 설정`);
+		console.log(`  a.emoji=${deck.a.emoji}`);
+		console.log(`  b.emoji=${deck.b.emoji}`);
+	}
+
 	const { error: upErr } = await sb
 		.from('decks')
 		.update({ data: deck, updated_at: new Date().toISOString() })
 		.eq('id', deckId);
 	if (upErr) throw upErr;
-
-	console.log(`${deckId}: 양편 이미지 설정 완료`);
-	console.log(`  a.emoji = ${aUrl}`);
-	console.log(`  b.emoji = ${bUrl}`);
+	console.log('완료');
 }
 
 main().catch((e) => {
