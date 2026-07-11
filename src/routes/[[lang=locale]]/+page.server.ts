@@ -1,7 +1,10 @@
 /**
- * 홈 SSR — 랭킹게임 콘텐츠(publicTopics)는 피벗으로 제거됨.
- * "그런데이제" 밸런스게임 구현 시 decks 그리드 데이터로 대체(docs/game-design.md §B-4).
+ * 홈 SSR — decks 그리드 데이터(docs/game-design.md §B-4).
+ * DB 정본(is_public), 미설정/비어있으면 코드 DECKS 폴백(decksRepo).
  */
-export function load() {
-	return {};
-}
+import { loadDecks } from '$lib/server/decksRepo';
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => {
+	return { decks: await loadDecks() };
+};

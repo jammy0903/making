@@ -3,7 +3,7 @@
  * service_role로 집계·신청 관리. 익명 앱과 분리 — /admin 은 noindex(+layout에서 로봇 차단).
  */
 import { fail, redirect } from '@sveltejs/kit';
-import { DECKS } from '$lib/game/decks';
+import { DECKS, type Deck } from '$lib/game/decks';
 import {
 	getAdminDb,
 	checkAdminPassword,
@@ -12,7 +12,20 @@ import {
 	adminCookieToken,
 	ADMIN_COOKIE
 } from '$lib/server/adminDb';
+import { loadDecksForAdmin, saveDeck, importCodeDecks } from '$lib/server/decksRepo';
 import type { Actions, PageServerLoad } from './$types';
+
+/** 저장 전 최소 검증 — 구조가 깨진 덱이 DB로 들어가 앱이 터지는 걸 막는다. */
+function validateDeck(d: unknown): { ok: true; deck: Deck } | { ok: false; error: string } {
+	const x = d as Partial<Deck>;
+	if (!x || typeof x !== 'object') return { ok: false, error: '덱 형식 오류' };
+	if (!x.id || !x.title || !x.type) return { ok: false, error: 'id·제목·유형은 필수' };
+	if (!x.a?.name || !x.b?.name) return { ok: false, error: '양편 이름 필수' };
+	if (!Array.isArray(x.a.penalties) || !Array.isArray(x.b.penalties)) {
+		return { ok: false, error: '조건 배열 오류' };
+	}
+	return { ok: true, deck: x as Deck };
+}
 
 const COOKIE_OPTS = {
 	path: '/admin',
@@ -86,13 +99,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		.order('created_at', { ascending: false })
 		.limit(200);
 
+	// 편집용 덱(정본 = DB, 비었으면 코드). data 전체를 폼으로 넘긴다.
+	const decks = await loadDecksForAdmin();
+
 	return {
 		configured: true,
 		authed: true,
 		visitors: visitors ?? 0,
 		totalPlays,
 		deckStats,
-		requests: requests ?? []
+		requests: requests ?? [],
+		decks
 	};
 };
 
@@ -139,5 +156,41 @@ export const actions: Actions = {
 			.eq('id', id);
 		if (error) return fail(500, { error: error.message });
 		return { ok: true };
+	},
+
+	// 코드(decks.ts)의 덱을 DB로 1회 이관(시드). 이관 후엔 DB가 정본.
+	import_decks: async ({ cookies }) => {
+		if (!isAuthed(cookies.get(ADMIN_COOKIE))) return fail(401, { error: '권한 없음' });
+		const r = await importCodeDecks();
+		if (!r.ok) return fail(500, { error: r.error });
+		return { ok: true, imported: r.count };
+	},
+
+	// 덱 1개 저장(폼에서 만든 deck JSON을 검증 후 upsert).
+	save_deck: async ({ request, cookies }) => {
+		if (!isAuthed(cookies.get(ADMIN_COOKIE))) return fail(401, { error: '권한 없음' });
+		const form = await request.formData();
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(String(form.get('deck_json') ?? ''));
+		} catch {
+			return fail(400, { error: 'JSON 파싱 실패' });
+		}
+		const v = validateDeck(parsed);
+		if (!v.ok) return fail(400, { error: v.error });
+		// stats 빈 줄 정리(편집 중 허용했던 빈 줄 제거).
+		const rc = v.deck.resultCards;
+		if (rc) {
+			for (const side of [rc.a, rc.b]) {
+				for (const c of [side.extreme, side.mild]) {
+					c.stats = (c.stats ?? []).map((s) => s.trim()).filter(Boolean);
+				}
+			}
+		}
+		const sortRaw = form.get('sort');
+		const sort = sortRaw != null && sortRaw !== '' ? Number(sortRaw) : undefined;
+		const r = await saveDeck(v.deck, sort);
+		if (!r.ok) return fail(500, { error: r.error });
+		return { ok: true, saved: v.deck.id };
 	}
 };
