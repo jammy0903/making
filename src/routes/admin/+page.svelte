@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getSessionId } from '$lib/supabase';
+	import { isImageIcon, type Deck, type DeckType } from '$lib/game/decks';
+	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -16,6 +18,67 @@
 		accepted: '수락',
 		rejected: '거절'
 	};
+
+	// ── 덱 편집 ─────────────────────────────────────────────
+	const TYPES: DeckType[] = ['attribute', 'person', 'scenario', 'acquisition', 'value'];
+	let editing = $state<Deck | null>(null);
+
+	function editDeck(d: Deck) {
+		editing = structuredClone(d); // data.decks는 서버산 plain 객체
+	}
+	function cancelEdit() {
+		editing = null;
+	}
+
+	// ── 이미지 업로드 ─────────────────────────────────────────
+	// 파일 선택 → /admin/upload(service_role)로 올리고, 반환 URL을 해당 필드에 채운다.
+	// 필드값이 이모지든 URL이든 같은 문자열 필드 하나로 저장(하위호환, isImageIcon으로 렌더 분기).
+	let uploading = $state<string | null>(null); // 업로드 중인 필드 키(라벨)
+	let uploadErr = $state('');
+
+	async function uploadImage(e: Event, apply: (url: string) => void, key: string) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		uploading = key;
+		uploadErr = '';
+		try {
+			const fd = new FormData();
+			fd.append('file', file);
+			const res = await fetch('/admin/upload', { method: 'POST', body: fd });
+			if (!res.ok) {
+				uploadErr = (await res.text().catch(() => '')) || `업로드 실패 (${res.status})`;
+				return;
+			}
+			const { url } = (await res.json()) as { url: string };
+			apply(url);
+		} catch {
+			uploadErr = '업로드 중 오류가 났어요';
+		} finally {
+			uploading = null;
+			input.value = ''; // 같은 파일 재선택 가능하게 리셋
+		}
+	}
+	// stats(string[]) ↔ 줄바꿈 텍스트
+	function stnl(stats: string[]): string {
+		return stats.join('\n');
+	}
+	function setStats(card: { stats: string[] }, v: string) {
+		// 타이핑 중엔 빈 줄 허용(줄바꿈 매끄럽게), 빈 줄 정리는 저장 시 서버에서.
+		card.stats = v.split('\n');
+	}
+	const deckJson = $derived(editing ? JSON.stringify(editing) : '');
+	// 편집 중 덱의 결과 카드 4종(있을 때만)을 [경로, 카드]로 나열
+	const cards = $derived(
+		editing?.resultCards
+			? ([
+					['관종/A · 극단', editing.resultCards.a.extreme],
+					['관종/A · 애매', editing.resultCards.a.mild],
+					['아싸/B · 극단', editing.resultCards.b.extreme],
+					['아싸/B · 애매', editing.resultCards.b.mild]
+				] as const)
+			: []
+	);
 </script>
 
 <svelte:head>
@@ -121,6 +184,123 @@
 					</li>
 				{/each}
 			</ul>
+		{/if}
+
+		<!-- 4. 덱 편집 (DB 정본) -->
+		<h3>덱 편집 <small>(DB 정본)</small></h3>
+		{#if form?.error}<p class="err">{form.error}</p>{/if}
+		{#if form?.imported}<p class="ok-msg">코드 덱 {form.imported}개를 DB로 이관했어요.</p>{/if}
+		{#if form?.saved}<p class="ok-msg">「{form.saved}」 저장됨. 앱에 바로 반영돼요.</p>{/if}
+
+		{#if !editing}
+			<form method="POST" action="?/import_decks" class="import-row">
+				<button type="submit" class="ghost">코드 → DB 이관(시드)</button>
+				<small>decks.ts의 현재 덱을 DB로 복사(덮어씀). DB 비었을 때 1회.</small>
+			</form>
+			<ul class="deck-list">
+				{#each data.decks as d (d.id)}
+					<li class="card deck-row">
+						<span class="deck-icon"><Icon value={d.icon} /></span>
+						<b>{d.title}</b>
+						<button type="button" onclick={() => editDeck(d)}>편집</button>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<form method="POST" action="?/save_deck" class="editor card">
+				<input type="hidden" name="deck_json" value={deckJson} />
+				<div class="ed-head">
+					<b>{editing.id}</b>
+					<button type="button" class="ghost" onclick={cancelEdit}>취소</button>
+				</div>
+
+				<label>제목<input bind:value={editing.title} /></label>
+				{#if uploadErr}<p class="err">{uploadErr}</p>{/if}
+				<div class="ed-two">
+					<div class="ed-field">
+						<span class="ed-flabel">아이콘</span>
+						<input bind:value={editing.icon} placeholder="이모지 또는 이미지 URL" />
+						<div class="up-row">
+							<span class="up-prev"><Icon value={editing.icon} size="26px" /></span>
+							<label class="up-btn"
+								>{uploading === 'icon' ? '올리는 중…' : '📁 이미지 업로드'}
+								<input
+									type="file"
+									accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+									onchange={(e) => uploadImage(e, (u) => editing && (editing.icon = u), 'icon')}
+								/>
+							</label>
+						</div>
+					</div>
+					<label
+						>유형
+						<select bind:value={editing.type}>
+							{#each TYPES as t (t)}<option value={t}>{t}</option>{/each}
+						</select>
+					</label>
+				</div>
+
+				{#each [editing.a, editing.b] as side, si (si)}
+					<fieldset class="ed-side">
+						<legend>{si === 0 ? 'A편' : 'B편'}</legend>
+						<div class="ed-two">
+							<label>이름<input bind:value={side.name} /></label>
+							<div class="ed-field">
+								<span class="ed-flabel">이모지</span>
+								<input bind:value={side.emoji} placeholder="이모지 또는 이미지 URL" />
+								<div class="up-row">
+									<span class="up-prev"><Icon value={side.emoji} size="26px" /></span>
+									<label class="up-btn"
+										>{uploading === `side${si}` ? '올리는 중…' : '📁 이미지 업로드'}
+										<input
+											type="file"
+											accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+											onchange={(e) => uploadImage(e, (u) => (side.emoji = u), `side${si}`)}
+										/>
+									</label>
+								</div>
+							</div>
+						</div>
+						{#each side.penalties as p (p.strength)}
+							<div class="ed-cond">
+								<span class="ed-str">강도 {p.strength}</span>
+								<input class="ed-ptext" placeholder="그런데 이제 …" bind:value={p.text} />
+								<input
+									class="ed-pmerit"
+									placeholder="근데 이제 …(메리트, 선택)"
+									bind:value={p.merit}
+								/>
+							</div>
+						{/each}
+					</fieldset>
+				{/each}
+
+				{#if editing.resultCards}
+					<fieldset class="ed-side">
+						<legend>결과 캐릭터 카드</legend>
+						{#each cards as [name, c] (name)}
+							<div class="ed-card">
+								<div class="ed-card-name">{name}</div>
+								<label>유형 라벨<input bind:value={c.label} /></label>
+								<label
+									>특이 스탯 <small>(한 줄에 하나)</small>
+									<textarea
+										rows="3"
+										value={stnl(c.stats)}
+										oninput={(e) => setStats(c, e.currentTarget.value)}
+									></textarea>
+								</label>
+								<label>예상 예언<input bind:value={c.prophecy} /></label>
+							</div>
+						{/each}
+					</fieldset>
+				{/if}
+
+				<div class="ed-actions">
+					<button type="submit">저장</button>
+					<button type="button" class="ghost" onclick={cancelEdit}>취소</button>
+				</div>
+			</form>
 		{/if}
 	{/if}
 </div>
@@ -295,5 +475,172 @@
 	.req-actions button {
 		padding: 6px 14px;
 		font-size: 14px;
+	}
+
+	/* ── 덱 편집 ── */
+	.ok-msg {
+		color: #1f9d55;
+		font-weight: 700;
+		font-size: 14px;
+		margin: 0 0 10px;
+	}
+	.import-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+		margin-bottom: 14px;
+	}
+	.import-row small {
+		color: var(--muted);
+	}
+	.deck-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.deck-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 14px;
+	}
+	.deck-row b {
+		flex: 1;
+		min-width: 0;
+	}
+	.deck-icon {
+		font-size: 20px;
+	}
+	.editor {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+	.ed-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.editor label {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--muted);
+	}
+	.editor input,
+	.editor select,
+	.editor textarea {
+		font: inherit;
+		font-weight: 400;
+		color: var(--ink);
+		padding: 9px 10px;
+		border: 2px solid var(--line);
+		background: var(--surface);
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.ed-two {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+	/* 이미지 업로드 필드(아이콘·이모지) */
+	.ed-field {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
+	.ed-flabel {
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--muted);
+	}
+	.up-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.up-prev {
+		width: 30px;
+		height: 30px;
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid var(--line);
+		font-size: 20px;
+		overflow: hidden;
+	}
+	.editor .up-btn {
+		/* .editor label의 세로 flex 상속을 이기고 인라인 버튼처럼 */
+		display: inline-flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 4px;
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--ink);
+		cursor: pointer;
+		border: 2px solid var(--line);
+		background: var(--surface);
+		padding: 6px 10px;
+		white-space: nowrap;
+	}
+	.editor .up-btn input {
+		display: none;
+	}
+	.ed-side {
+		border: 2px solid var(--line);
+		padding: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin: 0;
+	}
+	.ed-side legend {
+		font-weight: 800;
+		padding: 0 6px;
+	}
+	.ed-cond {
+		display: grid;
+		grid-template-columns: 54px 1fr;
+		gap: 6px 8px;
+		align-items: center;
+	}
+	.ed-str {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--muted);
+	}
+	.ed-ptext {
+		grid-column: 2;
+	}
+	.ed-pmerit {
+		grid-column: 2;
+	}
+	.ed-card {
+		border-top: 2px dashed var(--line);
+		padding-top: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.ed-card-name {
+		font-weight: 800;
+		font-size: 13px;
+	}
+	.ed-actions {
+		display: flex;
+		gap: 10px;
+		position: sticky;
+		bottom: 0;
+		background: var(--surface);
+		padding-top: 8px;
 	}
 </style>

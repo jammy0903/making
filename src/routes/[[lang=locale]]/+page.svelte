@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
-	import { DECKS } from '$lib/game/decks';
 	import { search } from '$lib/search.svelte';
+	import Icon from '$lib/game/Icon.svelte';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
 	// 검색어는 상단바(헤더) 입력창과 공유(search.q). 주제·조건 둘 다 필터.
 	const results = $derived.by(() => {
 		const query = search.q.trim().toLowerCase();
-		return DECKS.map((deck) => {
+		return data.decks.map((deck) => {
 			// 주제 매칭(제목·양편 이름)
 			const inTopic = [deck.title, deck.a.name, deck.b.name]
 				.join(' ')
@@ -50,13 +53,16 @@
 		{#each results as { deck, condHint } (deck.id)}
 			<li class="card deck">
 				<a class="deck-link" href={localePath(locale, `/g/${deck.id}`)}>
-					<span class="deck-icon">{deck.icon}</span>
+					<span class="deck-icon"><Icon value={deck.icon} alt={deck.title} /></span>
 					<strong class="deck-title">{deck.title}</strong>
 					<span class="deck-sides">
-						{deck.a.emoji} {deck.a.name} <span class="vs">vs</span> {deck.b.emoji} {deck.b.name}
+						<Icon value={deck.a.emoji} /> {deck.a.name} <span class="vs">vs</span>
+						<Icon value={deck.b.emoji} /> {deck.b.name}
 					</span>
 					{#if condHint}
-						<span class="cond-hit">🔍 …{condHint.text} <em>({condHint.emoji} {condHint.side})</em></span>
+						<span class="cond-hit"
+							>🔍 …{condHint.text} <em>(<Icon value={condHint.emoji} /> {condHint.side})</em></span
+						>
 					{/if}
 				</a>
 			</li>

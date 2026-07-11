@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { submitRequest } from '$lib/supabase';
-	import { DECKS } from '$lib/game/decks';
+	import { DECKS, isImageIcon } from '$lib/game/decks';
+	import Icon from '$lib/game/Icon.svelte';
 
 	let kind = $state<'topic' | 'condition'>('topic');
 
@@ -93,7 +94,8 @@
 					<select bind:value={deckId} required>
 						<option value="" disabled>주제를 고르세요</option>
 						{#each DECKS as d (d.id)}
-							<option value={d.id}>{d.icon} {d.title}</option>
+							<!-- <option>은 텍스트만 렌더 → 이미지 아이콘은 생략하고 제목만 -->
+							<option value={d.id}>{isImageIcon(d.icon) ? '' : d.icon} {d.title}</option>
 						{/each}
 					</select>
 				</label>
@@ -103,11 +105,11 @@
 						<legend>어느 편에?</legend>
 						<label class="radio">
 							<input type="radio" name="side" value={0} bind:group={side} />
-							<span>{selectedDeck.a.emoji} {selectedDeck.a.name}</span>
+							<span><Icon value={selectedDeck.a.emoji} /> {selectedDeck.a.name}</span>
 						</label>
 						<label class="radio">
 							<input type="radio" name="side" value={1} bind:group={side} />
-							<span>{selectedDeck.b.emoji} {selectedDeck.b.name}</span>
+							<span><Icon value={selectedDeck.b.emoji} /> {selectedDeck.b.name}</span>
 						</label>
 					</fieldset>
 				{/if}

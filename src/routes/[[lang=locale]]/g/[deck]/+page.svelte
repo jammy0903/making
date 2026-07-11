@@ -2,7 +2,9 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
-	import { getDeck, penaltyStyleOf } from '$lib/game/decks';
+	import { penaltyStyleOf } from '$lib/game/decks';
+	import Icon from '$lib/game/Icon.svelte';
+	import type { PageData } from './$types';
 	import { saveResult } from '$lib/game/savedResults';
 	import {
 		accumulated,
@@ -19,8 +21,10 @@
 	// 상위 N% 배지는 표본이 이만큼 쌓였을 때만 노출(초반 무의미한 수치 방지).
 	const MIN_RANK_SAMPLE = 5;
 
+	let { data }: { data: PageData } = $props();
+
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
-	const deck = $derived(getDeck(page.params.deck ?? ''));
+	const deck = $derived(data.deck ?? undefined);
 	// 문체(§4 CLT): 긴 에피소드형(인물)은 문단처럼, 짧은 조건형은 punchy 라벨로 레이아웃 차등(Phase 4).
 	const isLongStyle = $derived(deck ? penaltyStyleOf(deck) === 'long' : false);
 
@@ -266,7 +270,7 @@
 		{#each order as si (si)}
 			{@const s = si === 0 ? deck.a : deck.b}
 			<button class="panel" onclick={() => pick(si)}>
-				<span class="panel-head"><span class="emoji">{s.emoji}</span> {s.name}</span>
+				<span class="panel-head"><span class="emoji"><Icon value={s.emoji} /></span> {s.name}</span>
 				<!-- 완화책(merit): 반대편이 한 번이라도 선택되면 그 쪽에 떠서 계속 유지(안 사라짐). -->
 				{#if s.merit && meritShown[si]}
 					<span class="merit"><span class="merit-tag">그래도</span> {s.merit}</span>
@@ -314,7 +318,8 @@
 				{#if headline}
 					<span class="endured">「{headline}」</span><br />
 				{/if}
-				그래도 <span class="emoji">{prefSide.emoji}</span> <b>{prefSide.name}</b> {headlineTail(deck)}
+				그래도 <span class="emoji"><Icon value={prefSide.emoji} /></span> <b>{prefSide.name}</b>
+					{headlineTail(deck)}
 			</p>
 		{/if}
 
@@ -328,7 +333,7 @@
 				<div class="depth-title">🌡️ 버틴 깊이</div>
 				{#each [deck.a, deck.b] as s, si (si)}
 					<div class="bar-row">
-						<span class="bar-label">{s.emoji} {s.name}</span>
+						<span class="bar-label"><Icon value={s.emoji} /> {s.name}</span>
 						<span class="bar-track">
 							<span class="bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
 						</span>
@@ -347,15 +352,16 @@
 					<div class="vs-col">
 						<span class="vs-who">나</span>
 						<span class="vs-pref">
-							{#if result.indecisive}결정장애{:else}{prefSide.emoji} {prefSide.name}{/if}
+							{#if result.indecisive}결정장애{:else}<Icon value={prefSide.emoji} /> {prefSide.name}{/if}
 						</span>
 						<span class="vs-depth">버틴 깊이 {result.holdMax[result.pref]}</span>
 					</div>
 					<div class="vs-col">
 						<span class="vs-who">상대</span>
 						<span class="vs-pref">
-							{#if vsResult.indecisive}결정장애{:else}{(vsResult.pref === 0 ? deck.a : deck.b)
-									.emoji} {(vsResult.pref === 0 ? deck.a : deck.b).name}{/if}
+							{#if vsResult.indecisive}결정장애{:else}<Icon
+									value={(vsResult.pref === 0 ? deck.a : deck.b).emoji}
+								/> {(vsResult.pref === 0 ? deck.a : deck.b).name}{/if}
 						</span>
 						<span class="vs-depth">버틴 깊이 {vsResult.holdMax[vsResult.pref]}</span>
 					</div>
@@ -407,7 +413,7 @@
 	<section class="print-sheet" aria-hidden="true">
 		<div class="ps-frame">
 			<div class="ps-brand">그런데이제 · 결과 증서</div>
-			<div class="ps-topic">{deck.icon} {deck.title}</div>
+			<div class="ps-topic"><Icon value={deck.icon} /> {deck.title}</div>
 
 			<div class="ps-verdict">
 				{#if result.indecisive}
@@ -415,7 +421,7 @@
 				{:else if result.adaptive}
 					상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
 				{:else}
-					그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
+					그래도 <Icon value={prefSide.emoji} /> <b>{prefSide.name}</b> {headlineTail(deck)}
 				{/if}
 			</div>
 			{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive && !result.adaptive}
@@ -425,7 +431,7 @@
 			<div class="ps-depth">
 				{#each [deck.a, deck.b] as s, si (si)}
 					<div class="ps-bar-row">
-						<span class="ps-bar-label">{s.emoji} {s.name}</span>
+						<span class="ps-bar-label"><Icon value={s.emoji} /> {s.name}</span>
 						<span class="ps-bar-track">
 							<span class="ps-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
 						</span>
@@ -461,7 +467,7 @@
 	<div class="ig-card" bind:this={igCardEl} aria-hidden="true">
 		<div class="ig-inner">
 			<div class="ig-brand">그런데이제</div>
-			<div class="ig-topic">{deck.icon} {deck.title}</div>
+			<div class="ig-topic"><Icon value={deck.icon} /> {deck.title}</div>
 
 			{#if card}
 				<!-- v3 캐릭터 카드(화면 결과와 동일): 놀림 + 스탯 + 저주. 세로 중앙 배치로 잘림 방지. -->
@@ -481,14 +487,14 @@
 					{:else if result.adaptive}
 						상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
 					{:else}
-						그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
+						그래도 <Icon value={prefSide.emoji} /> <b>{prefSide.name}</b> {headlineTail(deck)}
 					{/if}
 				</div>
 
 				<div class="ig-depth">
 					{#each [deck.a, deck.b] as s, si (si)}
 						<div class="ig-bar-row">
-							<span class="ig-bar-label">{s.emoji} {s.name}</span>
+							<span class="ig-bar-label"><Icon value={s.emoji} /> {s.name}</span>
 							<span class="ig-bar-track">
 								<span class="ig-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
 							</span>
