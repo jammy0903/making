@@ -23,10 +23,11 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		expect(DECKS.find((d) => d.id === 'salty-bland')?.type).toBe('attribute');
 	});
 
-	it('짠맛/무맛 덱은 양쪽에 완화책(merit)을 가진다 — 전제 성립용', () => {
+	it('짠맛/무맛 덱은 v3 전환됨 — 모든 페널티에 메리트 결합', () => {
 		const sb = DECKS.find((d) => d.id === 'salty-bland')!;
-		expect(sb.a.merit).toBeTruthy();
-		expect(sb.b.merit).toBeTruthy();
+		for (const p of [...sb.a.penalties, ...sb.b.penalties]) {
+			expect(p.merit).toBeTruthy();
+		}
 	});
 
 	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
