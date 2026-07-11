@@ -14,6 +14,7 @@
 		headlineTail,
 		pickResultCard,
 		ROUNDS,
+		roundsOf,
 		type SideIndex
 	} from '$lib/game/engine';
 	import { recordPlay, type PlayRank } from '$lib/supabase';
@@ -25,6 +26,8 @@
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 	const deck = $derived(data.deck ?? undefined);
+	// 그 덱의 총 판 수(v3.1 가변 5~10). 덱 없으면 최대값 폴백.
+	const rounds = $derived(deck ? roundsOf(deck) : ROUNDS);
 	// 문체(§4 CLT): 긴 에피소드형(인물)은 문단처럼, 짧은 조건형은 punchy 라벨로 레이아웃 차등(Phase 4).
 	const isLongStyle = $derived(deck ? penaltyStyleOf(deck) === 'long' : false);
 
@@ -35,13 +38,14 @@
 	let sharedView = $state(false);
 	onMount(() => {
 		const r = decodeChoices(page.url.searchParams.get('r'));
-		if (r) {
+		// 공유 시퀀스는 그 덱 판 수와 길이가 맞아야 함(덱이 짧아졌거나 다른 길이면 무시).
+		if (r && (!deck || r.length === roundsOf(deck))) {
 			choices = r;
 			sharedView = true;
 		}
 	});
 
-	const done = $derived(choices.length >= ROUNDS);
+	const done = $derived(!!deck && choices.length >= rounds);
 	const roundNum = $derived(choices.length + 1); // 1-based, 결정 중인 판
 	// 메리트는 "반대편이 한 번이라도 선택되면" 그 쪽에 떠서 계속 유지된다(1번 조건 성격 — 안 사라짐).
 	// A(0)를 고르면 B(1) 쪽에 B의 메리트가 뜨고, 그 뒤로 계속 남는다. 버린 저쪽의 탈출구로 갈아타게 유혹.
@@ -73,7 +77,7 @@
 			if (switchTimer) clearTimeout(switchTimer);
 			switchTimer = setTimeout(() => (switchNote = ''), 1300);
 		}
-		if (next.length >= ROUNDS && deck) {
+		if (deck && next.length >= rounds) {
 			recordPlay(deck.id, next, computeResult(deck, next)).then((r) => (rank = r));
 			saveResult(deck.id, encodeChoices(next)); // 내 결과 저장(영구 아님)
 		}
@@ -100,8 +104,13 @@
 			: null
 	);
 
-	// 결과 비교(B-1): URL ?vs=<상대 10선택>이 있으면 같은 덱으로 상대 결과를 재현해 비교.
-	const vsChoices = $derived(deck ? decodeChoices(page.url.searchParams.get('vs')) : null);
+	// 결과 비교(B-1): URL ?vs=<상대 선택>이 있으면 같은 덱으로 상대 결과를 재현해 비교.
+	// 길이가 그 덱 판 수와 맞을 때만 유효(가변 길이).
+	const vsChoices = $derived.by(() => {
+		if (!deck) return null;
+		const c = decodeChoices(page.url.searchParams.get('vs'));
+		return c && c.length === rounds ? c : null;
+	});
 	const vsResult = $derived(deck && vsChoices ? computeResult(deck, vsChoices) : null);
 
 	function sideName(s: SideIndex): string {
@@ -261,7 +270,7 @@
 		<p class="challenge">누군가 이 주제로 비교를 걸었어요. 끝까지 가보자! 🆚</p>
 	{/if}
 	<div class="progress" aria-hidden="true">
-		{#each Array(ROUNDS) as _, i (i)}
+		{#each Array(rounds) as _, i (i)}
 			<span class="dot" class:filled={i < choices.length}></span>
 		{/each}
 	</div>
@@ -335,7 +344,7 @@
 					<div class="bar-row">
 						<span class="bar-label"><Icon value={s.emoji} /> {s.name}</span>
 						<span class="bar-track">
-							<span class="bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+							<span class="bar-fill" style="width:{(result.holdMax[si] / rounds) * 100}%"></span>
 						</span>
 						<span class="bar-num">{result.holdMax[si]}</span>
 					</div>
@@ -433,7 +442,7 @@
 					<div class="ps-bar-row">
 						<span class="ps-bar-label"><Icon value={s.emoji} /> {s.name}</span>
 						<span class="ps-bar-track">
-							<span class="ps-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+							<span class="ps-bar-fill" style="width:{(result.holdMax[si] / rounds) * 100}%"></span>
 						</span>
 						<span class="ps-bar-num">강도 {result.holdMax[si]}</span>
 					</div>
@@ -496,7 +505,7 @@
 						<div class="ig-bar-row">
 							<span class="ig-bar-label"><Icon value={s.emoji} /> {s.name}</span>
 							<span class="ig-bar-track">
-								<span class="ig-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+								<span class="ig-bar-fill" style="width:{(result.holdMax[si] / rounds) * 100}%"></span>
 							</span>
 							<span class="ig-bar-num">{result.holdMax[si]}</span>
 						</div>

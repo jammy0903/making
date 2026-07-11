@@ -15,8 +15,19 @@ import {
 	type ResultMode
 } from './decks';
 
+/** 기본/최대 판 수(가변 길이 상한). v3.1: 덱마다 판 수 5~10 → 실제 판 수는 roundsOf(deck) 사용. */
 export const ROUNDS = 10;
 export type SideIndex = 0 | 1;
+
+/** 그 덱의 총 판 수 = 맨몸 1판 + 조건 수(강도 2부터). 양편 길이 같음 전제(v3.1 가변 길이). */
+export function roundsOf(deck: Deck): number {
+	return deck.a.penalties.length + 1;
+}
+
+/** 극단/애매 임계 = 덱 최대 강도 상대값(마지막 2단계 이상 버팀 = 극단). 고정 8 폐기(v3.1). */
+export function extremeThreshold(deck: Deck): number {
+	return roundsOf(deck) - 1;
+}
 
 function side(deck: Deck, s: SideIndex) {
 	return s === 0 ? deck.a : deck.b;
@@ -55,9 +66,12 @@ export function encodeChoices(choices: SideIndex[]): string {
 	return choices.map((c) => (c === 0 ? '0' : '1')).join('');
 }
 
-/** 공유 문자열 → 완주(10판) 선택 시퀀스. 형식이 안 맞으면 null. */
+/**
+ * 공유 문자열 → 완주 선택 시퀀스. 형식이 안 맞으면 null.
+ * v3.1 가변 길이: 5~10판 허용. 실제 덱 판 수와 일치하는지는 호출부(플레이 화면)에서 검증.
+ */
 export function decodeChoices(s: string | null | undefined): SideIndex[] | null {
-	if (!s || !/^[01]{10}$/.test(s)) return null;
+	if (!s || !/^[01]{5,10}$/.test(s)) return null;
 	return s.split('').map((ch) => (ch === '1' ? 1 : 0) as SideIndex);
 }
 
@@ -83,7 +97,7 @@ export interface RoundResult {
 
 /**
  * 결과 계산(§A-5): 비용가중 감수 강도로 선호편 판정 + 버틴 깊이 대조.
- * `choices`는 길이 10 가정.
+ * `choices` 길이 = 그 덱 판 수(roundsOf, 5~10 가변). 길이에 독립적으로 계산.
  */
 export function computeResult(deck: Deck, choices: SideIndex[]): RoundResult {
 	const score: [number, number] = [0, 0];
@@ -195,18 +209,15 @@ export function headlineTail(deck: Deck): string {
 	return FRAMING_HEADLINE_TAIL[TYPE_CONFIG[deck.type].framing];
 }
 
-/** 극단(강도 8+까지 우세) / 애매(강도 5~7 전환) 판정 임계. */
-const EXTREME_HOLD = 8;
-
 /**
  * v3 캐릭터 카드 선택(docs/v3-pivot §2-2). 덱에 `resultCards`가 있을 때만.
  * 선호편으로 어느 편 카드인지, 그 편 완주강도(holdMax)로 극단/애매를 고른다.
- * 없으면 null → 화면은 v2 버틴깊이 결과로 폴백.
+ * 임계 = 덱 최대 강도 상대값(v3.1 `extremeThreshold`). 없으면 null → v2 버틴깊이 폴백.
  */
 export function pickResultCard(deck: Deck, result: RoundResult): ResultCard | null {
 	if (!deck.resultCards) return null;
 	const sideCards = result.pref === 0 ? deck.resultCards.a : deck.resultCards.b;
-	return result.holdMax[result.pref] >= EXTREME_HOLD ? sideCards.extreme : sideCards.mild;
+	return result.holdMax[result.pref] >= extremeThreshold(deck) ? sideCards.extreme : sideCards.mild;
 }
 
 /**

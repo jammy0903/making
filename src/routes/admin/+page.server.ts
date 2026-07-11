@@ -24,6 +24,20 @@ function validateDeck(d: unknown): { ok: true; deck: Deck } | { ok: false; error
 	if (!Array.isArray(x.a.penalties) || !Array.isArray(x.b.penalties)) {
 		return { ok: false, error: '조건 배열 오류' };
 	}
+	// v3.1 가변 길이: 조건 4~9개 · 양편 동일 · 강도 2부터 연속.
+	const n = x.a.penalties.length;
+	if (n < 4 || n > 9) return { ok: false, error: `조건은 4~9개여야 함(현재 ${n}개)` };
+	if (x.b.penalties.length !== n) {
+		return { ok: false, error: `양편 조건 수가 달라요(A ${n} / B ${x.b.penalties.length})` };
+	}
+	for (let i = 0; i < n; i++) {
+		if (x.a.penalties[i]?.strength !== i + 2 || x.b.penalties[i]?.strength !== i + 2) {
+			return { ok: false, error: '강도가 2부터 연속이 아니에요(저장 전 조건 추가/삭제로 재정렬)' };
+		}
+		if (!x.a.penalties[i]?.text?.trim() || !x.b.penalties[i]?.text?.trim()) {
+			return { ok: false, error: `강도 ${i + 2} 조건 문구가 비었어요(양편 다 필요)` };
+		}
+	}
 	return { ok: true, deck: x as Deck };
 }
 

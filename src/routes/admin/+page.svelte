@@ -67,6 +67,26 @@
 		// 타이핑 중엔 빈 줄 허용(줄바꿈 매끄럽게), 빈 줄 정리는 저장 시 서버에서.
 		card.stats = v.split('\n');
 	}
+	// ── 조건 개수 편집(v3.1 가변 길이 5~10판 = 조건 4~9개, 양편 동일) ──
+	function renumber() {
+		if (!editing) return;
+		editing.a.penalties.forEach((p, i) => (p.strength = i + 2));
+		editing.b.penalties.forEach((p, i) => (p.strength = i + 2));
+	}
+	function addCondition() {
+		if (!editing || editing.a.penalties.length >= 9) return;
+		editing.a.penalties.push({ strength: 0, text: '' });
+		editing.b.penalties.push({ strength: 0, text: '' });
+		renumber();
+	}
+	function removeCondition(idx: number) {
+		if (!editing || editing.a.penalties.length <= 4) return;
+		editing.a.penalties.splice(idx, 1);
+		editing.b.penalties.splice(idx, 1);
+		renumber();
+	}
+	const condCount = $derived(editing ? editing.a.penalties.length : 0);
+
 	const deckJson = $derived(editing ? JSON.stringify(editing) : '');
 	// 편집 중 덱의 결과 카드 4종(있을 때만)을 [경로, 카드]로 나열
 	const cards = $derived(
@@ -240,6 +260,19 @@
 					</label>
 				</div>
 
+				<div class="ed-condctl">
+					<span>조건 <b>{condCount}</b>개 · 판 수 {condCount + 1} <small>(4~9개 / 5~10판)</small></span>
+					<button
+						type="button"
+						class="ghost"
+						onclick={() => removeCondition(condCount - 1)}
+						disabled={condCount <= 4}>− 마지막 조건</button
+					>
+					<button type="button" class="ghost" onclick={addCondition} disabled={condCount >= 9}
+						>＋ 조건 추가</button
+					>
+				</div>
+
 				{#each [editing.a, editing.b] as side, si (si)}
 					<fieldset class="ed-side">
 						<legend>{si === 0 ? 'A편' : 'B편'}</legend>
@@ -261,7 +294,7 @@
 								</div>
 							</div>
 						</div>
-						{#each side.penalties as p (p.strength)}
+						{#each side.penalties as p, ci (ci)}
 							<div class="ed-cond">
 								<span class="ed-str">강도 {p.strength}</span>
 								<input class="ed-ptext" placeholder="그런데 이제 …" bind:value={p.text} />
@@ -270,6 +303,13 @@
 									placeholder="근데 이제 …(메리트, 선택)"
 									bind:value={p.merit}
 								/>
+								<button
+									type="button"
+									class="ed-delcond"
+									title="이 강도 조건을 양편에서 삭제"
+									onclick={() => removeCondition(ci)}
+									disabled={condCount <= 4}>✕</button
+								>
 							</div>
 						{/each}
 					</fieldset>
@@ -609,20 +649,53 @@
 	}
 	.ed-cond {
 		display: grid;
-		grid-template-columns: 54px 1fr;
+		grid-template-columns: 54px 1fr 26px;
 		gap: 6px 8px;
 		align-items: center;
 	}
 	.ed-str {
+		grid-column: 1;
+		grid-row: 1;
 		font-size: 12px;
 		font-weight: 700;
 		color: var(--muted);
 	}
 	.ed-ptext {
 		grid-column: 2;
+		grid-row: 1;
 	}
 	.ed-pmerit {
 		grid-column: 2;
+		grid-row: 2;
+	}
+	.ed-delcond {
+		grid-column: 3;
+		grid-row: 1 / span 2;
+		align-self: center;
+		border: 2px solid var(--line);
+		background: var(--surface);
+		color: #c0392b;
+		font-weight: 800;
+		cursor: pointer;
+		padding: 4px 0;
+	}
+	.ed-delcond:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+	.ed-condctl {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+		padding: 8px 0;
+		font-size: 13px;
+	}
+	.ed-condctl b {
+		font-size: 15px;
+	}
+	.ed-condctl small {
+		color: var(--muted);
 	}
 	.ed-card {
 		border-top: 2px dashed var(--line);

@@ -30,11 +30,15 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		}
 	});
 
-	it('모든 덱은 사이드별 페널티 9장(강도 2~10)', () => {
+	it('모든 덱은 사이드별 페널티 4~9장 · 강도 2부터 연속 · 양편 동일 (v3.1 가변 길이)', () => {
 		for (const deck of DECKS) {
-			expect(deck.a.penalties).toHaveLength(9);
-			expect(deck.b.penalties).toHaveLength(9);
-			expect(deck.a.penalties.map((p) => p.strength)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+			const n = deck.a.penalties.length;
+			expect(n).toBeGreaterThanOrEqual(4);
+			expect(n).toBeLessThanOrEqual(9);
+			expect(deck.b.penalties).toHaveLength(n); // 양편 길이 동일
+			const expected = Array.from({ length: n }, (_, i) => i + 2); // [2 … n+1]
+			expect(deck.a.penalties.map((p) => p.strength)).toEqual(expected);
+			expect(deck.b.penalties.map((p) => p.strength)).toEqual(expected);
 		}
 	});
 

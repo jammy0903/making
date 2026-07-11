@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDeck } from './decks';
+import { getDeck, type Deck } from './decks';
 import {
 	penaltyForRound,
 	penaltyAddedAt,
@@ -9,6 +9,8 @@ import {
 	decodeChoices,
 	headlineTail,
 	pickResultCard,
+	extremeThreshold,
+	roundsOf,
 	type SideIndex
 } from './engine';
 
@@ -127,12 +129,15 @@ describe('encodeChoices / decodeChoices', () => {
 		expect(s).toBe('0110100101');
 		expect(decodeChoices(s)).toEqual(choices);
 	});
-	it('형식이 안 맞으면 null(완주 10판만 허용)', () => {
+	it('형식이 안 맞으면 null(v3.1: 5~10판 허용)', () => {
 		expect(decodeChoices(null)).toBeNull();
 		expect(decodeChoices('')).toBeNull();
-		expect(decodeChoices('0110')).toBeNull(); // 길이 부족
-		expect(decodeChoices('01101001012')).toBeNull(); // 길이 초과
+		expect(decodeChoices('0110')).toBeNull(); // 길이 부족(<5)
+		expect(decodeChoices('01101001012')).toBeNull(); // 길이 초과(>10)
 		expect(decodeChoices('011010010x')).toBeNull(); // 잘못된 문자
+	});
+	it('짧은 덱(5판) 시퀀스도 왕복', () => {
+		expect(decodeChoices('01101')).toEqual([0, 1, 1, 0, 1]);
 	});
 });
 
@@ -140,8 +145,9 @@ describe('pickResultCard (v3 캐릭터 카드 선택)', () => {
 	const attention = getDeck('attention')!;
 
 	it('resultCards 없는 덱(v2)은 null → 버틴깊이 폴백', () => {
-		const seq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as SideIndex[];
-		expect(pickResultCard(deck, computeResult(deck, seq))).toBeNull();
+		const v2: Deck = { ...deck, resultCards: undefined }; // resultCards 제거한 합성 v2 덱
+		const seq = Array(roundsOf(v2)).fill(0) as SideIndex[];
+		expect(pickResultCard(v2, computeResult(v2, seq))).toBeNull();
 	});
 
 	it('한 편 끝까지 버티면 그 편 극단 카드(강도 8+)', () => {
@@ -156,6 +162,11 @@ describe('pickResultCard (v3 캐릭터 카드 선택)', () => {
 		const r = computeResult(attention, seq);
 		const c = pickResultCard(attention, r);
 		const side = r.pref === 0 ? attention.resultCards!.a : attention.resultCards!.b;
-		expect(c).toBe(r.holdMax[r.pref] >= 8 ? side.extreme : side.mild);
+		expect(c).toBe(r.holdMax[r.pref] >= extremeThreshold(attention) ? side.extreme : side.mild);
+	});
+
+	it('extremeThreshold·roundsOf = 덱 길이 상대값', () => {
+		expect(roundsOf(attention)).toBe(attention.a.penalties.length + 1);
+		expect(extremeThreshold(attention)).toBe(roundsOf(attention) - 1);
 	});
 });
