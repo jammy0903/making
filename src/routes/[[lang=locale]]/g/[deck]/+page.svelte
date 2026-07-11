@@ -104,6 +104,31 @@
 			: null
 	);
 
+	// ── 결과 영수증(감수·회피 영수증) 데이터 ──
+	// 각 판(강도 2~N): 그 판 내 편에 붙은 페널티 + 버텼나(감수)/갈아탔나(회피).
+	const receiptItems = $derived.by(() => {
+		if (!deck || !result) return [] as { s: number; t: string; kind: '감수' | '회피' }[];
+		const out: { s: number; t: string; kind: '감수' | '회피' }[] = [];
+		for (let n = 2; n <= choices.length; n++) {
+			const held = choices[n - 2];
+			const p = (held === 0 ? deck.a : deck.b).penalties[n - 2];
+			if (!p) continue;
+			out.push({ s: n, t: p.text, kind: choices[n - 1] === held ? '감수' : '회피' });
+		}
+		return out;
+	});
+	const rcCnt = (k: '감수' | '회피') => receiptItems.filter((i) => i.kind === k).length;
+	// 합계 = 결과 편(결정장애/적응형은 그 문구). 부가세 = 유형 라벨(카드), 없으면 verdict 폴백.
+	const rcTotal = $derived(
+		!result ? '' : result.indecisive ? '결정장애' : result.adaptive ? '적응형' : (prefSide?.name ?? '')
+	);
+	const rcGrade = $derived(card?.label ?? result?.verdict ?? '');
+	function josaEun(w: string): string {
+		const c = w.charCodeAt(w.length - 1);
+		if (c < 0xac00 || c > 0xd7a3) return '은';
+		return (c - 0xac00) % 28 === 0 ? '는' : '은';
+	}
+
 	// 결과 비교(B-1): URL ?vs=<상대 선택>이 있으면 같은 덱으로 상대 결과를 재현해 비교.
 	// 길이가 그 덱 판 수와 맞을 때만 유효(가변 길이).
 	const vsChoices = $derived.by(() => {
@@ -176,15 +201,23 @@
 	let igCardEl = $state<HTMLElement>();
 	let imgBusy = $state(false);
 
-	// igCardEl → PNG {dataUrl, blob} 생성. 실패 시 throw.
+	// igCardEl(9:16 프레임) → PNG {dataUrl, blob}. 캡처 직전 영수증을 프레임에 맞게 scale-to-fit.
 	async function renderCardPng(el: HTMLElement): Promise<{ dataUrl: string; blob: Blob }> {
+		// 판 수(5~10)에 따라 영수증 높이가 달라지므로, 프레임(1080×1920)에 맞춰 축소한다.
+		const rc = el.querySelector<HTMLElement>('.rcpt');
+		if (rc) {
+			rc.style.transform = 'none';
+			const pad = 0.92;
+			const sc = Math.min((el.clientWidth * pad) / rc.offsetWidth, (el.clientHeight * pad) / rc.offsetHeight);
+			rc.style.transform = `translateX(-50%) scale(${sc})`;
+		}
 		const { toPng } = await import('html-to-image');
 		const dataUrl = await toPng(el, {
 			width: 1080,
-			height: 1350,
+			height: 1920,
 			pixelRatio: 1,
 			cacheBust: true,
-			backgroundColor: '#ffffff',
+			backgroundColor: '#6d5efc',
 			// 폰트 임베드 끄기: CDN(Galmuri) 스타일시트는 cross-origin이라 cssRules 접근이
 			// SecurityError로 터진다. 스킵하면 이미지엔 시스템 폰트로 렌더(한글·이모지 정상).
 			skipFonts: true,
@@ -256,6 +289,42 @@
 	<title>{deck ? deck.title : '그런데이제'}</title>
 </svelte:head>
 
+{#snippet resultReceipt()}
+	<div class="rcpt">
+		<div class="rc-store">그 런 데 이 제</div>
+		<div class="rc-kind">감 수 · 회 피 영 수 증</div>
+		<div class="rc-info">{deck?.title}</div>
+		<div class="rc-eq">================================</div>
+		<div class="rc-row rc-head"><span>품 목</span><span class="rc-gb">구분</span></div>
+		<div class="rc-dash">- - - - - - - - - - - - - - - - -</div>
+		{#each receiptItems as it (it.s)}
+			<div class="rc-row" class:avoid={it.kind === '회피'}>
+				<span class="rc-nm"
+					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josaEun(it.t)} 못해</span>{/if}</span
+				>
+				<span class="rc-gb k-{it.kind}">{it.kind}</span>
+			</div>
+		{/each}
+		<div class="rc-eq">================================</div>
+		<div class="rc-sum">감수 {rcCnt('감수')} · 회피 {rcCnt('회피')}</div>
+		<div class="rc-dash">- - - - - - - - - - - - - - - - -</div>
+		<div class="rc-kv rc-total"><span>합 계</span><b>{rcTotal}</b></div>
+		<div class="rc-kv rc-vat">
+			<span>부가세</span><span class="rc-lead"></span><b class="rc-grade">「{rcGrade}」</b>
+		</div>
+		<div class="rc-eq">================================</div>
+		<div class="rc-kv"><span>결제수단</span><b>인생 · 일시불</b></div>
+		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result?.indecisive && !result?.adaptive}
+			<div class="rc-kv"><span>버틴 자</span><b>상위 {rank.percentile}%</b></div>
+		{/if}
+		<div class="rc-eq">================================</div>
+		<div class="rc-fine">* 감수한 인생은 교환·환불 불가 *</div>
+		<div class="rc-barcode"></div>
+		<div class="rc-thanks">☺ 감 사 합 니 다</div>
+		<div class="rc-url">codeinsight.online</div>
+	</div>
+{/snippet}
+
 {#if !deck}
 	<div class="empty" style="margin-top:48px">
 		<h2>주제를 찾을 수 없어요.</h2>
@@ -299,59 +368,7 @@
 {:else if result && prefSide && burnedSide}
 	<!-- 결과 카드: 버틴 깊이 대조(A-5). 플레이 중 숨긴 분석을 여기서 공개. -->
 	<div class="result card">
-		<div class="result-badge">그런데 이제 · 결과</div>
-
-		{#if card}
-			<!-- v3 캐릭터 카드(docs/v3-pivot §2-2): 3스텝 커뮤체. ①놀림 ②이유 ③예언/저주. -->
-			<div class="char-card">
-				<p class="char-label">🎴 당신의 유형: <b>「{card.label}」</b></p>
-				<ul class="char-stats">
-					{#each card.stats as st (st)}
-						<li>{st}</li>
-					{/each}
-				</ul>
-				<p class="char-prophecy">{card.prophecy}</p>
-			</div>
-		{:else if result.indecisive}
-			<p class="result-headline">
-				<span class="endured">이쪽저쪽 재기만 하다</span><br />
-				어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
-			</p>
-		{:else if result.adaptive}
-			<p class="result-headline">
-				<span class="endured">상황마다 최선을 골라</span><br />
-				유연하게 갈아탄 <b>적응형</b> 유형
-			</p>
-		{:else}
-			<p class="result-headline">
-				{#if headline}
-					<span class="endured">「{headline}」</span><br />
-				{/if}
-				그래도 <span class="emoji"><Icon value={prefSide.emoji} /></span> <b>{prefSide.name}</b>
-					{headlineTail(deck)}
-			</p>
-		{/if}
-
-		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result.indecisive && !result.adaptive}
-			<!-- 상위 N%(B-2): 같은 편 중 버틴 깊이 백분위. 표본 부족하면 숨김. -->
-			<p class="rank-badge">🏆 {prefSide.name} 중 <b>상위 {rank.percentile}%</b></p>
-		{/if}
-
-		{#if !card}
-			<div class="depth">
-				<div class="depth-title">🌡️ 버틴 깊이</div>
-				{#each [deck.a, deck.b] as s, si (si)}
-					<div class="bar-row">
-						<span class="bar-label"><Icon value={s.emoji} /> {s.name}</span>
-						<span class="bar-track">
-							<span class="bar-fill" style="width:{(result.holdMax[si] / rounds) * 100}%"></span>
-						</span>
-						<span class="bar-num">{result.holdMax[si]}</span>
-					</div>
-				{/each}
-				<p class="verdict">{result.verdict}</p>
-			</div>
-		{/if}
+		{@render resultReceipt()}
 
 		{#if vsResult}
 			<!-- 결과 비교(B-1): 같은 덱을 플레이한 상대와 나란히. -->
