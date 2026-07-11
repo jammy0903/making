@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
 	import { search } from '$lib/search.svelte';
+	import { isImageIcon } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData } from './$types';
 
@@ -53,7 +54,12 @@
 		{#each results as { deck, condHint } (deck.id)}
 			<li class="card deck">
 				<a class="deck-link" href={localePath(locale, `/g/${deck.id}`)}>
-					<span class="deck-icon"><Icon value={deck.icon} alt={deck.title} /></span>
+					{#if isImageIcon(deck.icon)}
+						<!-- 이미지 아이콘: 카드 폭을 채우는 배너로 전체가 다 보이게(잘림 없음) -->
+						<img class="deck-cover" src={deck.icon} alt={deck.title} />
+					{:else}
+						<span class="deck-icon">{deck.icon}</span>
+					{/if}
 					<strong class="deck-title">{deck.title}</strong>
 					<span class="deck-sides">
 						<Icon value={deck.a.emoji} /> {deck.a.name} <span class="vs">vs</span>
@@ -120,6 +126,13 @@
 	}
 	.deck-icon {
 		font-size: 44px;
+	}
+	/* 이미지 아이콘 배너: 카드 콘텐츠 폭을 채우고 전체가 잘림 없이 보이게 */
+	.deck-cover {
+		width: 100%;
+		height: auto;
+		display: block;
+		border-radius: 8px;
 	}
 	.deck-title {
 		font-size: 17px;
