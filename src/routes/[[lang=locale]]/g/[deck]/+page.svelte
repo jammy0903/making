@@ -491,63 +491,7 @@
 
 	<!-- ── 인스타 공유용 이미지 카드(화면 밖 렌더 → html-to-image가 PNG로 캡처) ────── -->
 	<div class="ig-card" bind:this={igCardEl} aria-hidden="true">
-		<div class="ig-inner">
-			<div class="ig-brand">그런데이제</div>
-			<div class="ig-topic"><Icon value={deck.icon} /> {deck.title}</div>
-
-			{#if card}
-				<!-- v3 캐릭터 카드(화면 결과와 동일): 놀림 + 스탯 + 저주. 세로 중앙 배치로 잘림 방지. -->
-				<div class="ig-char">
-					<div class="ig-label">🎴 당신의 유형<br /><b>「{card.label}」</b></div>
-					<ul class="ig-stats">
-						{#each card.stats as st (st)}
-							<li>{st}</li>
-						{/each}
-					</ul>
-					<p class="ig-prophecy">{card.prophecy}</p>
-				</div>
-			{:else}
-				<div class="ig-verdict">
-					{#if result.indecisive}
-						어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
-					{:else if result.adaptive}
-						상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
-					{:else}
-						그래도 <Icon value={prefSide.emoji} /> <b>{prefSide.name}</b> {headlineTail(deck)}
-					{/if}
-				</div>
-
-				<div class="ig-depth">
-					{#each [deck.a, deck.b] as s, si (si)}
-						<div class="ig-bar-row">
-							<span class="ig-bar-label"><Icon value={s.emoji} /> {s.name}</span>
-							<span class="ig-bar-track">
-								<span class="ig-bar-fill" style="width:{(result.holdMax[si] / rounds) * 100}%"></span>
-							</span>
-							<span class="ig-bar-num">{result.holdMax[si]}</span>
-						</div>
-					{/each}
-				</div>
-
-				<p class="ig-line">{result.verdict}</p>
-
-				{#if resultAcc && !result.indecisive && !result.adaptive && resultAcc[result.pref].length}
-					<div class="ig-story">
-						<div class="ig-story-title">«{prefSide.name}» 편에서 버틴 것들</div>
-						<ul>
-							{#each resultAcc[result.pref].slice(-3) as p (p.strength)}
-								<li>그런데 이제 {p.text}.{#if p.merit} 근데 이제 {p.merit}.{/if}</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-			{/if}
-
-			<div class="ig-footer">
-				<span>{printDate}</span>
-				<span>codeinsight.online</span>
-			</div>
-		</div>
+		{@render resultReceipt()}
 	</div>
 {/if}
 
@@ -875,15 +819,21 @@
 	/* ───────── 인스타 공유 이미지 카드(1080×1350, 4:5) ─────────
 	   화면 밖(left:-20000px)에 실제 렌더돼 있고, html-to-image가 이 노드를 PNG로 캡처.
 	   공유 이미지는 사용자 테마와 무관하게 항상 밝은 톤으로 보이도록 색을 고정한다. */
+	/* 인스타 스토리(9:16) 캡처 프레임. 영수증을 화면 밖에서 렌더 → renderCardPng가 scale-to-fit 후 캡처. */
 	.ig-card {
 		position: fixed;
 		left: -20000px;
 		top: 0;
 		width: 1080px;
-		height: 1350px;
-		background: linear-gradient(160deg, #efe9ff 0%, #ffffff 58%);
-		color: #17151f;
+		height: 1920px;
+		background: linear-gradient(155deg, #7b6cff 0%, #6d5efc 45%, #4a3fd6 100%);
 		overflow: hidden;
+	}
+	.ig-card :global(.rcpt) {
+		position: absolute;
+		left: 50%;
+		top: 4%;
+		transform-origin: top center;
 	}
 	.ig-inner {
 		box-sizing: border-box;
@@ -1271,5 +1221,168 @@
 		border-top: 2px solid #efe9ff;
 		font-size: 12px;
 		color: #7a7391;
+	}
+	/* ── 결과 영수증(감수·회피) — 화면·PNG 공용 ── */
+	.rcpt {
+		width: 330px;
+		box-sizing: border-box;
+		margin: 0 auto;
+		background: #f7f6f2;
+		color: #22201c;
+		font-family: 'Galmuri11', ui-monospace, 'Courier New', monospace;
+		font-size: 12px;
+		line-height: 1.5;
+		padding: 24px 22px;
+		box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+		--z: 12px;
+		-webkit-mask:
+			conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 0 100% / var(--z)
+				var(--z) repeat-x,
+			conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 0 0 / var(--z) var(--z)
+				repeat-x,
+			linear-gradient(#000 0 0) 0 50% / 100% calc(100% - 2 * var(--z)) no-repeat;
+		mask:
+			conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 0 100% / var(--z)
+				var(--z) repeat-x,
+			conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 0 0 / var(--z) var(--z)
+				repeat-x,
+			linear-gradient(#000 0 0) 0 50% / 100% calc(100% - 2 * var(--z)) no-repeat;
+	}
+	.rc-store {
+		text-align: center;
+		font-size: 20px;
+		font-weight: 800;
+		letter-spacing: 1px;
+	}
+	.rc-kind {
+		text-align: center;
+		font-size: 14px;
+		font-weight: 700;
+		letter-spacing: 1px;
+		margin-top: 4px;
+	}
+	.rc-info {
+		text-align: center;
+		font-size: 11px;
+		color: #555;
+	}
+	.rc-dash,
+	.rc-eq {
+		text-align: center;
+		color: #888;
+		font-size: 11px;
+		letter-spacing: -0.5px;
+		overflow: hidden;
+		white-space: nowrap;
+		margin: 7px 0;
+	}
+	.rc-eq {
+		color: #333;
+	}
+	.rc-row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 8px;
+		padding: 3px 2px;
+		align-items: baseline;
+	}
+	.rc-row.avoid {
+		background: #fbeeec;
+	}
+	.rc-cant {
+		color: #c0392b;
+		font-weight: 800;
+	}
+	.rc-head {
+		font-weight: 800;
+		color: #555;
+		font-size: 11px;
+	}
+	.rc-nm {
+		min-width: 0;
+	}
+	.rc-gb {
+		text-align: right;
+		font-weight: 800;
+	}
+	.k-감수 {
+		color: #1a7f4b;
+	}
+	.k-회피 {
+		color: #c0392b;
+	}
+	.rc-sum {
+		text-align: center;
+		font-weight: 800;
+		font-size: 12px;
+	}
+	.rc-kv {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+		font-size: 12px;
+	}
+	.rc-kv span {
+		color: #666;
+	}
+	.rc-kv b {
+		text-align: right;
+	}
+	.rc-total {
+		font-size: 15px;
+		font-weight: 800;
+		margin: 2px 0;
+	}
+	.rc-total b {
+		font-size: 15px;
+	}
+	.rc-vat {
+		align-items: flex-end;
+	}
+	.rc-lead {
+		flex: 1;
+		min-width: 14px;
+		border-bottom: 1.5px dotted #b0b0b0;
+		margin: 0 6px 4px;
+	}
+	.rc-grade {
+		font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+		font-size: 13.5px;
+		font-weight: 800;
+		letter-spacing: -0.2px;
+	}
+	.rc-fine {
+		text-align: center;
+		font-size: 11px;
+		color: #555;
+		margin-top: 2px;
+	}
+	.rc-barcode {
+		height: 46px;
+		margin: 12px 6px 4px;
+		background-image: repeating-linear-gradient(
+			90deg,
+			#1a1a1a 0 1.5px,
+			#f7f6f2 1.5px 3px,
+			#1a1a1a 3px 6px,
+			#f7f6f2 6px 7.5px,
+			#1a1a1a 7.5px 8.5px,
+			#f7f6f2 8.5px 11px,
+			#1a1a1a 11px 13px,
+			#f7f6f2 13px 14px
+		);
+		background-size: 14px 100%;
+		background-repeat: repeat-x;
+	}
+	.rc-thanks {
+		text-align: center;
+		font-size: 13px;
+		font-weight: 700;
+		margin-top: 10px;
+	}
+	.rc-url {
+		text-align: center;
+		font-size: 11px;
+		color: #555;
 	}
 </style>
