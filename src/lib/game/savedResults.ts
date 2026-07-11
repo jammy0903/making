@@ -1,6 +1,6 @@
 /**
  * 내 결과를 브라우저 localStorage에 저장(영구 아님 — 캐시 지우면 사라짐).
- * 결과 재현에 필요한 건 덱ID + 10선택뿐(결정론적). 최근 30개만 유지.
+ * 결과 재현에 필요한 건 덱ID + 선택 시퀀스뿐(결정론적). 최근 30개만 유지.
  */
 import type { SideIndex } from './engine';
 
@@ -9,7 +9,7 @@ const MAX = 30;
 
 export interface SavedResult {
 	deckId: string;
-	/** 10판 선택('0'/'1' 10자리 인코딩) */
+	/** 선택 시퀀스('0'/'1' 5~10자리 인코딩, v3.1 가변 길이) */
 	code: string;
 	/** 저장 시각(ms) */
 	ts: number;
@@ -29,7 +29,7 @@ export function loadResults(): SavedResult[] {
 
 /** 결과 저장(같은 덱+같은 선택이면 시각만 갱신). 최신이 앞. */
 export function saveResult(deckId: string, code: string): void {
-	if (typeof localStorage === 'undefined' || !/^[01]{10}$/.test(code)) return;
+	if (typeof localStorage === 'undefined' || !/^[01]{5,10}$/.test(code)) return;
 	try {
 		const list = loadResults().filter((r) => !(r.deckId === deckId && r.code === code));
 		list.unshift({ deckId, code, ts: Date.now() });

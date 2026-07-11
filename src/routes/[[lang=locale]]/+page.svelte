@@ -40,7 +40,7 @@
 
 <svelte:head>
 	<title>그런데이제</title>
-	<meta name="description" content="고른 쪽에 조건이 하나씩 붙는 10판 밸런스 게임. 끝까지 버틸 수 있어?" />
+	<meta name="description" content="고른 쪽에 조건이 하나씩 붙는 밸런스 게임. 끝까지 버틸 수 있어?" />
 </svelte:head>
 
 <section class="intro">
