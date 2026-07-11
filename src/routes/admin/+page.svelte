@@ -3,6 +3,7 @@
 	import { getSessionId } from '$lib/supabase';
 	import { isImageIcon, type Deck, type DeckType } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
+	import ImageSearchModal from '$lib/components/ImageSearchModal.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -57,6 +58,40 @@
 		} finally {
 			uploading = null;
 			input.value = ''; // 같은 파일 재선택 가능하게 리셋
+		}
+	}
+
+	// ── 이미지 검색 ─────────────────────────────────────────
+	// 파일 업로드와 같은 apply 콜백을 공유한다. 검색 모달에서 고른 외부 원본 URL을
+	// /admin/upload(JSON url 모드)로 넘기면 서버가 내려받아 스토리지에 저장 후 우리 URL을 준다.
+	let search = $state<{ apply: (url: string) => void; key: string; query: string } | null>(null);
+
+	function openSearch(apply: (url: string) => void, key: string, query: string) {
+		search = { apply, key, query };
+	}
+
+	async function pickFromSearch(srcUrl: string) {
+		if (!search) return;
+		const { apply, key } = search;
+		search = null; // 모달 닫고 저장 진행(업로드 인디케이터 재사용)
+		uploading = key;
+		uploadErr = '';
+		try {
+			const res = await fetch('/admin/upload', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ url: srcUrl })
+			});
+			if (!res.ok) {
+				uploadErr = (await res.text().catch(() => '')) || `저장 실패 (${res.status})`;
+				return;
+			}
+			const { url } = (await res.json()) as { url: string };
+			apply(url);
+		} catch {
+			uploadErr = '이미지 저장 중 오류가 났어요';
+		} finally {
+			uploading = null;
 		}
 	}
 	// stats(string[]) ↔ 줄바꿈 텍스트
@@ -250,6 +285,13 @@
 									onchange={(e) => uploadImage(e, (u) => editing && (editing.icon = u), 'icon')}
 								/>
 							</label>
+							<button
+								type="button"
+								class="up-btn"
+								onclick={() =>
+									openSearch((u) => editing && (editing.icon = u), 'icon', editing?.title ?? '')}
+								>🔍 이미지 검색</button
+							>
 						</div>
 					</div>
 					<label
@@ -291,6 +333,13 @@
 											onchange={(e) => uploadImage(e, (u) => (side.emoji = u), `side${si}`)}
 										/>
 									</label>
+									<button
+										type="button"
+										class="up-btn"
+										onclick={() =>
+											openSearch((u) => (side.emoji = u), `side${si}`, side.name ?? '')}
+										>🔍 이미지 검색</button
+									>
 								</div>
 							</div>
 						</div>
@@ -344,6 +393,13 @@
 		{/if}
 	{/if}
 </div>
+
+<ImageSearchModal
+	open={!!search}
+	initialQuery={search?.query ?? ''}
+	onpick={pickFromSearch}
+	onclose={() => (search = null)}
+/>
 
 <style>
 	.admin {
