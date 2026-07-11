@@ -51,6 +51,23 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		}
 	});
 
+	it('v3 관종/아싸 덱: 모든 페널티에 메리트 결합 + 편별 캐릭터 카드(극단/애매)', () => {
+		const d = getDeck('attention')!;
+		expect(d.type).toBe('value');
+		// 페널티 18장 전부 merit 결합(v3 필수 구조).
+		for (const p of [...d.a.penalties, ...d.b.penalties]) {
+			expect(p.merit).toBeTruthy();
+		}
+		// 편별 극단/애매 카드가 3요소(유형 라벨·특이 스탯·예상 예언)를 갖춘다.
+		for (const side of [d.resultCards!.a, d.resultCards!.b]) {
+			for (const c of [side.extreme, side.mild]) {
+				expect(c.label).toBeTruthy();
+				expect(c.stats.length).toBeGreaterThanOrEqual(3);
+				expect(c.prophecy).toBeTruthy();
+			}
+		}
+	});
+
 	it('TYPE_CONFIG에 5유형이 모두 존재하고 framing/penaltyStyle을 가진다', () => {
 		for (const t of ALL_TYPES) {
 			expect(TYPE_CONFIG[t]).toBeDefined();

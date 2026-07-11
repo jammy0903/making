@@ -8,6 +8,7 @@ import {
 	encodeChoices,
 	decodeChoices,
 	headlineTail,
+	pickResultCard,
 	type SideIndex
 } from './engine';
 
@@ -132,5 +133,29 @@ describe('encodeChoices / decodeChoices', () => {
 		expect(decodeChoices('0110')).toBeNull(); // 길이 부족
 		expect(decodeChoices('01101001012')).toBeNull(); // 길이 초과
 		expect(decodeChoices('011010010x')).toBeNull(); // 잘못된 문자
+	});
+});
+
+describe('pickResultCard (v3 캐릭터 카드 선택)', () => {
+	const attention = getDeck('attention')!;
+
+	it('resultCards 없는 덱(v2)은 null → 버틴깊이 폴백', () => {
+		const seq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as SideIndex[];
+		expect(pickResultCard(deck, computeResult(deck, seq))).toBeNull();
+	});
+
+	it('한 편 끝까지 버티면 그 편 극단 카드(강도 8+)', () => {
+		const seq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as SideIndex[]; // 관종 완주
+		const c = pickResultCard(attention, computeResult(attention, seq));
+		expect(c).toBe(attention.resultCards!.a.extreme);
+	});
+
+	it('중반(강도 5~7)에 갈아타면 애매 카드', () => {
+		// a로 6판 버티다(홀드 6) b로 전환 — pref=a, holdMax[a]=6 < 8 → 애매.
+		const seq = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1] as SideIndex[];
+		const r = computeResult(attention, seq);
+		const c = pickResultCard(attention, r);
+		const side = r.pref === 0 ? attention.resultCards!.a : attention.resultCards!.b;
+		expect(c).toBe(r.holdMax[r.pref] >= 8 ? side.extreme : side.mild);
 	});
 });

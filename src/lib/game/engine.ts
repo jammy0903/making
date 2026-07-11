@@ -6,7 +6,14 @@
  * - 1판(i=0): 맨몸, 순수 취향. 2판부터 판 시작 시 **직전에 고른 내 편**에 그 판 강도(=판 번호) 페널티가 붙는다.
  * - 강도 = 판 번호(A-2). 반대편은 안 건드림, 누적 리셋 없음(페널티-온리).
  */
-import { TYPE_CONFIG, type Deck, type Penalty, type ResultFraming, type ResultMode } from './decks';
+import {
+	TYPE_CONFIG,
+	type Deck,
+	type Penalty,
+	type ResultCard,
+	type ResultFraming,
+	type ResultMode
+} from './decks';
 
 export const ROUNDS = 10;
 export type SideIndex = 0 | 1;
@@ -186,6 +193,20 @@ const FRAMING_HEADLINE_TAIL: Record<ResultFraming, string> = {
 
 export function headlineTail(deck: Deck): string {
 	return FRAMING_HEADLINE_TAIL[TYPE_CONFIG[deck.type].framing];
+}
+
+/** 극단(강도 8+까지 우세) / 애매(강도 5~7 전환) 판정 임계. */
+const EXTREME_HOLD = 8;
+
+/**
+ * v3 캐릭터 카드 선택(docs/v3-pivot §2-2). 덱에 `resultCards`가 있을 때만.
+ * 선호편으로 어느 편 카드인지, 그 편 완주강도(holdMax)로 극단/애매를 고른다.
+ * 없으면 null → 화면은 v2 버틴깊이 결과로 폴백.
+ */
+export function pickResultCard(deck: Deck, result: RoundResult): ResultCard | null {
+	if (!deck.resultCards) return null;
+	const sideCards = result.pref === 0 ? deck.resultCards.a : deck.resultCards.b;
+	return result.holdMax[result.pref] >= EXTREME_HOLD ? sideCards.extreme : sideCards.mild;
 }
 
 /**

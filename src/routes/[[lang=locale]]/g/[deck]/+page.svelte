@@ -10,6 +10,7 @@
 		decodeChoices,
 		encodeChoices,
 		headlineTail,
+		pickResultCard,
 		ROUNDS,
 		type SideIndex
 	} from '$lib/game/engine';
@@ -45,6 +46,8 @@
 	// 현재 판에서 각 사이드에 쌓인 페널티(이번 판 새 페널티 포함)
 	const acc = $derived(deck && !done ? accumulated(deck, choices) : null);
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
+	// v3 캐릭터 카드: 덱에 resultCards가 있으면 숫자 결과 대신 유형 카드를 띄운다(없으면 null → v2 폴백).
+	const card = $derived(deck && result ? pickResultCard(deck, result) : null);
 
 	// 카드 위치 고정(사용자 요청): 매 판 deck.a 위·deck.b 아래로 고정. 스크램블 없음.
 	// (자문 A-2 위치 편향 랜덤화는 플레이 감각상 철회 — 뭘 눌러도 자리가 안 바뀌게.)
@@ -159,39 +162,71 @@
 	// 데스크톱은 다운로드. html-to-image는 필요할 때만 동적 import(초기 번들 경량화).
 	let igCardEl = $state<HTMLElement>();
 	let imgBusy = $state(false);
+
+	// igCardEl → PNG {dataUrl, blob} 생성. 실패 시 throw.
+	async function renderCardPng(el: HTMLElement): Promise<{ dataUrl: string; blob: Blob }> {
+		const { toPng } = await import('html-to-image');
+		const dataUrl = await toPng(el, {
+			width: 1080,
+			height: 1350,
+			pixelRatio: 1,
+			cacheBust: true,
+			backgroundColor: '#ffffff',
+			// 폰트 임베드 끄기: CDN(Galmuri) 스타일시트는 cross-origin이라 cssRules 접근이
+			// SecurityError로 터진다. 스킵하면 이미지엔 시스템 폰트로 렌더(한글·이모지 정상).
+			skipFonts: true,
+			// 카드는 화면 밖(position:fixed; left:-20000px)에 있어서, 복제본이 그 오프셋까지
+			// 물려받으면 캡처 캔버스가 백지가 된다. 캡처 시에만 원점으로 되돌린다.
+			style: { position: 'static', left: '0px', top: '0px' }
+		});
+		const blob = await (await fetch(dataUrl)).blob();
+		return { dataUrl, blob };
+	}
+
+	function isMobile(): boolean {
+		return typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+	}
+
 	async function shareImage() {
 		if (!igCardEl || imgBusy) return;
 		imgBusy = true;
 		shareMsg = '';
+		const el = igCardEl;
+
+		// ★클립보드 write는 클릭 제스처가 살아있는 "동기 시점"에 호출해야 한다(await 뒤엔 만료됨).
+		// 그래서 PNG 생성 Promise를 ClipboardItem에 그대로 넘겨, write()는 즉시 호출하고
+		// blob은 나중에 resolve되게 한다(Chrome이 Promise value를 지원). PC 카톡 Ctrl+V의 핵심.
+		const pngPromise = renderCardPng(el);
+		const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+
 		try {
-			const { toPng } = await import('html-to-image');
-			const dataUrl = await toPng(igCardEl, {
-				width: 1080,
-				height: 1350,
-				pixelRatio: 1,
-				cacheBust: true,
-				backgroundColor: '#ffffff',
-				// 폰트 임베드 끄기: CDN(Galmuri) 스타일시트는 cross-origin이라 cssRules 접근이
-				// SecurityError로 터진다. 스킵하면 이미지엔 시스템 폰트로 렌더(한글·이모지 정상).
-				skipFonts: true,
-				// 카드는 화면 밖(position:fixed; left:-20000px)에 있어서, 복제본이 그 오프셋까지
-				// 물려받으면 캡처 캔버스가 백지가 된다. 캡처 시에만 원점으로 되돌린다.
-				style: { position: 'static', left: '0px', top: '0px' }
-			});
-			const blob = await (await fetch(dataUrl)).blob();
+			// 데스크톱: 클립보드 이미지 복사 우선(Web Share가 데스크톱을 가로채지 않게).
+			if (!isMobile() && CI && navigator.clipboard?.write) {
+				try {
+					await navigator.clipboard.write([
+						new CI({ 'image/png': pngPromise.then((r) => r.blob) })
+					]);
+					shareMsg = '이미지 복사됨! 카톡·메신저 창에 붙여넣기(Ctrl+V) 하세요';
+					return;
+				} catch {
+					// 권한 거부·미지원 → 아래 다운로드 폴백으로.
+				}
+			}
+
+			const { dataUrl, blob } = await pngPromise;
+			const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
 			const file = new File([blob], 'geuronde-ije.png', { type: 'image/png' });
-			const nav = navigator as Navigator & {
-				canShare?: (d: { files: File[] }) => boolean;
-			};
-			if (nav.canShare?.({ files: [file] })) {
+			if (isMobile() && nav.canShare?.({ files: [file] })) {
+				// 모바일: 네이티브 공유 시트(→ 인스타·카톡 등).
 				await navigator.share({ files: [file], title: deck?.title ?? '그런데이제' });
-				shareMsg = '공유 시트에서 인스타그램을 골라 올려보세요!';
+				shareMsg = '공유 시트에서 앱을 골라 올려보세요!';
 			} else {
+				// 폴백: 파일 다운로드(클립보드·공유 시트 둘 다 안 될 때).
 				const a = document.createElement('a');
 				a.href = dataUrl;
 				a.download = 'geuronde-ije.png';
 				a.click();
-				shareMsg = '이미지를 저장했어요! 인스타 스토리·피드에 올려보세요';
+				shareMsg = '이미지를 저장했어요! 카톡·인스타에 올려보세요';
 			}
 		} catch (e) {
 			// 사용자가 공유 시트를 닫은 경우(AbortError)는 실패가 아님 — 조용히 넘김.
@@ -240,7 +275,8 @@
 				<div class="cond-list">
 					{#each acc[si] as p, i (p.strength)}
 						<span class="cond" class:cond-new={i === acc[si].length - 1}>
-							<span class="gr">그런데 이제</span> {p.text}.
+							<span class="gr">그런데 이제</span> {p.text}.{#if p.merit}
+								<span class="gr">근데 이제</span> <span class="merit-in">{p.merit}</span>.{/if}
 						</span>
 					{/each}
 				</div>
@@ -252,7 +288,18 @@
 	<div class="result card">
 		<div class="result-badge">그런데 이제 · 결과</div>
 
-		{#if result.indecisive}
+		{#if card}
+			<!-- v3 캐릭터 카드(docs/v3-pivot §2-2): 3스텝 커뮤체. ①놀림 ②이유 ③예언/저주. -->
+			<div class="char-card">
+				<p class="char-label">🎴 당신의 유형: <b>「{card.label}」</b></p>
+				<ul class="char-stats">
+					{#each card.stats as st (st)}
+						<li>{st}</li>
+					{/each}
+				</ul>
+				<p class="char-prophecy">{card.prophecy}</p>
+			</div>
+		{:else if result.indecisive}
 			<p class="result-headline">
 				<span class="endured">이쪽저쪽 재기만 하다</span><br />
 				어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
@@ -276,19 +323,21 @@
 			<p class="rank-badge">🏆 {prefSide.name} 중 <b>상위 {rank.percentile}%</b></p>
 		{/if}
 
-		<div class="depth">
-			<div class="depth-title">🌡️ 버틴 깊이</div>
-			{#each [deck.a, deck.b] as s, si (si)}
-				<div class="bar-row">
-					<span class="bar-label">{s.emoji} {s.name}</span>
-					<span class="bar-track">
-						<span class="bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
-					</span>
-					<span class="bar-num">{result.holdMax[si]}</span>
-				</div>
-			{/each}
-			<p class="verdict">{result.verdict}</p>
-		</div>
+		{#if !card}
+			<div class="depth">
+				<div class="depth-title">🌡️ 버틴 깊이</div>
+				{#each [deck.a, deck.b] as s, si (si)}
+					<div class="bar-row">
+						<span class="bar-label">{s.emoji} {s.name}</span>
+						<span class="bar-track">
+							<span class="bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+						</span>
+						<span class="bar-num">{result.holdMax[si]}</span>
+					</div>
+				{/each}
+				<p class="verdict">{result.verdict}</p>
+			</div>
+		{/if}
 
 		{#if vsResult}
 			<!-- 결과 비교(B-1): 같은 덱을 플레이한 상대와 나란히. -->
@@ -392,7 +441,7 @@
 					<div class="ps-story-title">내가 «{prefSide.name}» 편에서 버틴 것들</div>
 					<ul class="ps-conds">
 						{#each resultAcc[result.pref] as p (p.strength)}
-							<li>그런데 이제 {p.text}.</li>
+							<li>그런데 이제 {p.text}.{#if p.merit} 근데 이제 {p.merit}.{/if}</li>
 						{/each}
 						{#if resultAcc[result.pref].length === 0}
 							<li class="ps-none">— (첫 판에 바로 갈아탔어요)</li>
@@ -414,39 +463,52 @@
 			<div class="ig-brand">그런데이제</div>
 			<div class="ig-topic">{deck.icon} {deck.title}</div>
 
-			<div class="ig-verdict">
-				{#if result.indecisive}
-					어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
-				{:else if result.adaptive}
-					상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
-				{:else}
-					그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
-				{/if}
-			</div>
-
-			<div class="ig-depth">
-				{#each [deck.a, deck.b] as s, si (si)}
-					<div class="ig-bar-row">
-						<span class="ig-bar-label">{s.emoji} {s.name}</span>
-						<span class="ig-bar-track">
-							<span class="ig-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
-						</span>
-						<span class="ig-bar-num">{result.holdMax[si]}</span>
-					</div>
-				{/each}
-			</div>
-
-			<p class="ig-line">{result.verdict}</p>
-
-			{#if resultAcc && !result.indecisive && !result.adaptive && resultAcc[result.pref].length}
-				<div class="ig-story">
-					<div class="ig-story-title">«{prefSide.name}» 편에서 버틴 것들</div>
-					<ul>
-						{#each resultAcc[result.pref].slice(-3) as p (p.strength)}
-							<li>그런데 이제 {p.text}.</li>
+			{#if card}
+				<!-- v3 캐릭터 카드(화면 결과와 동일): 놀림 + 스탯 + 저주. 세로 중앙 배치로 잘림 방지. -->
+				<div class="ig-char">
+					<div class="ig-label">🎴 당신의 유형<br /><b>「{card.label}」</b></div>
+					<ul class="ig-stats">
+						{#each card.stats as st (st)}
+							<li>{st}</li>
 						{/each}
 					</ul>
+					<p class="ig-prophecy">{card.prophecy}</p>
 				</div>
+			{:else}
+				<div class="ig-verdict">
+					{#if result.indecisive}
+						어느 쪽도 끝까지 못 버틴 <b>결정장애</b> 유형
+					{:else if result.adaptive}
+						상황마다 최선을 골라 갈아탄 <b>적응형</b> 유형
+					{:else}
+						그래도 {prefSide.emoji} <b>{prefSide.name}</b> {headlineTail(deck)}
+					{/if}
+				</div>
+
+				<div class="ig-depth">
+					{#each [deck.a, deck.b] as s, si (si)}
+						<div class="ig-bar-row">
+							<span class="ig-bar-label">{s.emoji} {s.name}</span>
+							<span class="ig-bar-track">
+								<span class="ig-bar-fill" style="width:{(result.holdMax[si] / ROUNDS) * 100}%"></span>
+							</span>
+							<span class="ig-bar-num">{result.holdMax[si]}</span>
+						</div>
+					{/each}
+				</div>
+
+				<p class="ig-line">{result.verdict}</p>
+
+				{#if resultAcc && !result.indecisive && !result.adaptive && resultAcc[result.pref].length}
+					<div class="ig-story">
+						<div class="ig-story-title">«{prefSide.name}» 편에서 버틴 것들</div>
+						<ul>
+							{#each resultAcc[result.pref].slice(-3) as p (p.strength)}
+								<li>그런데 이제 {p.text}.{#if p.merit} 근데 이제 {p.merit}.{/if}</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
 			{/if}
 
 			<div class="ig-footer">
@@ -522,6 +584,11 @@
 		font-weight: 700;
 		color: #2e9e5b;
 	}
+	/* v3 인라인 메리트: 조건에 결합된 "근데 이제 ~" 부분을 초록 톤으로 구분. */
+	.merit-in {
+		color: #2e9e5b;
+		font-weight: 600;
+	}
 	/* 누적 조건 리스트: 판마다 한 줄씩 쌓인다(생략 없음). */
 	.cond-list {
 		display: flex;
@@ -578,6 +645,57 @@
 	.endured {
 		color: var(--accent);
 		font-weight: 700;
+	}
+	/* v3 캐릭터 카드(3스텝 커뮤체): ①놀림 헤드라인 ②이유 ③예언/저주. */
+	.char-card {
+		text-align: left;
+		margin: 0 0 20px;
+	}
+	.char-label {
+		font-size: 15px;
+		line-height: 1.4;
+		margin: 0 0 14px;
+		text-align: center;
+	}
+	.char-label b {
+		display: block;
+		font-size: 23px;
+		font-weight: 800;
+		color: var(--accent);
+		margin-top: 4px;
+	}
+	.char-stats {
+		list-style: none;
+		padding: 14px 16px;
+		margin: 0 0 14px;
+		background: var(--soft);
+		border-radius: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+	}
+	.char-stats li {
+		font-size: 14px;
+		line-height: 1.4;
+		color: var(--ink);
+		padding-left: 14px;
+		position: relative;
+	}
+	.char-stats li::before {
+		content: '▸';
+		position: absolute;
+		left: 0;
+		color: var(--accent);
+	}
+	.char-prophecy {
+		font-size: 15px;
+		font-weight: 700;
+		line-height: 1.5;
+		margin: 0;
+		padding: 12px 14px;
+		border: 2px dashed var(--line);
+		border-radius: 10px;
+		text-align: center;
 	}
 	.rank-badge {
 		margin: -8px 0 18px;
@@ -755,6 +873,57 @@
 		font-weight: 800;
 		line-height: 1.25;
 		margin: 20px 0 44px;
+	}
+	/* v3 캐릭터 카드(공유 이미지용): 남은 공간에 세로 중앙 배치 → 위아래 안 잘림. */
+	.ig-char {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 40px;
+		min-height: 0;
+	}
+	.ig-label {
+		text-align: center;
+		font-size: 34px;
+		line-height: 1.35;
+		color: #17151f;
+	}
+	.ig-label b {
+		display: inline-block;
+		margin-top: 12px;
+		font-size: 60px;
+		font-weight: 800;
+		line-height: 1.25;
+		color: #6d5efc;
+	}
+	.ig-stats {
+		list-style: none;
+		margin: 0;
+		padding: 40px 46px;
+		background: #fff;
+		border: 5px solid #d9cffb;
+		border-radius: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 26px;
+		font-size: 38px;
+		line-height: 1.35;
+	}
+	.ig-stats li::before {
+		content: '▸ ';
+		color: #6d5efc;
+		font-weight: 800;
+	}
+	.ig-prophecy {
+		text-align: center;
+		font-weight: 800;
+		font-size: 42px;
+		line-height: 1.45;
+		margin: 0;
+		padding: 38px 40px;
+		border: 5px dashed #d9cffb;
+		border-radius: 24px;
 	}
 	.ig-verdict {
 		text-align: center;
