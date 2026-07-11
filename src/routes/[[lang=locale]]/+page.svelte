@@ -127,10 +127,12 @@
 	.deck-icon {
 		font-size: 44px;
 	}
-	/* 이미지 아이콘 배너: 카드 콘텐츠 폭을 채우고 전체가 잘림 없이 보이게 */
+	/* 이미지 아이콘 배너: 카드 폭을 채우고 모든 덱이 같은 높이(~1.8:1)로 통일.
+	   가로가 넓은 이미지(파노라마)는 좌우가 살짝 crop되지만 배너 크기가 균일해진다. */
 	.deck-cover {
 		width: 100%;
-		height: auto;
+		aspect-ratio: 11 / 6;
+		object-fit: cover;
 		display: block;
 		border-radius: 8px;
 	}
