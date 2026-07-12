@@ -1098,7 +1098,7 @@
 		font-weight: 800;
 		margin: 6px 0;
 		white-space: nowrap;
-		background: #5a5a5a;
+		background: #a3a3a3;
 		color: #fff;
 		padding: 5px 12px;
 		border-radius: 3px;
