@@ -201,6 +201,31 @@
 	let igCardEl = $state<HTMLElement>();
 	let imgBusy = $state(false);
 
+	// PNG용 Galmuri 픽셀 폰트 임베드 CSS(base64). 최초 1회 빌드 후 캐시. 실패 시 '' (시스템 폰트 폴백).
+	let _galmuriCss: string | null = null;
+	async function galmuriEmbedCss(): Promise<string> {
+		if (_galmuriCss !== null) return _galmuriCss;
+		const toB64 = (buf: ArrayBuffer) => {
+			const bytes = new Uint8Array(buf);
+			let bin = '';
+			for (let i = 0; i < bytes.length; i += 0x8000)
+				bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+			return btoa(bin);
+		};
+		try {
+			const [reg, bold] = await Promise.all([
+				fetch('/fonts/Galmuri11.woff2').then((r) => r.arrayBuffer()),
+				fetch('/fonts/Galmuri11-Bold.woff2').then((r) => r.arrayBuffer())
+			]);
+			_galmuriCss =
+				`@font-face{font-family:'Galmuri11';font-weight:400;font-style:normal;src:url(data:font/woff2;base64,${toB64(reg)}) format('woff2')}` +
+				`@font-face{font-family:'Galmuri11';font-weight:700;font-style:normal;src:url(data:font/woff2;base64,${toB64(bold)}) format('woff2')}`;
+		} catch {
+			_galmuriCss = '';
+		}
+		return _galmuriCss;
+	}
+
 	// igCardEl(9:16 프레임) → PNG {dataUrl, blob}. 캡처 직전 영수증을 프레임에 맞게 scale-to-fit.
 	async function renderCardPng(el: HTMLElement): Promise<{ dataUrl: string; blob: Blob }> {
 		// 판 수(5~10)에 따라 영수증 높이가 달라지므로, 프레임(1080×1920)에 맞춰 축소한다.
@@ -212,15 +237,16 @@
 			rc.style.transform = `translateX(-50%) scale(${sc})`;
 		}
 		const { toPng } = await import('html-to-image');
+		const fontEmbedCSS = await galmuriEmbedCss();
 		const dataUrl = await toPng(el, {
 			width: 1080,
 			height: 1920,
 			pixelRatio: 1,
 			cacheBust: true,
 			backgroundColor: '#6d5efc',
-			// 폰트 임베드 끄기: CDN(Galmuri) 스타일시트는 cross-origin이라 cssRules 접근이
-			// SecurityError로 터진다. 스킵하면 이미지엔 시스템 폰트로 렌더(한글·이모지 정상).
-			skipFonts: true,
+			// Galmuri 픽셀 폰트를 base64로 임베드 → PNG에도 픽셀 폰트. fontEmbedCSS를 직접 주면
+			// html-to-image가 문서 스타일시트를 안 훑어서 CDN cross-origin cssRules SecurityError도 회피.
+			fontEmbedCSS,
 			// 카드는 화면 밖(position:fixed; left:-20000px)에 있어서, 복제본이 그 오프셋까지
 			// 물려받으면 캡처 캔버스가 백지가 된다. 캡처 시에만 원점으로 되돌린다.
 			style: { position: 'static', left: '0px', top: '0px' }
@@ -358,7 +384,7 @@
 					{#each acc[si] as p, i (p.strength)}
 						<span class="cond" class:cond-new={i === acc[si].length - 1}>
 							<span class="gr">그런데 이제</span> {p.text}.{#if p.merit}
-								<span class="gr">근데 이제</span> <span class="merit-in">{p.merit}</span>.{/if}
+								<span class="gr">하지만</span> <span class="merit-in">{p.merit}</span>.{/if}
 						</span>
 					{/each}
 				</div>
@@ -473,7 +499,7 @@
 					<div class="ps-story-title">내가 «{prefSide.name}» 편에서 버틴 것들</div>
 					<ul class="ps-conds">
 						{#each resultAcc[result.pref] as p (p.strength)}
-							<li>그런데 이제 {p.text}.{#if p.merit} 근데 이제 {p.merit}.{/if}</li>
+							<li>그런데 이제 {p.text}.{#if p.merit} 하지만 {p.merit}.{/if}</li>
 						{/each}
 						{#if resultAcc[result.pref].length === 0}
 							<li class="ps-none">— (첫 판에 바로 갈아탔어요)</li>
@@ -562,7 +588,7 @@
 		font-weight: 700;
 		color: #2e9e5b;
 	}
-	/* v3 인라인 메리트: 조건에 결합된 "근데 이제 ~" 부분을 초록 톤으로 구분. */
+	/* v3 인라인 메리트: 조건에 결합된 "하지만 ~" 부분을 초록 톤으로 구분. */
 	.merit-in {
 		color: #2e9e5b;
 		font-weight: 600;
@@ -1018,8 +1044,8 @@
 		color: #333;
 	}
 	.rc-row {
-		display: grid;
-		grid-template-columns: 1fr auto;
+		display: flex;
+		justify-content: space-between;
 		gap: 8px;
 		padding: 3px 2px;
 		align-items: baseline;
@@ -1030,6 +1056,7 @@
 	.rc-cant {
 		color: #c0392b;
 		font-weight: 800;
+		white-space: nowrap;
 	}
 	.rc-head {
 		font-weight: 800;
@@ -1037,11 +1064,14 @@
 		font-size: 11px;
 	}
 	.rc-nm {
+		flex: 1;
 		min-width: 0;
 	}
 	.rc-gb {
+		flex: none;
 		text-align: right;
 		font-weight: 800;
+		white-space: nowrap;
 	}
 	.k-감수 {
 		color: #1a7f4b;
@@ -1053,6 +1083,7 @@
 		text-align: center;
 		font-weight: 800;
 		font-size: 12px;
+		white-space: nowrap;
 	}
 	.rc-kv {
 		display: flex;
@@ -1062,14 +1093,17 @@
 	}
 	.rc-kv span {
 		color: #666;
+		white-space: nowrap;
 	}
 	.rc-kv b {
 		text-align: right;
+		white-space: nowrap;
 	}
 	.rc-total {
 		font-size: 15px;
 		font-weight: 800;
 		margin: 2px 0;
+		white-space: nowrap;
 	}
 	.rc-total b {
 		font-size: 15px;
