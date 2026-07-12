@@ -4,7 +4,10 @@ import { SITE } from '$lib/site';
 export const prerender = true;
 
 export function GET() {
-	const urls = [{ loc: `${SITE}/`, priority: '1.0', changefreq: 'daily' }];
+	const urls = [
+		{ loc: `${SITE}/`, priority: '1.0', changefreq: 'daily' },
+		{ loc: `${SITE}/stats`, priority: '0.7', changefreq: 'daily' }
+	];
 
 	const body =
 		`<?xml version="1.0" encoding="UTF-8"?>\n` +

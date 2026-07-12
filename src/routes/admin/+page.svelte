@@ -1,17 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { getSessionId } from '$lib/supabase';
 	import { isImageIcon, type Deck, type DeckType } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import ImageSearchModal from '$lib/components/ImageSearchModal.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-
-	let sessionId = $state('');
-	onMount(() => {
-		sessionId = getSessionId();
-	});
 
 	const kindLabel = (k: string) => (k === 'topic' ? '주제' : '조건');
 	const statusLabel: Record<string, string> = {
@@ -155,7 +148,6 @@
 		</div>
 	{:else if !data.authed}
 		<form method="POST" action="?/login" class="card login">
-			<input type="hidden" name="session_id" value={sessionId} />
 			<label>
 				비밀번호
 				<input type="password" name="password" autocomplete="current-password" required />
@@ -165,50 +157,16 @@
 		</form>
 	{:else}
 		{@const requests = data.requests ?? []}
-		{@const deckStats = data.deckStats ?? []}
 		<form method="POST" action="?/logout" class="logout-row">
 			<button type="submit" class="ghost">로그아웃</button>
 		</form>
 
-		<!-- 1. 방문자 / 2. 플레이 요약 -->
-		<div class="stat-row">
-			<div class="card stat">
-				<span class="stat-num">{data.visitors}</span>
-				<span class="stat-cap">고유 방문자 <small>(관리자 제외)</small></span>
-			</div>
-			<div class="card stat">
-				<span class="stat-num">{data.totalPlays}</span>
-				<span class="stat-cap">총 플레이(완주)</span>
-			</div>
-		</div>
+		<!-- 덱별 플레이 지표는 공개 통계 페이지로 분리(누구나 열람). -->
+		<a class="stats-link card" href="/stats">
+			📊 덱별 플레이 통계 보기 <small>(공개 페이지 · /stats)</small>
+		</a>
 
-		<!-- 2. 덱별 결과 -->
-		<h3>덱별 결과</h3>
-		<div class="table-wrap">
-			<table>
-				<thead>
-					<tr><th>덱</th><th>플레이</th><th>선호 분포</th><th>평균 깊이</th></tr>
-				</thead>
-				<tbody>
-					{#each deckStats as s (s.id)}
-						<tr>
-							<td>{s.title}</td>
-							<td class="num">{s.plays}</td>
-							<td class="dist">
-								{#if s.plays}
-									{s.nameA} {s.prefA} · {s.nameB} {s.prefB}
-								{:else}
-									<span class="muted">—</span>
-								{/if}
-							</td>
-							<td class="num">{s.plays ? s.avgDepth : '—'}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-
-		<!-- 3. 주제/조건 신청 -->
+		<!-- 주제/조건 신청 -->
 		<h3>주제·조건 신청 <small>({requests.length})</small></h3>
 		{#if requests.length === 0}
 			<p class="muted">아직 신청이 없습니다.</p>
@@ -354,8 +312,13 @@
 								/>
 								<input
 									class="ed-pshort"
-									placeholder="영수증용 짧은 라벨(선택, 없으면 자동 축약)"
+									placeholder="💢 페널티 짧은 라벨(영수증·참은 것 칩, 없으면 자동 축약)"
 									bind:value={p.short}
+								/>
+								<input
+									class="ed-pmshort"
+									placeholder="🎁 메리트 짧은 라벨(얻은 것 칩, 없으면 자동 축약)"
+									bind:value={p.meritShort}
 								/>
 								<button
 									type="button"
@@ -479,51 +442,24 @@
 	.logout-row {
 		text-align: right;
 	}
-	.stat-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 14px;
-	}
-	.stat {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 4px;
-		padding: 22px;
-	}
-	.stat-num {
-		font-size: 40px;
-		font-weight: 800;
-	}
-	.stat-cap {
-		font-size: 14px;
-		color: var(--muted);
-	}
-	.table-wrap {
-		overflow-x: auto;
-	}
-	table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 14px;
-	}
-	th,
-	td {
-		text-align: left;
-		padding: 10px 8px;
-		border-bottom: 2px solid var(--line);
-		white-space: nowrap;
-	}
-	td.num,
-	th:nth-child(2),
-	th:nth-child(4) {
-		text-align: right;
-	}
-	.dist {
-		white-space: normal;
-	}
 	.muted {
 		color: var(--muted);
+	}
+	/* 공개 통계 페이지로 가는 링크(덱별 지표는 거기로 분리) */
+	.stats-link {
+		display: block;
+		text-decoration: none;
+		color: var(--ink);
+		font-weight: 700;
+		padding: 16px 18px;
+		margin-bottom: 8px;
+	}
+	.stats-link:hover {
+		border-color: var(--accent);
+	}
+	.stats-link small {
+		color: var(--muted);
+		font-weight: 700;
 	}
 	.reqs {
 		list-style: none;
@@ -733,9 +669,13 @@
 		grid-column: 2;
 		grid-row: 3;
 	}
+	.ed-pmshort {
+		grid-column: 2;
+		grid-row: 4;
+	}
 	.ed-delcond {
 		grid-column: 3;
-		grid-row: 1 / span 3;
+		grid-row: 1 / span 4;
 		align-self: center;
 		border: 2px solid var(--line);
 		background: var(--surface);

@@ -48,6 +48,7 @@
 
 <section class="intro">
 	<p class="muted">고른 쪽에 조건이 하나씩 붙어요. <b>그런데 이제</b>… 끝까지 버틸 수 있나요?</p>
+	<a class="stats-cta" href={localePath(locale, '/stats')}>📊 모두의 선택 보기</a>
 </section>
 
 {#if results.length === 0}
@@ -82,7 +83,7 @@
 {/if}
 
 <p class="suggest-cta">
-	<a href={localePath(locale, '/suggest')}>💡 새 주제·조건 신청하기</a>
+	<a href={localePath(locale, '/suggest')}>💡 내가 주제 만들기</a>
 </p>
 
 <style>
@@ -90,6 +91,20 @@
 		max-width: 640px;
 		margin: 0 auto 20px;
 		text-align: center;
+	}
+	.stats-cta {
+		display: inline-block;
+		margin-top: 10px;
+		font-size: 13px;
+		font-weight: 700;
+		text-decoration: none;
+		color: var(--ink);
+		border: 2px solid var(--line);
+		padding: 6px 14px;
+	}
+	.stats-cta:hover {
+		border-color: var(--accent);
+		color: var(--accent);
 	}
 	.no-result {
 		text-align: center;

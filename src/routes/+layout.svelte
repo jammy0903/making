@@ -1,11 +1,9 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import { SITE } from '$lib/site';
 	import { page } from '$app/state';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
-	import { logVisit } from '$lib/supabase';
 	import { search } from '$lib/search.svelte';
 	import {
 		setLocaleContext,
@@ -20,12 +18,7 @@
 
 	let { children } = $props();
 
-	injectAnalytics(); // Vercel Web Analytics (유입 측정)
-
-	// 고유 방문자 집계(관리자 페이지 자체 방문은 제외 — 로그인하면 어차피 세션이 관리자로 표시됨).
-	onMount(() => {
-		if (!page.url.pathname.startsWith('/admin')) logVisit();
-	});
+	injectAnalytics(); // Vercel Web Analytics — 방문자 지표는 전적으로 여기에 위임(자체 집계 없음)
 
 	// 로케일은 URL 로 결정 (/ = ko, /en, /zh). 크로스-로케일 전환은 전체 리로드라 컨텍스트는 초기값 고정으로 안전.
 	const initialLocale: Locale = (page.params.lang as Locale) ?? defaultLocale;
@@ -198,16 +191,12 @@
 		max-width: 340px;
 		min-width: 0;
 	}
-	/* 유형칩: 데스크톱에선 항상 전부 표시(줄지 않음 → 잘림 방지). */
+	/* 유형칩: 한 덩어리 세그먼트 컨트롤(연결된 토글). 데스크톱에선 항상 전부 표시. */
 	.header-filters {
 		display: flex;
-		align-items: center;
-		gap: 6px;
+		align-items: stretch;
 		flex: 0 0 auto;
-		scrollbar-width: none; /* Firefox */
-	}
-	.header-filters::-webkit-scrollbar {
-		display: none; /* Chrome/Safari */
+		border: 2px solid var(--line);
 	}
 	/* 모바일: 헤더를 세 줄로 — 1행 제목+언어선택, 2행 검색창, 3행 유형칩(전체폭 균등).
 	   칩을 작게 줄이고 한 줄 폭에 나눠 담아 가로 스크롤 없이 5개 다 보이게. */
@@ -230,13 +219,9 @@
 		.app-header.wide .header-search {
 			max-width: none; /* 검색창이 줄 폭 다 쓰도록 상한 해제 */
 		}
-		.header-filters {
-			gap: 5px;
-			overflow-x: visible; /* 스크롤 제거 — 아래 칩 축소로 5개 모두 한 줄에 */
-		}
 		.header-filters .chip {
 			flex: 1 1 0; /* 5개 칩이 줄 폭을 균등 분할 */
-			padding: 6px 4px; /* 작게 */
+			padding: 8px 4px; /* 작게 */
 			font-size: 12px;
 			min-width: 0;
 		}
@@ -246,17 +231,27 @@
 		font: inherit;
 		font-size: 13px;
 		font-weight: 700;
-		padding: 6px 12px;
-		border: 3px solid var(--line);
+		padding: 7px 13px;
+		border: none;
+		border-left: 2px solid var(--line); /* 칩 사이 구분선 */
 		background: var(--surface);
-		color: var(--ink);
+		color: var(--muted); /* 비활성은 은은하게 → 검색창과 경쟁 안 함 */
 		cursor: pointer;
 		white-space: nowrap;
+		transition:
+			background 0.12s,
+			color 0.12s;
+	}
+	.chip:first-child {
+		border-left: none;
+	}
+	.chip:hover {
+		background: var(--soft);
+		color: var(--ink);
 	}
 	.chip.on {
 		background: var(--accent);
 		color: var(--accent-ink);
-		border-color: var(--accent);
 	}
 	.header-search input {
 		width: 100%;

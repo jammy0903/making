@@ -40,24 +40,6 @@ export interface PlayRank {
 	sample: number;
 }
 
-/** 세션 uuid를 밖에서도 쓸 수 있게(관리자 로그인 시 자기 세션 제외용). */
-export function getSessionId(): string {
-	return sessionId();
-}
-
-/** 방문 기록(고유 방문자 집계용). 실패는 조용히 무시 — 통계 부수효과일 뿐. */
-export async function logVisit(): Promise<void> {
-	const sb = getSupabase();
-	if (!sb) return;
-	const sid = sessionId();
-	if (!sid) return;
-	try {
-		await sb.rpc('log_visit', { p_session_id: sid });
-	} catch (e) {
-		console.warn('[logVisit]', e);
-	}
-}
-
 /**
  * 주제/조건 신청 접수. 성공하면 true.
  * @param kind 'topic'(새 주제) | 'condition'(조건 문구 제안)
