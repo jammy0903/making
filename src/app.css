@@ -17,6 +17,9 @@
 	/* 박스 하드 그림자 색. 잉크보다 조금 옅게(투명도↓) — 여기 하나만 바꾸면 전역 토글. */
 	--shadow-color: rgba(33, 31, 61, 0.55);
 	--shadow: 4px 4px 0 var(--shadow-color);
+	/* 넓은 콘텐츠(홈 갤러리·상단바) PC 최대폭. 좌우 광고 배너(.ad-side 160px) 자리를
+	   남기려 1040→960. 여기 하나만 바꾸면 상단바·갤러리 폭이 함께 조정됨. */
+	--wide: 960px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -74,9 +77,9 @@ button,
 	padding: 0 16px 48px;
 }
 
-/* 홈 갤러리는 넓게 (헤더·다른 페이지는 640px 유지) */
+/* 홈 갤러리는 넓게 (기타 페이지 본문은 640px 유지) */
 .wrap.wide {
-	max-width: 1040px;
+	max-width: var(--wide);
 }
 
 /* ── 광고 슬롯 ──────────────────────────────────────────────
@@ -186,10 +189,10 @@ button,
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	/* PC: 모든 페이지 상단바를 1040으로 통일. max-width라 모바일은 뷰포트 폭으로
-	   자동 분리(모바일 크기 유지). 홈은 이 폭이 카드 갤러리(.wrap.wide 1040)도 덮어
+	/* PC: 모든 페이지 상단바를 --wide로 통일(갤러리와 같은 폭). max-width라 모바일은
+	   뷰포트 폭으로 자동 분리(모바일 크기 유지). 홈은 이 폭이 카드 갤러리도 덮어
 	   스크롤 시 그림자 새는 것까지 방지. */
-	max-width: 1040px;
+	max-width: var(--wide);
 	margin: 0 auto 8px;
 	padding: 14px 16px;
 	padding-top: max(14px, env(safe-area-inset-top)); /* 노치 대응 */

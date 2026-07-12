@@ -184,21 +184,30 @@
 		min-width: 0; /* 자식(칩) 축소 허용 */
 		flex: 0 1 auto;
 	}
+	/* 검색창이 남는 공간을 채우되 좁아지면 먼저 줄어든다(칩보다 양보). 상한 340. */
 	.app-header.wide .header-search {
-		flex: 0 1 340px;
+		flex: 1 1 auto;
 		max-width: 340px;
+		min-width: 0;
 	}
+	/* 유형칩: 데스크톱에선 항상 전부 표시(줄지 않음 → 잘림 방지). */
 	.header-filters {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex: 0 1 auto; /* 데스크톱=내용폭, 좁으면 줄어들며 칩 가로 스크롤 */
-		min-width: 0;
-		overflow-x: auto; /* 좁은 화면에선 칩을 가로 스크롤(넘침 방지) */
+		flex: 0 0 auto;
 		scrollbar-width: none; /* Firefox */
 	}
 	.header-filters::-webkit-scrollbar {
 		display: none; /* Chrome/Safari */
+	}
+	/* 모바일: 한 줄에 다 못 담으므로 칩을 가로 스크롤로 분리. */
+	@media (max-width: 680px) {
+		.header-filters {
+			flex: 0 1 auto;
+			min-width: 0;
+			overflow-x: auto;
+		}
 	}
 	.chip {
 		flex: 0 0 auto;
