@@ -321,10 +321,11 @@
 		<div class="rc-row rc-head"><span>품 목</span><span class="rc-gb">구분</span></div>
 		<div class="rc-dash">- - - - - - - - - - - - - - - - -</div>
 		{#each receiptItems as it (it.s)}
-			<div class="rc-row" class:avoid={it.kind === '회피'}>
+			<div class="rc-row rc-item" class:avoid={it.kind === '회피'}>
 				<span class="rc-nm"
 					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josaEun(it.t)} 못해</span>{/if}</span
 				>
+				<span class="rc-lead"></span>
 				<span class="rc-gb k-{it.kind}">{it.kind}</span>
 			</div>
 		{/each}
@@ -1060,6 +1061,11 @@
 	.rc-nm {
 		flex: 1;
 		min-width: 0;
+	}
+	/* 품목 행: 왼쪽 정렬 + 회색 점선 리더 후 감수/회피 */
+	.rc-item .rc-nm {
+		flex: 0 1 auto;
+		text-align: left;
 	}
 	.rc-gb {
 		flex: none;
