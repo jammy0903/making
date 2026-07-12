@@ -90,7 +90,7 @@
 -->
 <div class="ad ad-top" id="ad-top"></div>
 
-<header class="app-header">
+<header class="app-header" class:wide={isHome}>
 	{#if !isHome}
 		<a class="btn" href={localePath(locale, '/')} aria-label={t('nav.home')} style="padding:8px 12px"
 			>‹</a
@@ -149,6 +149,10 @@
 		position: relative;
 		flex: 1 1 auto;
 		max-width: 360px;
+	}
+	/* 넓은 상단바(홈)에선 검색창이 남는 공간을 채워 언어선택을 오른쪽 끝으로 민다. */
+	.app-header.wide .header-search {
+		max-width: none;
 	}
 	.header-search input {
 		width: 100%;

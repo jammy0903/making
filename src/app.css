@@ -193,6 +193,11 @@ button,
 	background: var(--bg);
 	border-bottom: 3px solid var(--line);
 }
+/* 홈: 상단바를 갤러리 폭(1040)에 맞춰 늘림 — sticky 바가 좁으면 스크롤 시
+   640px 밖 카드들이 옆으로 지나가며 그림자가 새 보인다(.wrap.wide와 폭 일치). */
+.app-header.wide {
+	max-width: 1040px;
+}
 
 .app-title {
 	margin: 0;
