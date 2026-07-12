@@ -1096,11 +1096,19 @@
 	.rc-total {
 		font-size: 15px;
 		font-weight: 800;
-		margin: 2px 0;
+		margin: 6px 0;
 		white-space: nowrap;
+		background: #111;
+		color: #fff;
+		padding: 9px 12px;
+		border-radius: 3px;
+	}
+	.rc-total span {
+		color: #fff;
 	}
 	.rc-total b {
 		font-size: 15px;
+		color: #fff;
 	}
 	.rc-vat {
 		align-items: flex-end;
