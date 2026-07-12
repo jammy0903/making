@@ -4,6 +4,7 @@
 	import { SITE } from '$lib/site';
 	import { page } from '$app/state';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+	import { dev } from '$app/environment';
 	import { search } from '$lib/search.svelte';
 	import {
 		setLocaleContext,
@@ -18,7 +19,9 @@
 
 	let { children } = $props();
 
-	injectAnalytics(); // Vercel Web Analytics — 방문자 지표는 전적으로 여기에 위임(자체 집계 없음)
+	// Vercel Web Analytics — 방문자 지표는 전적으로 여기에 위임(자체 집계 없음).
+	// dev에선 development 모드(콘솔 디버그, 실통계 미집계) → 로컬 방문이 실서비스 지표에 안 섞임.
+	injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	// 로케일은 URL 로 결정 (/ = ko, /en, /zh). 크로스-로케일 전환은 전체 리로드라 컨텍스트는 초기값 고정으로 안전.
 	const initialLocale: Locale = (page.params.lang as Locale) ?? defaultLocale;
