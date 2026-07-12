@@ -333,7 +333,6 @@
 		<div class="rc-kv rc-vat">
 			<span>부가세</span><span class="rc-lead"></span><b>회피 {rcCnt('회피')} · 감수 {rcCnt('감수')}</b>
 		</div>
-		<div class="rc-eq">================================</div>
 		<div class="rc-kv"><span>결제수단</span><b>인생 · 일시불</b></div>
 		{#if rank && rank.sample >= MIN_RANK_SAMPLE && !result?.indecisive && !result?.adaptive}
 			<div class="rc-kv"><span>버틴 자</span><b>상위 {rank.percentile}%</b></div>
@@ -1114,7 +1113,7 @@
 	}
 	.rc-grade {
 		font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
-		font-size: 13.5px;
+		font-size: 12px;
 		font-weight: 800;
 		letter-spacing: -0.2px;
 		white-space: normal;
