@@ -315,7 +315,7 @@
 {#snippet resultReceipt()}
 	<div class="rcpt">
 		<div class="rc-store">그 런 데 이 제</div>
-		<div class="rc-kind">감 수 · 회 피 영 수 증</div>
+		<div class="rc-kind">취 향 영 수 증</div>
 		<div class="rc-info">{deck?.title}</div>
 		<div class="rc-eq">================================</div>
 		<div class="rc-row rc-head"><span>품 목</span><span class="rc-gb">구분</span></div>
