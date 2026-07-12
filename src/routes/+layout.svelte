@@ -105,6 +105,7 @@
 			>‹</a
 		>
 	{/if}
+	<img class="app-emblem" src="/emblem.png" alt="" aria-hidden="true" />
 	<h1 class="app-title">{t('app.title')}</h1>
 	{#if isHome}
 		<!-- 검색창+유형칩을 한 묶음으로 감싸 헤더 가운데에 배치(margin:0 auto). -->
@@ -156,6 +157,13 @@
 <div class="ad ad-bottom" id="ad-bottom"></div>
 
 <style>
+	/* 상단 제목 왼쪽 엠블럼(로고). 제목 폰트(18px)보다 살짝 큰 뱃지 크기. */
+	.app-emblem {
+		height: 36px;
+		width: auto;
+		flex: 0 0 auto;
+		display: block;
+	}
 	.lang-select {
 		margin-left: 8px;
 		font: inherit;
