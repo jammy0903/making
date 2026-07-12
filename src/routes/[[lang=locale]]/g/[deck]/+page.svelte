@@ -1098,9 +1098,9 @@
 		font-weight: 800;
 		margin: 6px 0;
 		white-space: nowrap;
-		background: #111;
+		background: #5a5a5a;
 		color: #fff;
-		padding: 9px 12px;
+		padding: 5px 12px;
 		border-radius: 3px;
 	}
 	.rc-total span {
