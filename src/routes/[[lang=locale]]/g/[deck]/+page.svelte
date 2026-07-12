@@ -1032,7 +1032,7 @@
 		letter-spacing: -0.5px;
 		overflow: hidden;
 		white-space: nowrap;
-		margin: 7px 0;
+		margin: 4px 0;
 	}
 	.rc-eq {
 		color: #333;
