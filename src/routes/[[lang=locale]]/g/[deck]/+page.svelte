@@ -118,10 +118,7 @@
 		return out;
 	});
 	const rcCnt = (k: '감수' | '회피') => receiptItems.filter((i) => i.kind === k).length;
-	// 합계 = 결과 편(결정장애/적응형은 그 문구). 부가세 = 유형 라벨(카드), 없으면 verdict 폴백.
-	const rcTotal = $derived(
-		!result ? '' : result.indecisive ? '결정장애' : result.adaptive ? '적응형' : (prefSide?.name ?? '')
-	);
+	// 합계 = 유형 라벨(카드), 없으면 verdict 폴백. 부가세 = 회피·감수 카운트.
 	const rcGrade = $derived(card?.label ?? result?.verdict ?? '');
 	function josaEun(w: string): string {
 		const c = w.charCodeAt(w.length - 1);
@@ -332,11 +329,9 @@
 			</div>
 		{/each}
 		<div class="rc-eq">================================</div>
-		<div class="rc-sum">감수 {rcCnt('감수')} · 회피 {rcCnt('회피')}</div>
-		<div class="rc-dash">- - - - - - - - - - - - - - - - -</div>
-		<div class="rc-kv rc-total"><span>합 계</span><b>{rcTotal}</b></div>
+		<div class="rc-kv rc-total"><span>합 계</span><b class="rc-grade">「{rcGrade}」</b></div>
 		<div class="rc-kv rc-vat">
-			<span>부가세</span><span class="rc-lead"></span><b class="rc-grade">「{rcGrade}」</b>
+			<span>부가세</span><span class="rc-lead"></span><b>회피 {rcCnt('회피')} · 감수 {rcCnt('감수')}</b>
 		</div>
 		<div class="rc-eq">================================</div>
 		<div class="rc-kv"><span>결제수단</span><b>인생 · 일시불</b></div>
@@ -1122,6 +1117,8 @@
 		font-size: 13.5px;
 		font-weight: 800;
 		letter-spacing: -0.2px;
+		white-space: normal;
+		text-align: right;
 	}
 	.rc-fine {
 		text-align: center;
