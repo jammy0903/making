@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
-	import { penaltyStyleOf } from '$lib/game/decks';
+	import { penaltyStyleOf, shortenPenalty } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData } from './$types';
 	import { saveResult } from '$lib/game/savedResults';
@@ -57,7 +57,7 @@
 	// v3 캐릭터 카드: 덱에 resultCards가 있으면 숫자 결과 대신 유형 카드를 띄운다(없으면 null → v2 폴백).
 	const card = $derived(deck && result ? pickResultCard(deck, result) : null);
 
-	// 카드 위치 고정(사용자 요청): 매 판 deck.a 위·deck.b 아래로 고정. 스크램블 없음.
+	// 카드 위치 고정(사용자 요청): 매 판 deck.a 왼쪽·deck.b 오른쪽으로 고정. 스크램블 없음.
 	// (자문 A-2 위치 편향 랜덤화는 플레이 감각상 철회 — 뭘 눌러도 자리가 안 바뀌게.)
 	const order: SideIndex[] = [0, 1];
 
@@ -113,7 +113,7 @@
 			const held = choices[n - 2];
 			const p = (held === 0 ? deck.a : deck.b).penalties[n - 2];
 			if (!p) continue;
-			out.push({ s: n, t: p.text, kind: choices[n - 1] === held ? '감수' : '회피' });
+			out.push({ s: n, t: p.short || shortenPenalty(p.text), kind: choices[n - 1] === held ? '감수' : '회피' });
 		}
 		return out;
 	});
@@ -515,16 +515,18 @@
 
 	.board {
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
+		align-items: stretch;
 		gap: 14px;
-		max-width: 560px;
+		max-width: 680px;
 		margin: 0 auto;
 	}
 	.panel {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		width: 100%;
+		flex: 1 1 0;
+		min-width: 0;
 		text-align: left;
 		padding: 20px;
 		background: var(--surface);
@@ -584,16 +586,21 @@
 		color: var(--muted);
 		font-weight: 600;
 	}
-	/* 이번 판에 새로 붙은 조건만 강조(색 채움 + 굵게). */
+	/* 이번 판에 새로 붙은 조건만 강조 — 하이라이터 노랑(구 보라 #6d5efc 대체).
+	   라이트/다크 공통 밝은 마커라 초록 메리트(.merit-in)와 어두운 글자가 모두 또렷이 읽힘. */
 	.cond-new {
 		font-weight: 700;
-		background: var(--accent);
-		color: var(--accent-ink);
-		border-left-color: var(--accent-ink);
+		background: #fff3bf;
+		color: #211f3d;
+		border-left-color: #f0b429;
 	}
 	.cond-new .gr {
-		color: var(--accent-ink);
-		opacity: 0.75;
+		color: #7a6f3a;
+		opacity: 1;
+	}
+	/* 노랑 배경 위에선 기본 초록(#2e9e5b)이 살짝 뜨니 진하게 눌러 대비 확보. */
+	.cond-new .merit-in {
+		color: #1b6e3f;
 	}
 	/* 긴 에피소드형(인물): 조건 문장이 길어 살짝 크게·여유 있게. */
 	.board.long .cond {
@@ -606,118 +613,6 @@
 		margin: 12px auto;
 		padding: 24px;
 		text-align: center;
-	}
-	.result-badge {
-		font-size: 13px;
-		letter-spacing: 0.04em;
-		color: var(--muted);
-		margin-bottom: 16px;
-	}
-	.result-headline {
-		font-size: 19px;
-		line-height: 1.5;
-		margin: 0 0 22px;
-	}
-	.endured {
-		color: var(--accent);
-		font-weight: 700;
-	}
-	/* v3 캐릭터 카드(3스텝 커뮤체): ①놀림 헤드라인 ②이유 ③예언/저주. */
-	.char-card {
-		text-align: left;
-		margin: 0 0 20px;
-	}
-	.char-label {
-		font-size: 15px;
-		line-height: 1.4;
-		margin: 0 0 14px;
-		text-align: center;
-	}
-	.char-label b {
-		display: block;
-		font-size: 23px;
-		font-weight: 800;
-		color: var(--accent);
-		margin-top: 4px;
-	}
-	.char-stats {
-		list-style: none;
-		padding: 14px 16px;
-		margin: 0 0 14px;
-		background: var(--soft);
-		border-radius: 10px;
-		display: flex;
-		flex-direction: column;
-		gap: 9px;
-	}
-	.char-stats li {
-		font-size: 14px;
-		line-height: 1.4;
-		color: var(--ink);
-		padding-left: 14px;
-		position: relative;
-	}
-	.char-stats li::before {
-		content: '▸';
-		position: absolute;
-		left: 0;
-		color: var(--accent);
-	}
-	.char-prophecy {
-		font-size: 15px;
-		font-weight: 700;
-		line-height: 1.5;
-		margin: 0;
-		padding: 12px 14px;
-		border: 2px dashed var(--line);
-		border-radius: 10px;
-		text-align: center;
-	}
-	.rank-badge {
-		margin: -8px 0 18px;
-		font-size: 15px;
-		color: var(--accent);
-	}
-	.depth {
-		text-align: left;
-		border-top: 3px solid var(--line);
-		padding-top: 16px;
-	}
-	.depth-title {
-		font-weight: 700;
-		margin-bottom: 10px;
-	}
-	.bar-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 8px;
-	}
-	.bar-label {
-		flex: 0 0 84px;
-		font-size: 14px;
-	}
-	.bar-track {
-		flex: 1;
-		height: 14px;
-		background: var(--soft);
-		border: 2px solid var(--line);
-	}
-	.bar-fill {
-		display: block;
-		height: 100%;
-		background: var(--accent);
-	}
-	.bar-num {
-		flex: 0 0 20px;
-		text-align: right;
-		font-size: 13px;
-		font-weight: 700;
-	}
-	.verdict {
-		margin: 12px 0 0;
-		font-size: 15px;
-		color: var(--ink);
 	}
 	.result-actions {
 		display: flex;
@@ -834,163 +729,6 @@
 		left: 50%;
 		top: 4%;
 		transform-origin: top center;
-	}
-	.ig-inner {
-		box-sizing: border-box;
-		height: 100%;
-		padding: 90px 80px;
-		display: flex;
-		flex-direction: column;
-	}
-	.ig-brand {
-		text-align: center;
-		font-size: 34px;
-		letter-spacing: 8px;
-		font-weight: 800;
-		color: #6d5efc;
-	}
-	.ig-topic {
-		text-align: center;
-		font-size: 58px;
-		font-weight: 800;
-		line-height: 1.25;
-		margin: 20px 0 44px;
-	}
-	/* v3 캐릭터 카드(공유 이미지용): 남은 공간에 세로 중앙 배치 → 위아래 안 잘림. */
-	.ig-char {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: 40px;
-		min-height: 0;
-	}
-	.ig-label {
-		text-align: center;
-		font-size: 34px;
-		line-height: 1.35;
-		color: #17151f;
-	}
-	.ig-label b {
-		display: inline-block;
-		margin-top: 12px;
-		font-size: 60px;
-		font-weight: 800;
-		line-height: 1.25;
-		color: #6d5efc;
-	}
-	.ig-stats {
-		list-style: none;
-		margin: 0;
-		padding: 40px 46px;
-		background: #fff;
-		border: 5px solid #d9cffb;
-		border-radius: 24px;
-		display: flex;
-		flex-direction: column;
-		gap: 26px;
-		font-size: 38px;
-		line-height: 1.35;
-	}
-	.ig-stats li::before {
-		content: '▸ ';
-		color: #6d5efc;
-		font-weight: 800;
-	}
-	.ig-prophecy {
-		text-align: center;
-		font-weight: 800;
-		font-size: 42px;
-		line-height: 1.45;
-		margin: 0;
-		padding: 38px 40px;
-		border: 5px dashed #d9cffb;
-		border-radius: 24px;
-	}
-	.ig-verdict {
-		text-align: center;
-		font-size: 46px;
-		line-height: 1.5;
-		background: #fff;
-		border: 5px solid #d9cffb;
-		border-radius: 24px;
-		padding: 44px 40px;
-	}
-	.ig-verdict b {
-		color: #6d5efc;
-	}
-	.ig-depth {
-		margin: 52px 0 8px;
-		display: flex;
-		flex-direction: column;
-		gap: 30px;
-	}
-	.ig-bar-row {
-		display: grid;
-		grid-template-columns: 340px 1fr 84px;
-		align-items: center;
-		gap: 24px;
-		font-size: 38px;
-	}
-	.ig-bar-label {
-		font-weight: 800;
-	}
-	.ig-bar-track {
-		height: 38px;
-		background: #eee;
-		border: 4px solid #17151f;
-		border-radius: 999px;
-		overflow: hidden;
-	}
-	.ig-bar-fill {
-		display: block;
-		height: 100%;
-		background: #6d5efc;
-	}
-	.ig-bar-num {
-		text-align: right;
-		font-weight: 800;
-		font-size: 34px;
-	}
-	.ig-line {
-		text-align: center;
-		font-weight: 800;
-		font-size: 40px;
-		margin: 44px 0;
-	}
-	.ig-story {
-		margin-top: auto;
-		border-top: 4px dashed #d9cffb;
-		padding-top: 34px;
-	}
-	.ig-story-title {
-		font-weight: 800;
-		font-size: 34px;
-		margin-bottom: 22px;
-	}
-	.ig-story ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		font-size: 32px;
-		line-height: 1.4;
-	}
-	.ig-story li::before {
-		content: '✔ ';
-		color: #6d5efc;
-		font-weight: 800;
-	}
-	.ig-footer {
-		display: flex;
-		justify-content: space-between;
-		margin-top: 40px;
-		padding-top: 26px;
-		border-top: 3px solid #efe9ff;
-		font-size: 28px;
-		color: #7a7391;
 	}
 
 	.switch-note {

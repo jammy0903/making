@@ -352,6 +352,11 @@
 									placeholder="근데 이제 …(메리트, 선택)"
 									bind:value={p.merit}
 								/>
+								<input
+									class="ed-pshort"
+									placeholder="영수증용 짧은 라벨(선택, 없으면 자동 축약)"
+									bind:value={p.short}
+								/>
 								<button
 									type="button"
 									class="ed-delcond"
@@ -724,9 +729,13 @@
 		grid-column: 2;
 		grid-row: 2;
 	}
+	.ed-pshort {
+		grid-column: 2;
+		grid-row: 3;
+	}
 	.ed-delcond {
 		grid-column: 3;
-		grid-row: 1 / span 2;
+		grid-row: 1 / span 3;
 		align-self: center;
 		border: 2px solid var(--line);
 		background: var(--surface);

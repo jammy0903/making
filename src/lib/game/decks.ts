@@ -50,6 +50,11 @@ export interface Penalty {
 	/** "그런데 이제 ___" 뒤에 붙는 짧은 조건. 설명 말고 조건만(예: "히터 없음", "외투 1개뿐") */
 	text: string;
 	/**
+	 * 결과 영수증 항목용 짧은 라벨(선택, v3.1). 예: "축의금 5만원 궁상".
+	 * 없으면 text를 자동 축약(shortenPenalty). 게임 보드엔 항상 원문 text.
+	 */
+	short?: string;
+	/**
 	 * v3 메리트 결합(docs/v3-pivot §2-1). 있으면 렌더 "그런데 이제 {text}. 근데 이제 {merit}."
 	 * 같은 도메인 인과 파생 + 페널티 감정 ≥ 메리트 ×2 + 컨셉 배신 금지 + 3초 저울질.
 	 * 없으면 v2 페널티-온리로 렌더(기존 덱 호환).
@@ -1131,4 +1136,20 @@ export function penaltyStyleOf(deck: Deck): PenaltyStyle {
  */
 export function isImageIcon(v: string | undefined | null): boolean {
 	return !!v && /^(https?:\/\/|data:image\/)/.test(v);
+}
+
+/**
+ * 결과 영수증 항목용 자동 축약. `penalty.short`가 없을 때 폴백.
+ * 음슴체 종결 꼬리(~해야 함/~임 등)를 떼고, 그래도 길면 앞부분만 남기고 …로 마무리.
+ * (품질은 손저작 short만 못하니, 영수증을 알차게 하려면 short를 채우는 게 정석.)
+ */
+export function shortenPenalty(text: string): string {
+	let s = text.trim();
+	// 음슴체 종결부 제거
+	s = s
+		.replace(/\s*(해야|여야|어야|아야|이어야|되어야|돼야|봐야|받아야)?\s*함$/, '')
+		.replace(/\s*(임|음|됨)$/, '')
+		.trim();
+	if (s.length > 18) s = s.slice(0, 17).trim() + '…';
+	return s || text.trim();
 }
