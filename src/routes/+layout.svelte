@@ -53,6 +53,15 @@
 		const l = (e.currentTarget as HTMLSelectElement).value as Locale;
 		location.href = localePath(l, rest); // 크로스-로케일: URL 이동 + 전체 리로드
 	}
+
+	// 홈 상단바 유형 필터 칩. 클릭=선택, 같은 칩 재클릭=해제(전체). search.type을 홈이 공유.
+	const typeFilters = [
+		['attribute', '속성'],
+		['person', '인물'],
+		['scenario', '상황'],
+		['acquisition', '획득'],
+		['value', '가치']
+	] as const;
 </script>
 
 <svelte:head>
@@ -115,6 +124,17 @@
 				>
 			{/if}
 		</div>
+		<div class="header-filters" role="group" aria-label="유형 필터">
+			{#each typeFilters as [type, label] (type)}
+				<button
+					type="button"
+					class="chip"
+					class:on={search.type === type}
+					aria-pressed={search.type === type}
+					onclick={() => (search.type = search.type === type ? null : type)}>{label}</button
+				>
+			{/each}
+		</div>
 	{/if}
 	<select class="lang-select" aria-label={t('lang.label')} value={locale} onchange={switchLang}>
 		{#each locales as l (l)}
@@ -150,9 +170,39 @@
 		flex: 1 1 auto;
 		max-width: 360px;
 	}
-	/* 넓은 상단바(홈)에선 검색창이 남는 공간을 채워 언어선택을 오른쪽 끝으로 민다. */
+	/* 넓은 상단바(홈): 검색창=왼쪽 절반, 유형칩=오른쪽 절반으로 공간을 나눈다. */
 	.app-header.wide .header-search {
+		flex: 1 1 0;
 		max-width: none;
+	}
+	.header-filters {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex: 1 1 0;
+		min-width: 0;
+		overflow-x: auto; /* 좁은 화면에선 칩을 가로 스크롤(넘침 방지) */
+		scrollbar-width: none; /* Firefox */
+	}
+	.header-filters::-webkit-scrollbar {
+		display: none; /* Chrome/Safari */
+	}
+	.chip {
+		flex: 0 0 auto;
+		font: inherit;
+		font-size: 13px;
+		font-weight: 700;
+		padding: 6px 12px;
+		border: 3px solid var(--line);
+		background: var(--surface);
+		color: var(--ink);
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.chip.on {
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 	.header-search input {
 		width: 100%;

@@ -10,10 +10,13 @@
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
 
-	// 검색어는 상단바(헤더) 입력창과 공유(search.q). 주제·조건 둘 다 필터.
+	// 검색어·유형칩은 상단바(헤더)와 공유(search.q·search.type). 주제·조건·유형 필터.
 	const results = $derived.by(() => {
 		const query = search.q.trim().toLowerCase();
-		return data.decks.map((deck) => {
+		const type = search.type;
+		return data.decks
+			.filter((deck) => !type || deck.type === type)
+			.map((deck) => {
 			// 주제 매칭(제목·양편 이름)
 			const inTopic = [deck.title, deck.a.name, deck.b.name]
 				.join(' ')
@@ -48,7 +51,9 @@
 </section>
 
 {#if results.length === 0}
-	<p class="no-result">‘{search.q}’에 해당하는 주제·조건이 없어요.</p>
+	<p class="no-result">
+		{#if search.q.trim()}‘{search.q}’에 해당하는 주제·조건이 없어요.{:else}이 유형에 해당하는 주제가 없어요.{/if}
+	</p>
 {:else}
 	<ul class="grid">
 		{#each results as { deck, condHint } (deck.id)}
