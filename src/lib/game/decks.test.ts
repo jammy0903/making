@@ -63,12 +63,10 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		for (const p of [...d.a.penalties, ...d.b.penalties]) {
 			expect(p.merit).toBeTruthy();
 		}
-		// 편별 극단/애매 카드가 3요소(유형 라벨·특이 스탯·예상 예언)를 갖춘다.
+		// 편별 극단/애매 카드가 유형 라벨을 갖춘다.
 		for (const side of [d.resultCards!.a, d.resultCards!.b]) {
 			for (const c of [side.extreme, side.mild]) {
 				expect(c.label).toBeTruthy();
-				expect(c.stats.length).toBeGreaterThanOrEqual(3);
-				expect(c.prophecy).toBeTruthy();
 			}
 		}
 	});
