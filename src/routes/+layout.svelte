@@ -107,33 +107,36 @@
 	{/if}
 	<h1 class="app-title">{t('app.title')}</h1>
 	{#if isHome}
-		<div class="header-search">
-			<span class="hs-icon" aria-hidden="true">🔍</span>
-			<input
-				type="search"
-				bind:value={search.q}
-				placeholder="주제·조건 검색"
-				aria-label="주제·조건 검색"
-			/>
-			{#if search.q}
-				<button
-					type="button"
-					class="hs-clear"
-					onclick={() => (search.q = '')}
-					aria-label="검색어 지우기">✕</button
-				>
-			{/if}
-		</div>
-		<div class="header-filters" role="group" aria-label="유형 필터">
-			{#each typeFilters as [type, label] (type)}
-				<button
-					type="button"
-					class="chip"
-					class:on={search.type === type}
-					aria-pressed={search.type === type}
-					onclick={() => (search.type = search.type === type ? null : type)}>{label}</button
-				>
-			{/each}
+		<!-- 검색창+유형칩을 한 묶음으로 감싸 헤더 가운데에 배치(margin:0 auto). -->
+		<div class="header-mid">
+			<div class="header-search">
+				<span class="hs-icon" aria-hidden="true">🔍</span>
+				<input
+					type="search"
+					bind:value={search.q}
+					placeholder="주제·조건 검색"
+					aria-label="주제·조건 검색"
+				/>
+				{#if search.q}
+					<button
+						type="button"
+						class="hs-clear"
+						onclick={() => (search.q = '')}
+						aria-label="검색어 지우기">✕</button
+					>
+				{/if}
+			</div>
+			<div class="header-filters" role="group" aria-label="유형 필터">
+				{#each typeFilters as [type, label] (type)}
+					<button
+						type="button"
+						class="chip"
+						class:on={search.type === type}
+						aria-pressed={search.type === type}
+						onclick={() => (search.type = search.type === type ? null : type)}>{label}</button
+					>
+				{/each}
+			</div>
 		</div>
 	{/if}
 	<select class="lang-select" aria-label={t('lang.label')} value={locale} onchange={switchLang}>
@@ -170,16 +173,26 @@
 		flex: 1 1 auto;
 		max-width: 360px;
 	}
-	/* 넓은 상단바(홈): 검색창=왼쪽 절반, 유형칩=오른쪽 절반으로 공간을 나눈다. */
+	/* 홈 상단바: 검색창+유형칩 묶음(.header-mid)을 헤더 가운데에 배치.
+	   margin:0 auto 가 좌우 남는 공간을 균등 분배 → 제목(그런데이제) 왼쪽에도 여백이
+	   생겨 향후 엠블럼 자리 확보. 언어선택은 오른쪽 끝 유지. */
+	.header-mid {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 0 auto; /* 가운데 정렬 */
+		min-width: 0; /* 자식(칩) 축소 허용 */
+		flex: 0 1 auto;
+	}
 	.app-header.wide .header-search {
-		flex: 1 1 0;
-		max-width: none;
+		flex: 0 1 340px;
+		max-width: 340px;
 	}
 	.header-filters {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex: 1 1 0;
+		flex: 0 1 auto; /* 데스크톱=내용폭, 좁으면 줄어들며 칩 가로 스크롤 */
 		min-width: 0;
 		overflow-x: auto; /* 좁은 화면에선 칩을 가로 스크롤(넘침 방지) */
 		scrollbar-width: none; /* Firefox */
