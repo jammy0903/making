@@ -186,17 +186,15 @@ button,
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	max-width: 640px;
+	/* PC: 모든 페이지 상단바를 1040으로 통일. max-width라 모바일은 뷰포트 폭으로
+	   자동 분리(모바일 크기 유지). 홈은 이 폭이 카드 갤러리(.wrap.wide 1040)도 덮어
+	   스크롤 시 그림자 새는 것까지 방지. */
+	max-width: 1040px;
 	margin: 0 auto 8px;
 	padding: 14px 16px;
 	padding-top: max(14px, env(safe-area-inset-top)); /* 노치 대응 */
 	background: var(--bg);
 	border-bottom: 3px solid var(--line);
-}
-/* 홈: 상단바를 갤러리 폭(1040)에 맞춰 늘림 — sticky 바가 좁으면 스크롤 시
-   640px 밖 카드들이 옆으로 지나가며 그림자가 새 보인다(.wrap.wide와 폭 일치). */
-.app-header.wide {
-	max-width: 1040px;
 }
 
 .app-title {
