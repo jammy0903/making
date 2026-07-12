@@ -25,7 +25,7 @@
 	}
 
 	// ── 이미지 업로드 ─────────────────────────────────────────
-	// 파일 선택 → /admin/upload(service_role)로 올리고, 반환 URL을 해당 필드에 채운다.
+	// 파일 선택 → /manage-7fq2c9/upload(service_role)로 올리고, 반환 URL을 해당 필드에 채운다.
 	// 필드값이 이모지든 URL이든 같은 문자열 필드 하나로 저장(하위호환, isImageIcon으로 렌더 분기).
 	let uploading = $state<string | null>(null); // 업로드 중인 필드 키(라벨)
 	let uploadErr = $state('');
@@ -39,7 +39,7 @@
 		try {
 			const fd = new FormData();
 			fd.append('file', file);
-			const res = await fetch('/admin/upload', { method: 'POST', body: fd });
+			const res = await fetch('/manage-7fq2c9/upload', { method: 'POST', body: fd });
 			if (!res.ok) {
 				uploadErr = (await res.text().catch(() => '')) || `업로드 실패 (${res.status})`;
 				return;
@@ -56,7 +56,7 @@
 
 	// ── 이미지 검색 ─────────────────────────────────────────
 	// 파일 업로드와 같은 apply 콜백을 공유한다. 검색 모달에서 고른 외부 원본 URL을
-	// /admin/upload(JSON url 모드)로 넘기면 서버가 내려받아 스토리지에 저장 후 우리 URL을 준다.
+	// /manage-7fq2c9/upload(JSON url 모드)로 넘기면 서버가 내려받아 스토리지에 저장 후 우리 URL을 준다.
 	let search = $state<{ apply: (url: string) => void; key: string; query: string } | null>(null);
 
 	function openSearch(apply: (url: string) => void, key: string, query: string) {
@@ -70,7 +70,7 @@
 		uploading = key;
 		uploadErr = '';
 		try {
-			const res = await fetch('/admin/upload', {
+			const res = await fetch('/manage-7fq2c9/upload', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ url: srcUrl })
@@ -86,14 +86,6 @@
 		} finally {
 			uploading = null;
 		}
-	}
-	// stats(string[]) ↔ 줄바꿈 텍스트
-	function stnl(stats: string[]): string {
-		return stats.join('\n');
-	}
-	function setStats(card: { stats: string[] }, v: string) {
-		// 타이핑 중엔 빈 줄 허용(줄바꿈 매끄럽게), 빈 줄 정리는 저장 시 서버에서.
-		card.stats = v.split('\n');
 	}
 	// ── 조건 개수 편집(v3.1 가변 길이 5~10판 = 조건 4~9개, 양편 동일) ──
 	function renumber() {
@@ -339,15 +331,6 @@
 							<div class="ed-card">
 								<div class="ed-card-name">{name}</div>
 								<label>유형 라벨<input bind:value={c.label} /></label>
-								<label
-									>특이 스탯 <small>(한 줄에 하나)</small>
-									<textarea
-										rows="3"
-										value={stnl(c.stats)}
-										oninput={(e) => setStats(c, e.currentTarget.value)}
-									></textarea>
-								</label>
-								<label>예상 예언<input bind:value={c.prophecy} /></label>
 							</div>
 						{/each}
 					</fieldset>
@@ -571,8 +554,7 @@
 		color: var(--muted);
 	}
 	.editor input,
-	.editor select,
-	.editor textarea {
+	.editor select {
 		font: inherit;
 		font-weight: 400;
 		color: var(--ink);

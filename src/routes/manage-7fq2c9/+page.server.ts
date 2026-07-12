@@ -1,6 +1,6 @@
 /**
  * 관리자 대시보드(서버 전용). 공유 비밀번호(env ADMIN_PASSWORD)로 게이트,
- * service_role로 집계·신청 관리. 익명 앱과 분리 — /admin 은 noindex(+layout에서 로봇 차단).
+ * service_role로 집계·신청 관리. 익명 앱과 분리 — 비밀 경로(/manage-7fq2c9) + noindex 메타·헤더.
  */
 import { fail, redirect } from '@sveltejs/kit';
 import { type Deck } from '$lib/game/decks';
@@ -42,14 +42,16 @@ function validateDeck(d: unknown): { ok: true; deck: Deck } | { ok: false; error
 }
 
 const COOKIE_OPTS = {
-	path: '/admin',
+	path: '/manage-7fq2c9',
 	httpOnly: true,
 	sameSite: 'lax' as const,
 	secure: true,
 	maxAge: 60 * 60 * 24 * 7 // 7일
 };
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, setHeaders }) => {
+	// noindex를 HTTP 헤더로도(메타 태그 보강). 크롤러가 아예 색인 안 하게.
+	setHeaders({ 'X-Robots-Tag': 'noindex, nofollow' });
 	const configured = isAdminConfigured();
 	const authed = isAuthed(cookies.get(ADMIN_COOKIE));
 	if (!authed) return { configured, authed: false };
@@ -86,12 +88,12 @@ export const actions: Actions = {
 		}
 		const token = adminCookieToken();
 		if (token) cookies.set(ADMIN_COOKIE, token, COOKIE_OPTS);
-		throw redirect(303, '/admin');
+		throw redirect(303, '/manage-7fq2c9');
 	},
 
 	logout: async ({ cookies }) => {
-		cookies.delete(ADMIN_COOKIE, { path: '/admin' });
-		throw redirect(303, '/admin');
+		cookies.delete(ADMIN_COOKIE, { path: '/manage-7fq2c9' });
+		throw redirect(303, '/manage-7fq2c9');
 	},
 
 	decide: async ({ request, cookies }) => {
@@ -132,15 +134,6 @@ export const actions: Actions = {
 		}
 		const v = validateDeck(parsed);
 		if (!v.ok) return fail(400, { error: v.error });
-		// stats 빈 줄 정리(편집 중 허용했던 빈 줄 제거).
-		const rc = v.deck.resultCards;
-		if (rc) {
-			for (const side of [rc.a, rc.b]) {
-				for (const c of [side.extreme, side.mild]) {
-					c.stats = (c.stats ?? []).map((s) => s.trim()).filter(Boolean);
-				}
-			}
-		}
 		const sortRaw = form.get('sort');
 		const sort = sortRaw != null && sortRaw !== '' ? Number(sortRaw) : undefined;
 		const r = await saveDeck(v.deck, sort);
