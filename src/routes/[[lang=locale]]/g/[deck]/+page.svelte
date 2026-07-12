@@ -216,8 +216,8 @@
 	}
 
 	// ── 인스타 공유용 이미지(PNG) ─────────────────────────────
-	// 결과를 세로형(1080×1350, 인스타 피드 4:5) 카드로 렌더 → 모바일은 공유 시트(→인스타),
-	// 데스크톱은 다운로드. html-to-image는 필요할 때만 동적 import(초기 번들 경량화).
+	// 영수증을 폭 1080px로 꽉 채워 흰 배경 PNG로 렌더(높이는 영수증 길이에 맞춤) → 모바일은
+	// 공유 시트(→인스타), 데스크톱은 다운로드. html-to-image는 필요할 때만 동적 import(번들 경량화).
 	let igCardEl = $state<HTMLElement>();
 	let imgBusy = $state(false);
 
@@ -246,24 +246,26 @@
 		return _galmuriCss;
 	}
 
-	// igCardEl(9:16 프레임) → PNG {dataUrl, blob}. 캡처 직전 영수증을 프레임에 맞게 scale-to-fit.
+	// igCardEl → PNG {dataUrl, blob}. 배경색 없이 영수증이 가로 폭을 꽉 채우고,
+	// 프레임 높이를 영수증 높이에 맞춰(여백 0) 캡처한다.
 	async function renderCardPng(el: HTMLElement): Promise<{ dataUrl: string; blob: Blob }> {
-		// 판 수(5~10)에 따라 영수증 높이가 달라지므로, 프레임(1080×1920)에 맞춰 축소한다.
 		const rc = el.querySelector<HTMLElement>('.rcpt');
+		let outH = el.clientHeight;
 		if (rc) {
 			rc.style.transform = 'none';
-			const pad = 0.92;
-			const sc = Math.min((el.clientWidth * pad) / rc.offsetWidth, (el.clientHeight * pad) / rc.offsetHeight);
+			const sc = el.clientWidth / rc.offsetWidth; // 가로 폭 꽉 채우기(여백 없음)
 			rc.style.transform = `translateX(-50%) scale(${sc})`;
+			outH = Math.round(rc.offsetHeight * sc); // 프레임 높이 = 영수증 높이 → 배경 여백 제거
+			el.style.height = `${outH}px`;
 		}
 		const { toPng } = await import('html-to-image');
 		const fontEmbedCSS = await galmuriEmbedCss();
 		const dataUrl = await toPng(el, {
 			width: 1080,
-			height: 1920,
+			height: outH,
 			pixelRatio: 1,
 			cacheBust: true,
-			backgroundColor: '#6d5efc',
+			backgroundColor: '#ffffff',
 			// Galmuri 픽셀 폰트를 base64로 임베드 → PNG에도 픽셀 폰트. fontEmbedCSS를 직접 주면
 			// html-to-image가 문서 스타일시트를 안 훑어서 CDN cross-origin cssRules SecurityError도 회피.
 			fontEmbedCSS,
@@ -271,6 +273,7 @@
 			// 물려받으면 캡처 캔버스가 백지가 된다. 캡처 시에만 원점으로 되돌린다.
 			style: { position: 'static', left: '0px', top: '0px' }
 		});
+		el.style.height = ''; // 다음 캡처 대비 프레임 높이 원복
 		const blob = await (await fetch(dataUrl)).blob();
 		return { dataUrl, blob };
 	}
@@ -703,23 +706,23 @@
 		display: none;
 	}
 
-	/* ───────── 인스타 공유 이미지 카드(1080×1350, 4:5) ─────────
+	/* ───────── 공유 이미지 카드(폭 1080px, 높이는 영수증에 맞춤) ─────────
 	   화면 밖(left:-20000px)에 실제 렌더돼 있고, html-to-image가 이 노드를 PNG로 캡처.
-	   공유 이미지는 사용자 테마와 무관하게 항상 밝은 톤으로 보이도록 색을 고정한다. */
-	/* 인스타 스토리(9:16) 캡처 프레임. 영수증을 화면 밖에서 렌더 → renderCardPng가 scale-to-fit 후 캡처. */
+	   공유 이미지는 사용자 테마와 무관하게 항상 밝은 톤으로 보이도록 색을 고정한다.
+	   renderCardPng가 캡처 직전 영수증을 폭에 꽉 맞춰 키우고 프레임 높이를 영수증에 맞춘다. */
 	.ig-card {
 		position: fixed;
 		left: -20000px;
 		top: 0;
 		width: 1080px;
 		height: 1920px;
-		background: linear-gradient(155deg, #7b6cff 0%, #6d5efc 45%, #4a3fd6 100%);
+		background: #ffffff; /* 배경색 제거 — 영수증이 프레임을 꽉 채움 */
 		overflow: hidden;
 	}
 	.ig-card :global(.rcpt) {
 		position: absolute;
 		left: 50%;
-		top: 4%;
+		top: 0; /* 최상단부터 — 위쪽 여백 없음 */
 		transform-origin: top center;
 	}
 
