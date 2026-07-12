@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
-	import { penaltyStyleOf, shortenPenalty } from '$lib/game/decks';
+	import { penaltyStyleOf, shortenPenalty, type Penalty } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData } from './$types';
 	import { saveResult } from '$lib/game/savedResults';
@@ -53,6 +53,31 @@
 	const meritShown = $derived<[boolean, boolean]>([choices.includes(1), choices.includes(0)]);
 	// 현재 판에서 각 사이드에 쌓인 페널티(이번 판 새 페널티 포함)
 	const acc = $derived(deck && !done ? accumulated(deck, choices) : null);
+
+	// ── 새 픽셀 레이아웃 "표시용"만(게임 로직·엔진·점수·결과 전부 불변. choices에서 파생만) ──
+	// 활성 편 = 직전 선택 / pending = 이번 판 그 편에 붙은 새 조건 / endured = 감수(유지)한 조건만.
+	const activeSide = $derived(
+		deck && choices.length >= 1 && !done ? choices[choices.length - 1] : null
+	);
+	const pending = $derived(
+		deck && activeSide !== null
+			? ((activeSide === 0 ? deck.a : deck.b).penalties[choices.length - 1] ?? null)
+			: null
+	);
+	const endured = $derived.by<[Penalty[], Penalty[]]>(() => {
+		const e: [Penalty[], Penalty[]] = [[], []];
+		if (!deck) return e;
+		for (let R = 2; R <= choices.length; R++) {
+			if (choices[R - 1] === choices[R - 2]) {
+				const cur = choices[R - 1];
+				e[cur].push((cur === 0 ? deck.a : deck.b).penalties[R - 2]);
+			}
+		}
+		return e;
+	});
+	const shortTag = (p: Penalty, kind: 'p' | 'm') =>
+		shortenPenalty(kind === 'p' ? p.text : (p.merit ?? ''));
+
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
 	// v3 캐릭터 카드: 덱에 resultCards가 있으면 숫자 결과 대신 유형 카드를 띄운다(없으면 null → v2 폴백).
 	const card = $derived(deck && result ? pickResultCard(deck, result) : null);
@@ -365,25 +390,53 @@
 		{/each}
 	</div>
 
-	<div class="board" class:long={isLongStyle}>
+	<!-- 새 픽셀 레이아웃(화면만): ① 편 이름 a vs b ② 현재 조건 하나 ③ 편별 바구니(PC 좌우·모바일 세로) -->
+	<div class="names">
+		<button class="ncard a" class:active={activeSide === 0} onclick={() => pick(0)}>
+			<span class="emoji"><Icon value={deck.a.emoji} /></span> <span class="nm">{deck.a.name}</span>
+		</button>
+		<span class="vs">VS</span>
+		<button class="ncard b" class:active={activeSide === 1} onclick={() => pick(1)}>
+			<span class="emoji"><Icon value={deck.b.emoji} /></span> <span class="nm">{deck.b.name}</span>
+		</button>
+	</div>
+
+	<div class="cond-bar" class:a={activeSide === 0} class:b={activeSide === 1}>
+		{#if pending}
+			<span class="gr">그런데 이제</span> {pending.text}.{#if pending.merit}
+				<span class="gr">하지만</span> <span class="merit-in">{pending.merit}</span>.{/if}
+			<span class="dlg" aria-hidden="true">▼</span>
+		{:else}
+			<span class="cond-empty">위에서 한쪽을 골라 시작하세요. 그 편에 조건이 하나씩 붙어요.</span>
+		{/if}
+	</div>
+
+	<div class="baskets">
 		{#each order as si (si)}
 			{@const s = si === 0 ? deck.a : deck.b}
-			<button class="panel" onclick={() => pick(si)}>
-				<span class="panel-head"><span class="emoji"><Icon value={s.emoji} /></span> {s.name}</span>
-				<!-- 완화책(merit): 반대편이 한 번이라도 선택되면 그 쪽에 떠서 계속 유지(안 사라짐). -->
-				{#if s.merit && meritShown[si]}
-					<span class="merit"><span class="merit-tag">그래도</span> {s.merit}</span>
-				{/if}
-				<!-- 누적 표시(생략 없음): 감수한 조건이 판마다 쌓여 보인다. 최신만 강조. -->
-				<div class="cond-list">
-					{#each acc[si] as p, i (p.strength)}
-						<span class="cond" class:cond-new={i === acc[si].length - 1}>
-							<span class="gr">그런데 이제</span> {p.text}.{#if p.merit}
-								<span class="gr">하지만</span> <span class="merit-in">{p.merit}</span>.{/if}
-						</span>
-					{/each}
+			<div class="sbox {si === 0 ? 'a' : 'b'}">
+				<div class="sbox-h"><span class="emoji"><Icon value={s.emoji} /></span> {s.name}</div>
+				<div class="grp mer">
+					<div class="grp-h">🎁 얻은 것 <b>{endured[si].filter((p) => p.merit).length}</b></div>
+					<div class="chips">
+						{#each endured[si].filter((p) => p.merit) as p (p.strength)}
+							<span class="chip">{shortTag(p, 'm')}</span>
+						{:else}
+							<span class="none">—</span>
+						{/each}
+					</div>
 				</div>
-			</button>
+				<div class="grp pen">
+					<div class="grp-h">💢 참은 것 <b>{endured[si].length}</b></div>
+					<div class="chips">
+						{#each endured[si] as p (p.strength)}
+							<span class="chip">{shortTag(p, 'p')}</span>
+						{:else}
+							<span class="none">—</span>
+						{/each}
+					</div>
+				</div>
+			</div>
 		{/each}
 	</div>
 {:else if result && prefSide && burnedSide}
@@ -615,19 +668,7 @@
 		color: #211f3d;
 		border-left-color: #f0b429;
 	}
-	.cond-new .gr {
-		color: #7a6f3a;
-		opacity: 1;
-	}
-	/* 노랑 배경 위에선 기본 초록(#2e9e5b)이 살짝 뜨니 진하게 눌러 대비 확보. */
-	.cond-new .merit-in {
-		color: #1b6e3f;
-	}
-	/* 긴 에피소드형(인물): 조건 문장이 길어 살짝 크게·여유 있게. */
-	.board.long .cond {
-		font-size: 14.5px;
-		line-height: 1.55;
-	}
+	/* (구 2카드 레이아웃의 .cond-new/.board.long 파생 스타일 제거 — 새 픽셀 레이아웃으로 교체) */
 
 	.result {
 		max-width: 480px;
@@ -1166,5 +1207,196 @@
 		text-align: center;
 		font-size: 11px;
 		color: #555;
+	}
+	/* ═══ 새 픽셀 플레이 레이아웃(편 이름·현재 조건·편별 바구니). 게임 로직 무관, 화면만. ═══ */
+	.names {
+		display: flex;
+		align-items: stretch;
+		gap: 8px;
+		max-width: 640px;
+		margin: 0 auto 10px;
+	}
+	.ncard {
+		flex: 1 1 0;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		font: inherit;
+		font-weight: 800;
+		font-size: 16px;
+		color: var(--ink);
+		background: var(--surface);
+		padding: 14px 10px;
+		border: 3px solid var(--line);
+		box-shadow: var(--shadow);
+		cursor: pointer;
+		transition:
+			transform 0.05s steps(2),
+			box-shadow 0.05s steps(2);
+	}
+	.ncard .nm {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.ncard.a {
+		background: #ffe9ec;
+	}
+	.ncard.b {
+		background: #e6f7ef;
+	}
+	.ncard:active {
+		transform: translate(3px, 3px);
+		box-shadow: 1px 1px 0 var(--shadow-color);
+	}
+	.ncard.active {
+		border-color: var(--gold);
+		box-shadow: 4px 4px 0 var(--gold);
+	}
+	.vs {
+		align-self: center;
+		font-weight: 800;
+		font-size: 13px;
+		color: #fff;
+		background: var(--danger);
+		border: 3px solid var(--line);
+		padding: 2px 8px;
+		box-shadow: 2px 2px 0 var(--shadow-color);
+	}
+	.cond-bar {
+		position: relative;
+		max-width: 640px;
+		margin: 0 auto 16px;
+		font-size: 14.5px;
+		line-height: 1.55;
+		font-weight: 700;
+		background: #fff3bf;
+		color: #211f3d;
+		padding: 14px;
+		border: 3px solid var(--line);
+		box-shadow: var(--shadow);
+		min-height: 82px;
+		background-image: repeating-linear-gradient(
+			0deg,
+			#0000 0 3px,
+			rgba(33, 31, 61, 0.04) 3px 4px
+		);
+	}
+	.cond-bar .gr {
+		color: #7a6f3a;
+	}
+	.cond-bar .merit-in {
+		color: #1b6e3f;
+		font-weight: 700;
+	}
+	.cond-bar .dlg {
+		position: absolute;
+		right: 10px;
+		bottom: 6px;
+		color: #b58a00;
+		animation: condblink 1s steps(2) infinite;
+	}
+	@keyframes condblink {
+		50% {
+			opacity: 0;
+		}
+	}
+	.cond-empty {
+		font-weight: 400;
+		font-size: 13px;
+		color: #8a7f4a;
+	}
+	.baskets {
+		display: flex;
+		gap: 10px;
+		max-width: 640px;
+		margin: 0 auto;
+	}
+	.sbox {
+		flex: 1 1 0;
+		min-width: 0;
+		background: var(--surface);
+		border: 3px solid var(--line);
+		box-shadow: var(--shadow);
+	}
+	.sbox-h {
+		font-weight: 800;
+		font-size: 13.5px;
+		padding: 8px 10px;
+		border-bottom: 2px dashed var(--soft);
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	/* 1행(헤더)을 그 편 이름카드와 같은 색으로 채움 */
+	.sbox.a .sbox-h {
+		background: #ffe9ec;
+	}
+	.sbox.b .sbox-h {
+		background: #e6f7ef;
+	}
+	.grp {
+		padding: 8px 10px;
+	}
+	.grp.mer {
+		border-bottom: 2px dashed var(--soft);
+	}
+	.grp-h {
+		font-size: 11.5px;
+		font-weight: 700;
+		margin-bottom: 6px;
+	}
+	.grp-h b {
+		font-size: 11px;
+		color: #fff;
+		padding: 0 6px;
+		border: 2px solid var(--line);
+	}
+	.grp.mer .grp-h b {
+		background: #2e9e5b;
+	}
+	.grp.pen .grp-h b {
+		background: #e03131;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+	}
+	.chip {
+		font-size: 11.5px;
+		font-weight: 700;
+		padding: 3px 8px;
+		border: 2px solid var(--line);
+	}
+	.grp.mer .chip {
+		background: #d3f9d8;
+		color: #0f5c33;
+	}
+	.grp.pen .chip {
+		background: #ffe3e3;
+		color: #b02020;
+	}
+	.none {
+		font-size: 11px;
+		color: var(--muted);
+	}
+	/* 모바일: 편별 바구니 세로 스택 / PC: 좌우 나란히(기본 flex row) */
+	@media (max-width: 640px) {
+		.baskets {
+			flex-direction: column;
+		}
+		.cond-bar {
+			font-size: 13.5px;
+		}
+		.ncard {
+			font-size: 13px;
+			padding: 10px 8px;
+		}
+		.ncard .nm {
+			white-space: normal;
+		}
 	}
 </style>
