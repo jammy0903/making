@@ -312,12 +312,12 @@
 								/>
 								<input
 									class="ed-pshort"
-									placeholder="💢 페널티 짧은 라벨(영수증·참은 것 칩, 없으면 자동 축약)"
+									placeholder="💢 페널티 짧은 라벨(영수증·감수 칩, 없으면 자동 축약)"
 									bind:value={p.short}
 								/>
 								<input
 									class="ed-pmshort"
-									placeholder="🎁 메리트 짧은 라벨(얻은 것 칩, 없으면 자동 축약)"
+									placeholder="🎁 메리트 짧은 라벨(이득 칩, 없으면 자동 축약)"
 									bind:value={p.meritShort}
 								/>
 								<button

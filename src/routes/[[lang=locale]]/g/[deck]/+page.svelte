@@ -415,7 +415,7 @@
 			<div class="sbox {si === 0 ? 'a' : 'b'}">
 				<div class="sbox-h"><span class="emoji"><Icon value={s.emoji} /></span> {s.name}</div>
 				<div class="grp mer">
-					<div class="grp-h">🎁 얻은 것 <b>{endured[si].filter((p) => p.merit).length}</b></div>
+					<div class="grp-h">🎁 이득 <b>{endured[si].filter((p) => p.merit).length}</b></div>
 					<div class="chips">
 						{#each endured[si].filter((p) => p.merit) as p (p.strength)}
 							<span class="chip">{shortTag(p, 'm')}</span>
@@ -425,7 +425,7 @@
 					</div>
 				</div>
 				<div class="grp pen">
-					<div class="grp-h">💢 참은 것 <b>{endured[si].length}</b></div>
+					<div class="grp-h">💢 감수 <b>{endured[si].length}</b></div>
 					<div class="chips">
 						{#each endured[si] as p (p.strength)}
 							<span class="chip">{shortTag(p, 'p')}</span>
