@@ -349,7 +349,7 @@
 								<input class="ed-ptext" placeholder="그런데 이제 …" bind:value={p.text} />
 								<input
 									class="ed-pmerit"
-									placeholder="근데 이제 …(메리트, 선택)"
+									placeholder="하지만 …(메리트, 선택)"
 									bind:value={p.merit}
 								/>
 								<input
