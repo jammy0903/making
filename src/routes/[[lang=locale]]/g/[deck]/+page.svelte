@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
+	import { localePath, defaultLocale, josaEunNeun, type Locale } from '$lib/i18n';
 	import { penaltyStyleOf, shortenPenalty, type Penalty } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData } from './$types';
@@ -145,11 +145,6 @@
 	const rcCnt = (k: '감수' | '회피') => receiptItems.filter((i) => i.kind === k).length;
 	// 합계 = 유형 라벨(카드), 없으면 verdict 폴백. 부가세 = 회피·감수 카운트.
 	const rcGrade = $derived(card?.label ?? result?.verdict ?? '');
-	function josaEun(w: string): string {
-		const c = w.charCodeAt(w.length - 1);
-		if (c < 0xac00 || c > 0xd7a3) return '은';
-		return (c - 0xac00) % 28 === 0 ? '는' : '은';
-	}
 
 	// 결과 비교(B-1): URL ?vs=<상대 선택>이 있으면 같은 덱으로 상대 결과를 재현해 비교.
 	// 길이가 그 덱 판 수와 맞을 때만 유효(가변 길이).
@@ -348,7 +343,7 @@
 		{#each receiptItems as it (it.s)}
 			<div class="rc-row rc-item" class:avoid={it.kind === '회피'}>
 				<span class="rc-nm"
-					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josaEun(it.t)} 못해</span>{/if}</span
+					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josaEunNeun(it.t)} 못해</span>{/if}</span
 				>
 				<span class="rc-lead"></span>
 				<span class="rc-gb k-{it.kind}">{it.kind}</span>
@@ -587,72 +582,13 @@
 		border-color: var(--accent);
 	}
 
-	.board {
-		display: flex;
-		flex-direction: row;
-		align-items: stretch;
-		gap: 14px;
-		max-width: 680px;
-		margin: 0 auto;
-	}
-	.panel {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		flex: 1 1 0;
-		min-width: 0;
-		text-align: left;
-		padding: 20px;
-		background: var(--surface);
-		border: 3px solid var(--line);
-		box-shadow: var(--shadow);
-		cursor: pointer;
-		font: inherit;
-		color: var(--ink);
-		transition: transform 0.06s ease;
-	}
-	.panel:active {
-		transform: translate(2px, 2px);
-		box-shadow: none;
-	}
-	.panel-head {
-		font-size: 22px;
-		font-weight: 800;
-	}
 	.emoji {
 		font-size: 1.1em;
 	}
-	/* 완화책(merit): 페널티(빨강 계열) 대비 초록 톤 숨통. 상시 노출. */
-	.merit {
-		font-size: 13px;
-		line-height: 1.45;
-		padding: 5px 8px;
-		background: var(--soft);
-		border-left: 3px solid #2e9e5b;
-		color: var(--ink);
-	}
-	.merit-tag {
-		font-size: 11px;
-		font-weight: 700;
-		color: #2e9e5b;
-	}
 	/* v3 인라인 메리트: 조건에 결합된 "하지만 ~" 부분을 초록 톤으로 구분. */
 	.merit-in {
-		color: #2e9e5b;
+		color: var(--merit);
 		font-weight: 600;
-	}
-	/* 누적 조건 리스트: 판마다 한 줄씩 쌓인다(생략 없음). */
-	.cond-list {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
-	.cond {
-		font-size: 14px;
-		line-height: 1.4;
-		color: var(--ink);
-		padding: 4px 8px;
-		border-left: 3px solid var(--line);
 	}
 	/* "그런데 이제" 반복은 작게·연하게 두고 조건 문구를 앞세운다. */
 	.gr {
@@ -660,15 +596,6 @@
 		color: var(--muted);
 		font-weight: 600;
 	}
-	/* 이번 판에 새로 붙은 조건만 강조 — 하이라이터 노랑(구 보라 #6d5efc 대체).
-	   라이트/다크 공통 밝은 마커라 초록 메리트(.merit-in)와 어두운 글자가 모두 또렷이 읽힘. */
-	.cond-new {
-		font-weight: 700;
-		background: #fff3bf;
-		color: #211f3d;
-		border-left-color: #f0b429;
-	}
-	/* (구 2카드 레이아웃의 .cond-new/.board.long 파생 스타일 제거 — 새 픽셀 레이아웃으로 교체) */
 
 	.result {
 		max-width: 480px;
@@ -1242,10 +1169,10 @@
 		white-space: nowrap;
 	}
 	.ncard.a {
-		background: #ffe9ec;
+		background: var(--side-a);
 	}
 	.ncard.b {
-		background: #e6f7ef;
+		background: var(--side-b);
 	}
 	.ncard:active {
 		transform: translate(3px, 3px);
@@ -1332,10 +1259,10 @@
 	}
 	/* 1행(헤더)을 그 편 이름카드와 같은 색으로 채움 */
 	.sbox.a .sbox-h {
-		background: #ffe9ec;
+		background: var(--side-a);
 	}
 	.sbox.b .sbox-h {
-		background: #e6f7ef;
+		background: var(--side-b);
 	}
 	.grp {
 		padding: 8px 10px;
@@ -1355,10 +1282,10 @@
 		border: 2px solid var(--line);
 	}
 	.grp.mer .grp-h b {
-		background: #2e9e5b;
+		background: var(--merit);
 	}
 	.grp.pen .grp-h b {
-		background: #e03131;
+		background: var(--penalty);
 	}
 	.chips {
 		display: flex;
@@ -1372,12 +1299,12 @@
 		border: 2px solid var(--line);
 	}
 	.grp.mer .chip {
-		background: #d3f9d8;
-		color: #0f5c33;
+		background: var(--merit-soft);
+		color: var(--merit-ink);
 	}
 	.grp.pen .chip {
-		background: #ffe3e3;
-		color: #b02020;
+		background: var(--penalty-soft);
+		color: var(--penalty-ink);
 	}
 	.none {
 		font-size: 11px;

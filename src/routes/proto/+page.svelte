@@ -4,6 +4,8 @@
 	인스타 규격(9:16/4:5/1:1) 프레임에 scale-to-fit. localhost:5173/proto.
 -->
 <script lang="ts">
+	import { josaEunNeun } from '$lib/i18n';
+
 	const s = {
 		title: '월 200 백수 vs 월 천 직장인',
 		side: '월 200 백수',
@@ -22,12 +24,6 @@
 		]
 	};
 	const cnt = (k: string) => s.log.filter((l) => l.kind === k).length;
-	// 은/는 조사 자동(받침 유무). 회피 항목 "…은/는 못해" 렌더용.
-	function josa(w: string): string {
-		const c = w.charCodeAt(w.length - 1);
-		if (c < 0xac00 || c > 0xd7a3) return '은';
-		return (c - 0xac00) % 28 === 0 ? '는' : '은';
-	}
 
 	function fit(node: HTMLElement) {
 		const run = () => {
@@ -61,7 +57,7 @@
 		{#each s.log as it (it.s)}
 			<div class="rc-row" class:avoid={it.kind === '회피'} class:back={it.kind === '복귀'}>
 				<span class="rc-nm"
-					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josa(it.t)} 못해</span>{/if}</span
+					>{it.t}{#if it.kind === '회피'}<span class="rc-cant">{josaEunNeun(it.t)} 못해</span>{/if}</span
 				>
 				<span class="rc-gb k-{it.kind}">{it.kind}</span>
 			</div>

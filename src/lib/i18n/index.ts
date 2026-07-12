@@ -73,3 +73,13 @@ export function pickLocale(acceptLanguage: string | null, country?: string | nul
 	if (first) return 'en';
 	return defaultLocale;
 }
+
+/**
+ * 받침 유무로 은/는 조사 선택(한글 끝음절 기준). 한글이 아니면 '은' 폴백.
+ * 예) "토마토" → "는", "물" → "은". 결과 영수증의 "…은/는 못해" 등에 공용.
+ */
+export function josaEunNeun(word: string): string {
+	const c = word.charCodeAt(word.length - 1);
+	if (c < 0xac00 || c > 0xd7a3) return '은';
+	return (c - 0xac00) % 28 === 0 ? '는' : '은';
+}

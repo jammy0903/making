@@ -261,10 +261,10 @@
 			box-shadow 0.05s steps(2);
 	}
 	.pixel .ncard.a {
-		background: #ffe9ec;
+		background: var(--side-a);
 	}
 	.pixel .ncard.b {
-		background: #e6f7ef;
+		background: var(--side-b);
 	}
 	.pixel .ncard:active:not(:disabled) {
 		transform: translate(3px, 3px);
@@ -296,10 +296,10 @@
 		);
 	}
 	.pixel .cond.a {
-		border-left-color: #e03131;
+		border-left-color: var(--penalty);
 	}
 	.pixel .cond.b {
-		border-left-color: #2e9e5b;
+		border-left-color: var(--merit);
 	}
 	.pixel .cond .gr {
 		color: #7a6f3a;
@@ -329,10 +329,10 @@
 		box-shadow: var(--shadow);
 	}
 	.pixel .sbox.a {
-		border-top: 7px solid #e03131;
+		border-top: 7px solid var(--penalty);
 	}
 	.pixel .sbox.b {
-		border-top: 7px solid #2e9e5b;
+		border-top: 7px solid var(--merit);
 	}
 	.pixel .sbox-h {
 		border-bottom: 2px dashed var(--soft);
@@ -347,21 +347,21 @@
 		border: 2px solid var(--line);
 	}
 	.pixel .grp.mer .grp-h b {
-		background: #2e9e5b;
+		background: var(--merit);
 	}
 	.pixel .grp.pen .grp-h b {
-		background: #e03131;
+		background: var(--penalty);
 	}
 	.pixel .chip {
 		border: 2px solid var(--line);
 	}
 	.pixel .grp.mer .chip {
-		background: #d3f9d8;
-		color: #0f5c33;
+		background: var(--merit-soft);
+		color: var(--merit-ink);
 	}
 	.pixel .grp.pen .chip {
-		background: #ffe3e3;
-		color: #b02020;
+		background: var(--penalty-soft);
+		color: var(--penalty-ink);
 	}
 
 	/* ══════════════ 스킨 2 · 감열지 전표(도트프린터/타자기) ══════════════ */
