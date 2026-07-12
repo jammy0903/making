@@ -6,7 +6,7 @@
 	--surface: #ffffff;
 	--ink: #211f3d; /* 진한 아웃라인/글자 */
 	--muted: #6a6890;
-	--line: #211f3d; /* 픽셀 스타일: 테두리는 잉크색 */
+	--line: #43406a; /* 테두리 전용. 글자(--ink)보다 옅은 남색 — 눈 피로 완화(대비 15.8:1→9.6:1) */
 	--soft: #cbc7ea; /* 옅은 분리선용 */
 	--accent: #6d5efc;
 	--accent-ink: #ffffff;
@@ -191,7 +191,7 @@ button,
 	padding: 14px 16px;
 	padding-top: max(14px, env(safe-area-inset-top)); /* 노치 대응 */
 	background: var(--bg);
-	border-bottom: 3px solid var(--ink);
+	border-bottom: 3px solid var(--line);
 }
 
 .app-title {
@@ -221,7 +221,7 @@ a {
 	gap: 6px;
 	min-height: 44px; /* 터치 타깃 확보 */
 	padding: 10px 16px;
-	border: 3px solid var(--ink);
+	border: 3px solid var(--line);
 	border-radius: 0;
 	background: var(--surface);
 	color: var(--ink);
@@ -266,7 +266,7 @@ a {
 /* 패널: 잉크 테두리 + 하드 그림자 */
 .card {
 	background: var(--surface);
-	border: 3px solid var(--ink);
+	border: 3px solid var(--line);
 	border-radius: 0;
 	box-shadow: var(--shadow);
 }
@@ -276,7 +276,7 @@ a {
 select.input {
 	width: 100%;
 	padding: 10px 12px;
-	border: 3px solid var(--ink);
+	border: 3px solid var(--line);
 	border-radius: 0;
 	background: var(--surface);
 	color: var(--ink);
