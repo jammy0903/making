@@ -125,8 +125,8 @@ button,
 .ad-right {
 	right: 20px;
 }
-/* 콘텐츠(최대 1040) + 좌우 배너(160*2)가 겹치지 않을 만큼 넓을 때만 노출 */
-@media (max-width: 1439px) {
+/* 콘텐츠(최대 --wide 960) + 좌우 배너(160*2)가 겹치지 않을 만큼 넓을 때만 노출 */
+@media (max-width: 1359px) {
 	.ad-side {
 		display: none;
 	}
