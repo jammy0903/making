@@ -468,11 +468,11 @@
 		background: #1f9d55;
 	}
 	button.no {
-		border-color: #c0392b;
-		color: #c0392b;
+		border-color: var(--error);
+		color: var(--error);
 	}
 	.err {
-		color: #c0392b;
+		color: var(--error);
 		font-size: 14px;
 		margin: 0;
 	}
@@ -566,7 +566,7 @@
 		color: #1f9d55;
 	}
 	.st-rejected {
-		color: #c0392b;
+		color: var(--error);
 	}
 	.req-actions {
 		display: flex;
@@ -739,7 +739,7 @@
 		align-self: center;
 		border: 2px solid var(--line);
 		background: var(--surface);
-		color: #c0392b;
+		color: var(--error);
 		font-weight: 800;
 		cursor: pointer;
 		padding: 4px 0;

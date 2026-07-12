@@ -239,7 +239,7 @@
 		cursor: default;
 	}
 	.err {
-		color: #c0392b;
+		color: var(--error);
 		font-size: 14px;
 		margin: 0;
 	}

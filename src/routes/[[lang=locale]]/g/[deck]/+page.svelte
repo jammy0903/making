@@ -1199,7 +1199,7 @@
 		font-size: 14.5px;
 		line-height: 1.55;
 		font-weight: 700;
-		background: #fff3bf;
+		background: var(--cond-hl);
 		color: #211f3d;
 		padding: 14px;
 		border: 3px solid var(--line);

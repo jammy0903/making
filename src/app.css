@@ -30,6 +30,9 @@
 	--penalty: #e03131; /* 참은 것(빨강) 강조 */
 	--penalty-soft: #ffe3e3; /* 페널티 칩 배경 */
 	--penalty-ink: #b02020; /* 페널티 칩 글자 */
+	--cond-hl: #fff3bf; /* 조건 하이라이트 노랑("그런데 이제") — 노랑 위 강제 다크텍스트라 테마 무관 고정 */
+	--cond-hl-line: #f0b429; /* 조건 하이라이트 앰버 라인 */
+	--error: #c0392b; /* 에러·거부 텍스트(폼 검증 .err·반려 상태). --danger(#ff5470)는 강조 배지용으로 별개 */
 }
 
 @media (prefers-color-scheme: dark) {

@@ -223,10 +223,10 @@
 		font-size: 13.5px;
 		line-height: 1.5;
 		font-weight: 700;
-		background: #fff3bf;
+		background: var(--cond-hl);
 		color: #211f3d;
 		padding: 8px 10px;
-		border-left: 4px solid #f0b429;
+		border-left: 4px solid var(--cond-hl-line);
 	}
 	.csent.empty-wrap {
 		background: transparent;
@@ -253,8 +253,8 @@
 		font-size: 11px;
 		font-weight: 700;
 		color: #8a6d00;
-		background: #fff3bf;
-		border: 2px solid #f0b429;
+		background: var(--cond-hl);
+		border: 2px solid var(--cond-hl-line);
 		padding: 2px 7px;
 	}
 

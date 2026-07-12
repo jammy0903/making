@@ -282,11 +282,11 @@
 		box-shadow: 2px 2px 0 var(--shadow-color);
 	}
 	.pixel .cond {
-		background: #fff3bf;
+		background: var(--cond-hl);
 		color: #211f3d;
 		border: 3px solid var(--line);
 		border-left-width: 8px;
-		border-left-color: #f0b429;
+		border-left-color: var(--cond-hl-line);
 		box-shadow: var(--shadow);
 		/* 살짝 스캔라인(픽셀 CRT 느낌) */
 		background-image: repeating-linear-gradient(
