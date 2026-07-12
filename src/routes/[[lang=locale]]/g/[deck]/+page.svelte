@@ -75,8 +75,11 @@
 		}
 		return e;
 	});
+	// 바구니 칩 라벨: 손저작 라벨(short/meritShort) 우선, 없으면 원문 자동 축약.
 	const shortTag = (p: Penalty, kind: 'p' | 'm') =>
-		shortenPenalty(kind === 'p' ? p.text : (p.merit ?? ''));
+		kind === 'p'
+			? (p.short ?? shortenPenalty(p.text))
+			: (p.meritShort ?? shortenPenalty(p.merit ?? ''));
 
 	const result = $derived(deck && done ? computeResult(deck, choices) : null);
 	// v3 캐릭터 카드: 덱에 resultCards가 있으면 숫자 결과 대신 유형 카드를 띄운다(없으면 null → v2 폴백).

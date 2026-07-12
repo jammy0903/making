@@ -60,6 +60,11 @@ export interface Penalty {
 	 * 없으면 v2 페널티-온리로 렌더(기존 덱 호환).
 	 */
 	merit?: string;
+	/**
+	 * 바구니 "🎁 얻은 것" 칩용 짧은 라벨(선택, v3.1). merit의 축약판. 예: "평일 늦잠 꿀맛".
+	 * 없으면 merit을 자동 축약(shortenPenalty). short가 페널티용이면 이건 메리트용.
+	 */
+	meritShort?: string;
 }
 
 /**
