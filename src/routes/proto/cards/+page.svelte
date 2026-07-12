@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 	import Board from './Board.svelte';
+	import BoardNew from './BoardNew.svelte';
 	import { getDeck } from '$lib/game/decks';
 
 	// 6판짜리 가변 덱으로 시연(문장 짧아 카드 크기 감 잡기 좋음).
@@ -32,13 +33,34 @@
 </script>
 
 <div class="proto-wrap">
-	<h1>게임 카드 재설계 — 후보 2개</h1>
+	<h1>게임 카드 재설계 — 새 레이아웃</h1>
 	<p class="sub">
 		덱: <b>{deck.title}</b><br />
 		카드 = <b>조건명 + 현재 문장 1개</b>(크기 고정, 판 넘어가면 문장만 교체) · 바구니 =
 		<b>감수(그 편 유지)한 것만</b> 짧게 모음(왼 페널티 · 오 메리트). 갈아타면(회피) 안 담김.
 	</p>
 	<p class="how">카드를 눌러 플레이 → 같은 편 계속 누르면 그 편 바구니가 채워지고, 반대편 누르면 갈아탐.</p>
+
+	<p class="how">
+		새 레이아웃(① 편 이름 a vs b · ② 현재 조건 하나 · ③ 편별 바구니)에 그래픽 스킨 2종.
+	</p>
+
+	<section>
+		<h2>★ 스킨 A · 픽셀 아케이드 🕹️</h2>
+		<BoardNew {deck} {shorts} theme="pixel" />
+	</section>
+
+	<hr />
+
+	<section>
+		<h2>★ 스킨 B · 감열지 전표 🧾 (도트프린터/타자기)</h2>
+		<BoardNew {deck} {shorts} theme="receipt" />
+	</section>
+
+	<hr />
+
+	<details>
+		<summary style="cursor:pointer;font-weight:700;margin:12px 0">이전 후보 4개 (참고용, 펼치기)</summary>
 
 	<section>
 		<h2>후보 1 · 리스트형 바구니</h2>
@@ -65,13 +87,17 @@
 		<h2>후보 4 · 감정 아이템 태그 (💢 참은 것 · 💎 얻은 것)</h2>
 		<Board {deck} {shorts} variant={4} />
 	</section>
+	</details>
 </div>
 
 <style>
 	/* 게임 폰트(Galmuri)·색은 body/app.css에서 상속 — 커스텀 폰트 지정 안 함. */
+	/* 부모 <main class="wrap">(640px)를 벗어나 화면 중앙에 더 넓게(PC 너비 감 잡기용). */
 	.proto-wrap {
-		max-width: 680px;
-		margin: 0 auto;
+		width: min(880px, 94vw);
+		max-width: none;
+		margin-left: 50%;
+		transform: translateX(-50%);
 		padding: 24px 16px 80px;
 		color: var(--ink);
 	}

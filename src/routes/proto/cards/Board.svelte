@@ -487,4 +487,21 @@
 		content: '💎';
 		margin-right: 4px;
 	}
+
+	/* ── 모바일(아이폰 등 ≤640px): 카드 2개는 좌우 유지(vs 대결), 카드 안 두 바구니는
+	   세로로 쌓아 각 바구니가 칸 폭을 꽉 쓰게(가독성). 칩은 잘리지 말고 줄바꿈. ── */
+	@media (max-width: 640px) {
+		/* 두 편(카드+바구니)을 세로로 쌓아 각 편이 폭을 꽉 씀 → A/B 높이차로 어긋나던 문제 해소.
+		   full-width라 카드 안 바구니 2개는 좌우 그대로, 후보 3 저울도 정상 유지. */
+		.cards {
+			flex-direction: column;
+			gap: 16px;
+		}
+		.csent {
+			font-size: 13px;
+		}
+		.chip {
+			white-space: normal !important; /* 좁은 칩도 잘리지 말고 줄바꿈 */
+		}
+	}
 </style>
