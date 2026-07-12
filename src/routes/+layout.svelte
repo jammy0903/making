@@ -201,12 +201,36 @@
 	.header-filters::-webkit-scrollbar {
 		display: none; /* Chrome/Safari */
 	}
-	/* 모바일: 한 줄에 다 못 담으므로 칩을 가로 스크롤로 분리. */
+	/* 모바일: 헤더를 세 줄로 — 1행 제목+언어선택, 2행 검색창, 3행 유형칩(전체폭 균등).
+	   칩을 작게 줄이고 한 줄 폭에 나눠 담아 가로 스크롤 없이 5개 다 보이게. */
 	@media (max-width: 680px) {
+		.app-header {
+			flex-wrap: wrap;
+		}
+		.app-title {
+			flex: 1 1 auto; /* 남는 공간 차지 → 언어선택을 오른쪽 끝으로, 제목은 한 줄 유지 */
+			white-space: nowrap;
+		}
+		.header-mid {
+			order: 3; /* 제목·언어선택 다음(둘째 줄부터)으로 */
+			flex: 1 1 100%; /* 한 줄 전체 차지 → 강제 줄바꿈 */
+			margin: 0; /* 가운데정렬 해제(모바일은 폭 꽉 채움) */
+			flex-direction: column; /* 검색창 / 칩을 세로로 분리 */
+			align-items: stretch;
+			gap: 8px;
+		}
+		.app-header.wide .header-search {
+			max-width: none; /* 검색창이 줄 폭 다 쓰도록 상한 해제 */
+		}
 		.header-filters {
-			flex: 0 1 auto;
+			gap: 5px;
+			overflow-x: visible; /* 스크롤 제거 — 아래 칩 축소로 5개 모두 한 줄에 */
+		}
+		.header-filters .chip {
+			flex: 1 1 0; /* 5개 칩이 줄 폭을 균등 분할 */
+			padding: 6px 4px; /* 작게 */
+			font-size: 12px;
 			min-width: 0;
-			overflow-x: auto;
 		}
 	}
 	.chip {
