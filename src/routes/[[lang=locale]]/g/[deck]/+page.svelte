@@ -336,6 +336,15 @@
 
 <svelte:head>
 	<title>{deck ? deck.title : '그런데이제'}</title>
+	{#if data.og}
+		<!-- 공유 미리보기(카톡·인스타·X): ?r=/?vs=에 따라 SSR로 결과·도전 문구를 노출. og:image는 레이아웃 기본값 사용(레버 ②에서 결과별 이미지로 교체). -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={data.og.title} />
+		<meta property="og:description" content={data.og.description} />
+		<meta name="twitter:title" content={data.og.title} />
+		<meta name="twitter:description" content={data.og.description} />
+		<meta name="description" content={data.og.description} />
+	{/if}
 </svelte:head>
 
 {#snippet resultReceipt()}

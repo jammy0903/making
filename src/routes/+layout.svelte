@@ -33,6 +33,10 @@
 	const rest = $derived(splitLocale(page.url.pathname).rest);
 	const isHome = $derived(rest === '/');
 	const canonical = $derived(SITE + localePath(locale, rest));
+	// og 이미지: 페이지 load가 결과별 이미지를 주면 그걸(레버 ②), 없으면 사이트 기본. 단일 og:image로 유지.
+	const ogImage = $derived(
+		(page.data as { og?: { image?: string } | null }).og?.image ?? `${SITE}/og-default.png`
+	);
 
 	// WebSite 구조화 데이터(JSON-LD)
 	const websiteLd = $derived(
@@ -77,11 +81,11 @@
 	<meta property="og:site_name" content={t('app.title')} />
 	<meta property="og:locale" content={locale} />
 	<meta property="og:url" content={canonical} />
-	<meta property="og:image" content="{SITE}/og-default.png" />
+	<meta property="og:image" content={ogImage} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:image" content="{SITE}/og-default.png" />
+	<meta name="twitter:image" content={ogImage} />
 </svelte:head>
 
 <!-- WebSite 구조화 데이터 (svelte:head 의 script 안 {@html} 은 비어버려서 body 에 둠 — 크롤러는 body JSON-LD 도 읽음) -->
