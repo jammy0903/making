@@ -23,10 +23,11 @@ describe('유형 태그 인프라 (Phase 0)', () => {
 		expect(DECKS.find((d) => d.id === 'salty-bland')?.type).toBe('attribute');
 	});
 
-	it('짠맛/무맛 덱은 v3 전환됨 — 모든 페널티에 메리트 결합', () => {
+	it('짠맛/무맛 덱은 메리트 없는 순수 페널티 — 텍스트만', () => {
 		const sb = DECKS.find((d) => d.id === 'salty-bland')!;
 		for (const p of [...sb.a.penalties, ...sb.b.penalties]) {
-			expect(p.merit).toBeTruthy();
+			expect(p.text).toBeTruthy();
+			expect(p.merit).toBeUndefined();
 		}
 	});
 
