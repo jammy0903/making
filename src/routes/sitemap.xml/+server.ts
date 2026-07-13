@@ -1,10 +1,9 @@
 import { SITE } from '$lib/site';
-import { DECKS } from '$lib/game/decks';
 import { locales, localePath, defaultLocale } from '$lib/i18n';
 
 /**
- * 동적 sitemap.xml — 홈·통계·신청 + 모든 덱 플레이 페이지(/g/{id}).
- * 덱 목록은 코드 DECKS 기준(id 안정적, 빌드 시 네트워크 불필요). 각 URL에 로케일 hreflang 대체 포함.
+ * 동적 sitemap.xml — 각 URL에 로케일 hreflang 대체 포함.
+ * 리그·상황 페이지는 스키마 구현 후 여기에 추가한다(설계문서 v4 §3-4 딥링크).
  */
 export const prerender = true;
 
@@ -16,12 +15,7 @@ interface Entry {
 
 export function GET() {
 	const lastmod = new Date().toISOString().slice(0, 10);
-	const entries: Entry[] = [
-		{ path: '/', priority: '1.0', changefreq: 'daily' },
-		{ path: '/stats', priority: '0.7', changefreq: 'daily' },
-		{ path: '/suggest', priority: '0.5', changefreq: 'monthly' },
-		...DECKS.map((d) => ({ path: `/g/${d.id}`, priority: '0.9', changefreq: 'weekly' }))
-	];
+	const entries: Entry[] = [{ path: '/', priority: '1.0', changefreq: 'daily' }];
 
 	// 각 URL: 정본(ko) loc + ko/en/zh + x-default hreflang 대체(다국어 SEO).
 	const altLinks = (path: string) =>
