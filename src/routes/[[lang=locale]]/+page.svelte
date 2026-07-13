@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, type Locale } from '$lib/i18n';
+	import { SITE } from '$lib/site';
 	import { search } from '$lib/search.svelte';
 	import { isImageIcon } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
@@ -9,6 +10,21 @@
 	let { data }: { data: PageData } = $props();
 
 	const locale = $derived((page.params.lang as Locale) ?? defaultLocale);
+
+	// 게임 카탈로그 구조화 데이터(ItemList) — 크롤러가 덱 목록을 하나의 컬렉션으로 인식.
+	const itemListLd = $derived(
+		JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'ItemList',
+			name: '그런데이제 밸런스 게임 주제',
+			itemListElement: data.decks.map((d, i) => ({
+				'@type': 'ListItem',
+				position: i + 1,
+				name: d.title,
+				url: SITE + localePath(locale, `/g/${d.id}`)
+			}))
+		})
+	);
 
 	// 검색어·유형칩은 상단바(헤더)와 공유(search.q·search.type). 주제·조건·유형 필터.
 	const results = $derived.by(() => {
@@ -42,9 +58,16 @@
 </script>
 
 <svelte:head>
-	<title>그런데이제</title>
-	<meta name="description" content="고른 쪽에 조건이 하나씩 붙는 밸런스 게임. 끝까지 버틸 수 있어?" />
+	<title>그런데이제 — 고를 때마다 조건이 붙는 밸런스 게임</title>
+	<meta
+		name="description"
+		content="고른 쪽에 조건이 하나씩 붙는 밸런스 게임. 여름 vs 겨울, 월 200 백수 vs 월 천 직장인… 끝까지 버틸 수 있어?"
+	/>
 </svelte:head>
+
+<!-- 게임 카탈로그 ItemList JSON-LD (svelte:head 안 {@html} script는 비어버려 body에 둠 — 크롤러는 body도 읽음) -->
+<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+{@html `<script type="application/ld+json">${itemListLd}</script>`}
 
 <section class="intro">
 	<p class="muted">고른 쪽에 조건이 하나씩 붙어요. <b>그런데 이제</b>… 끝까지 버틸 수 있나요?</p>

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { localePath, defaultLocale, josaEunNeun, type Locale } from '$lib/i18n';
+	import { SITE } from '$lib/site';
 	import { penaltyStyleOf, shortenPenalty, type Penalty } from '$lib/game/decks';
 	import Icon from '$lib/game/Icon.svelte';
 	import type { PageData } from './$types';
@@ -30,6 +31,25 @@
 	const rounds = $derived(deck ? roundsOf(deck) : ROUNDS);
 	// 문체(§4 CLT): 긴 에피소드형(인물)은 문단처럼, 짧은 조건형은 punchy 라벨로 레이아웃 차등(Phase 4).
 	const isLongStyle = $derived(deck ? penaltyStyleOf(deck) === 'long' : false);
+
+	// 브레드크럼 구조화 데이터(홈 › 덱) — 검색결과 경로 표시 + 사이트 구조 전달.
+	const breadcrumbLd = $derived(
+		deck
+			? JSON.stringify({
+					'@context': 'https://schema.org',
+					'@type': 'BreadcrumbList',
+					itemListElement: [
+						{ '@type': 'ListItem', position: 1, name: '그런데이제', item: SITE + localePath(locale, '/') },
+						{
+							'@type': 'ListItem',
+							position: 2,
+							name: deck.title,
+							item: SITE + localePath(locale, `/g/${deck.id}`)
+						}
+					]
+				})
+			: ''
+	);
 
 	// 플레이 상태 — 고른 사이드 배열(0=a, 1=b). 메커니즘/점수는 화면에 숨김(B-2).
 	let choices = $state<SideIndex[]>([]);
@@ -335,10 +355,9 @@
 </script>
 
 <svelte:head>
-	<title>{deck ? deck.title : '그런데이제'}</title>
+	<title>{deck ? `${deck.title} — 밸런스 게임 · 그런데이제` : '그런데이제'}</title>
 	{#if data.og}
-		<!-- 공유 미리보기(카톡·인스타·X): ?r=/?vs=에 따라 SSR로 결과·도전 문구를 노출. og:image는 레이아웃 기본값 사용(레버 ②에서 결과별 이미지로 교체). -->
-		<meta property="og:type" content="website" />
+		<!-- 공유 미리보기(카톡·인스타·X): ?r=/?vs=에 따라 SSR로 결과·도전 문구를 노출. og:type/image는 레이아웃이 담당. -->
 		<meta property="og:title" content={data.og.title} />
 		<meta property="og:description" content={data.og.description} />
 		<meta name="twitter:title" content={data.og.title} />
@@ -346,6 +365,12 @@
 		<meta name="description" content={data.og.description} />
 	{/if}
 </svelte:head>
+
+{#if deck}
+	<!-- 브레드크럼 JSON-LD (svelte:head 안 {@html} script는 비어버려 body에 둠 — 크롤러는 body도 읽음) -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html `<script type="application/ld+json">${breadcrumbLd}</script>`}
+{/if}
 
 {#snippet resultReceipt()}
 	<div class="rcpt">

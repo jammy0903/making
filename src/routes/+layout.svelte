@@ -78,8 +78,12 @@
 	<meta name="google-site-verification" content="fTGiuFJ27AfnyjIL6zIcD_VGvsguOIn1kEaVHBRfG10" />
 
 	<!-- 기본 Open Graph / Twitter (페이지에서 og:title 등은 덮어씀) -->
+	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content={t('app.title')} />
 	<meta property="og:locale" content={locale} />
+	{#each locales.filter((l) => l !== locale) as l (l)}
+		<meta property="og:locale:alternate" content={l} />
+	{/each}
 	<meta property="og:url" content={canonical} />
 	<meta property="og:image" content={ogImage} />
 	<meta property="og:image:width" content="1200" />
