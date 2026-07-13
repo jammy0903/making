@@ -1,4 +1,5 @@
--- 바꾼 5개 덱만 코드→DB 반영 (2026-07-13, short 라벨 포함). 나머지 7개 덱과 sort/is_public은 건드리지 않음.
+-- 바꾼 5개 덱 + 신규 덱 lukewarm-flat 코드→DB 반영 (2026-07-13, short 라벨 포함).
+-- 기존 5개는 sort/is_public 안 건드림. 신규 덱은 맨 뒤로(sort=max+1) 삽입되며, 순서는 대시보드에서 조정 가능.
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run.
 
 -- [선택] 실행 전 현재 5개 덱 백업(결과를 따로 저장해두면 롤백 가능):
@@ -49,3 +50,12 @@ on conflict (id) do update set
   data = excluded.data,
   updated_at = excluded.updated_at;
 
+
+-- lukewarm-flat (신규 덱 · v3 온-테마 · 2026-07-13)
+insert into decks (id, title, emoji, data, is_public, sort, updated_at)
+values ('lukewarm-flat', '미지근국 vs 김빠진 음료', '🥣', '{"id":"lukewarm-flat","title":"미지근국 vs 김빠진 음료","icon":"🥣","type":"attribute","a":{"name":"미지근국","emoji":"🍲","penalties":[{"strength":2,"text":"갓 지은 밥도 내 앞에선 늘 한 김 식어 미적지근함","merit":"뜨거운 밥에 입천장 델 일이 없음"},{"strength":3,"text":"아이스크림이 늘 반쯤 녹은 채로만 넘어옴","merit":"찬 걸 급히 먹어도 머리가 띵해질 일이 없음"},{"strength":4,"text":"갓 나온 국·찌개가 내 앞에만 오면 미지근해짐","merit":"뜨거운 뚝배기·국그릇에 손 델 걱정이 없음"},{"strength":5,"text":"시원한 물을 벌컥벌컥 마셔도 늘 미적지근하게 느껴짐","merit":"찬물에 이가 시려 인상 쓸 일이 없음"},{"strength":6,"text":"갓 뽑은 커피가 늘 뜨겁지도 차갑지도 않은 애매한 온도임","merit":"뜨거워서 식을 때까지 후후 불며 기다릴 일이 없음"},{"strength":7,"text":"라면이 늘 한 김 죽어 살짝 불은 채로 완성됨","merit":"급하게 먹어도 뜨거워 데거나 못 먹을 일이 없음"},{"strength":8,"text":"겨울에 호호 불며 먹는 붕어빵·어묵 국물의 그 뜨끈함을 못 느낌","merit":"한여름에도 뜨거운 음식이 부담스러울 일이 없음"},{"strength":9,"text":"미슐랭·오마카세를 가도 갓 낸 요리가 내 입엔 늘 미지근하게 닿음","merit":"너무 뜨겁거나 차가워 첫입에 맛을 놓치는 법이 없음"},{"strength":10,"text":"평생 뜨끈한 국물 한 술, 살얼음 낀 냉면 한 젓가락의 온도를 못 느끼고 삶","merit":"평생 혀 데고 배탈 나는 온도 사고 없이 늘 순하게 먹음"}]},"b":{"name":"김빠진 음료","emoji":"🥤","penalties":[{"strength":2,"text":"갓 딴 콜라도 내 입엔 늘 김 빠진 맹맹한 맛으로만 느껴짐","merit":"탄산이 코·목을 쏘아 사레들 일이 없음"},{"strength":3,"text":"맥주 첫 잔의 그 짜릿한 목 넘김을 평생 못 느낌","merit":"트림이 콱 올라와 민망할 일이 없음"},{"strength":4,"text":"사이다를 흔들어 따도 거품 한 번 안 올라오고 밍밍함","merit":"흔들린 탄산이 터져 옷·손에 튈 일이 없음"},{"strength":5,"text":"톡 쏘는 맛에 마시는 하이볼·스파클링이 다 맹물처럼 느껴짐","merit":"탄산에 배가 빵빵하게 부풀 일이 없음"},{"strength":6,"text":"갓 개봉한 탄산수도 나에게만 김 다 빠진 맹탕임","merit":"김 빠질까 급하게 들이켜야 하는 조급함이 없음"},{"strength":7,"text":"회식·파티에서 다들 짜릿하다는 그 맛을 나만 못 느껴 겉돎","merit":"탄산이 위를 자극해 속 쓰릴 일이 없음"},{"strength":8,"text":"콜라·맥주·사이다 뭘 시켜도 결국 다 같은 맹맹한 맛임","merit":"자기 전 마셔도 속 더부룩해 잠 설칠 일이 없음"},{"strength":9,"text":"유명 수제 맥주·샴페인을 따도 그 톡 쏘는 값을 나만 못 누림","merit":"탄산에 이 삭고 살찐다는 걱정에서 자유로움"},{"strength":10,"text":"평생 캬 하고 터지는 그 짜릿한 한 모금을 못 느끼고 밍밍하게 삶","merit":"평생 탄산 과음으로 속 버리거나 이 상할 일 없이 지냄"}]},"resultCards":{"a":{"extreme":{"label":"혀 델 걱정 없는 미적지근이 평화라는 미지근국파"},"mild":{"label":"뜨끈한 국물은 그리운데 데는 것보단 낫다는 미지근국파"}},"b":{"extreme":{"label":"짜릿함 없어도 속 편한 맹탕이 최고라는 김빠진음료파"},"mild":{"label":"톡 쏘는 맛은 아쉬운데 속은 안 버려 다행인 김빠진음료파"}}}}'::jsonb, true, (select coalesce(max(sort),0)+1 from decks), now())
+on conflict (id) do update set
+  title = excluded.title,
+  emoji = excluded.emoji,
+  data = excluded.data,
+  updated_at = excluded.updated_at;
