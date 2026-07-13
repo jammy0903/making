@@ -68,13 +68,13 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		headline = stripEmoji(title);
 		sub = deck.title;
 	} else if (kind === 'vs') {
-		badge = '도전장';
+		badge = '너는?';
 		headline = deck.title;
-		sub = '나랑 붙어볼래?';
+		sub = '친구야, 너의 취향은?';
 	} else {
 		badge = '밸런스게임';
 		headline = deck.title;
-		sub = `${deck.a.name} vs ${deck.b.name} — 너는 어디까지 버틸래?`;
+		sub = `${deck.a.name} vs ${deck.b.name} — 너의 취향은?`;
 	}
 
 	const markup = html(`

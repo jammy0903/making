@@ -42,8 +42,8 @@ export function ogText(deck: Deck, params: URLSearchParams): OgText {
 	if (validCode(deck, params.get('vs'))) {
 		return {
 			kind: 'vs',
-			title: `🆚 ${deck.title}, 나랑 붙어볼래?`,
-			description: '내 선택 나왔어. 너도 골라서 나랑 비교해보자.'
+			title: `친구야, 너의 취향은? · ${deck.title}`,
+			description: '나는 골랐어. 너도 골라봐 — 너는 뭐야?'
 		};
 	}
 	const r = validCode(deck, params.get('r'));
@@ -51,12 +51,12 @@ export function ogText(deck: Deck, params: URLSearchParams): OgText {
 		return {
 			kind: 'result',
 			title: resultLabel(deck, r),
-			description: `«${deck.title}» — 나는 이렇게 나왔어. 너는 어디까지 버틸래?`
+			description: `나는 이렇게 나왔어. 친구야, 너의 취향은?`
 		};
 	}
 	return {
 		kind: 'deck',
 		title: deck.title,
-		description: `${versus} — 너는 어디까지 버틸래?`
+		description: `${versus} — 너의 취향은?`
 	};
 }
