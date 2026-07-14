@@ -3,8 +3,9 @@
 // 키는 환경변수로만 주입(하드코딩 금지). 둘 다 없으면 isConfigured=false → 크롤러가 스킵.
 //   NAVER_CLIENT_ID / NAVER_CLIENT_SECRET (developers.naver.com 앱 등록: 검색 API + 데이터랩)
 
-const ID = process.env.NAVER_CLIENT_ID;
-const SECRET = process.env.NAVER_CLIENT_SECRET;
+// 변수명 두 형태 모두 인식 (NAVER_CLIENT_ID/SECRET 또는 NAVER_CLIENTID/NAVER_SECRET)
+const ID = process.env.NAVER_CLIENT_ID || process.env.NAVER_CLIENTID;
+const SECRET = process.env.NAVER_CLIENT_SECRET || process.env.NAVER_SECRET;
 
 export const isConfigured = Boolean(ID && SECRET);
 
