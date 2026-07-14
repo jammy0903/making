@@ -1,0 +1,167 @@
+<script lang="ts">
+  import { page } from '$app/state';
+  import { tagText, timeAgo } from '$lib/cards';
+  import { votedMap, sameMonth, markVoted, castVote, postComment } from '$lib/client/api';
+  import { voteCard } from '$lib/client/share';
+  import { login } from '$lib/client/auth';
+  import { user } from '$lib/client/session.svelte';
+
+  let { data } = $props();
+
+  // SSR 데이터를 낙관적 UI용 로컬 상태로 복사
+  let m = $state({ ...data.meme });
+  let comments = $state([...data.comments]);
+  $effect(() => {
+    m = { ...data.meme };
+    comments = [...data.comments];
+  });
+
+  let draftNick = $state('');
+  let draftText = $state('');
+  let shareLabel = $state('결과 카드 공유');
+  let voteVersion = $state(0); // 투표 직후 쿨다운 재계산 트리거
+
+  const total = $derived(m.voteYes + m.voteNo);
+  const yesPct = $derived(total ? Math.round((m.voteYes / total) * 100) : 0);
+  const noPct = $derived(total ? 100 - yesPct : 0);
+  const votedEntry = $derived.by(() => {
+    voteVersion;
+    if (typeof localStorage === 'undefined') return null;
+    return votedMap()[String(m.id)] || null;
+  });
+  const votedNow = $derived(!!(votedEntry && sameMonth(votedEntry.t)));
+  const voteHint = $derived(
+    votedNow
+      ? '이번 달 판정 완료 · 다음 달 다시'
+      : votedEntry
+        ? `지난 판정: ${votedEntry.c === 'yes' ? '살았다' : '죽었다'} · 다시 판정 가능`
+        : ''
+  );
+
+  const desc = $derived(m.desc || `${m.name} — 밈 뜻과 활성도를 memedics에서 확인하세요.`);
+  const pageUrl = $derived(`${page.url.origin}/m/${m.id}`);
+
+  async function vote(dir: 'yes' | 'no') {
+    if (votedNow) return;
+    markVoted(m.id, dir);
+    if (dir === 'yes') m.voteYes++; else m.voteNo++;
+    voteVersion++;
+    try {
+      await castVote(m.id, dir);
+    } catch {
+      /* 같은 달 중복(409) 등은 표시만 유지 */
+    }
+  }
+
+  async function submitComment() {
+    const text = draftText.trim();
+    if (!text) return;
+    const nick = user.current ? user.current.name : draftNick.trim() || '익명';
+    try {
+      const row = await postComment(m.id, nick, text, user.current);
+      comments = [row, ...comments];
+      m.commentCount++;
+      draftText = '';
+    } catch (e) {
+      alert('댓글 등록 실패: ' + (e as Error).message);
+    }
+  }
+
+  async function share() {
+    shareLabel = '만드는 중…';
+    try {
+      const r = await voteCard(m);
+      shareLabel = r === 'downloaded+copied' ? '이미지 저장 · 링크 복사됨 ✓' : r === 'downloaded' ? '이미지 저장됨 ✓' : r === 'shared' ? '공유됨 ✓' : '결과 카드 공유';
+    } catch (e) {
+      shareLabel = '공유 실패';
+      console.error('공유 카드 오류:', e);
+    }
+    setTimeout(() => (shareLabel = '결과 카드 공유'), 2500);
+  }
+
+  const reg = $derived(
+    m.status === 'new' ? (m.days === 0 ? '오늘 등록' : `등록 ${m.days}일 전`) : `등록 ${m.months}개월 전`
+  );
+</script>
+
+<svelte:head>
+  <title>{m.name} 뜻 — memedics 밈 사전</title>
+  <meta name="description" content={desc} />
+  <link rel="canonical" href={pageUrl} />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content={`${m.name} — 살았나 죽었나 | memedics`} />
+  <meta property="og:description" content={desc} />
+  <meta property="og:url" content={pageUrl} />
+  {#if m.photoUrl}<meta property="og:image" content={m.photoUrl} />{/if}
+  <meta name="twitter:card" content={m.photoUrl ? 'summary_large_image' : 'summary'} />
+</svelte:head>
+
+<div class="wrap-narrow page">
+  <a class="back" href="/" style="border:none">← 목록으로</a>
+  <div class="detail">
+    {#if m.photoUrl}
+      <div class="photo-slot detail-media"><img src={m.photoUrl} alt={m.name} referrerpolicy="no-referrer" /></div>
+    {/if}
+    {#if m.name}<div class="headword">{m.name}</div>{/if}
+    <div class="tag-head">{tagText(m)}</div>
+    <div class="reg">
+      {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
+    </div>
+    {#if m.desc}<p class="detail-desc">{m.desc}</p>{/if}
+
+    <div class="vote">
+      <div class="vote-row">
+        <div class="vote-btns {votedNow ? 'voted' : ''}">
+          <button class="vote-btn" onclick={() => vote('yes')}>살았다</button>
+          <button class="vote-btn" onclick={() => vote('no')}>죽었다</button>
+        </div>
+        <span class="vote-total">{total}표 참여</span>
+        {#if voteHint}<span class="vote-hint">{voteHint}</span>{/if}
+      </div>
+      <div class="vote-bar"><div style="width:{yesPct}%"></div></div>
+      <div class="vote-legend"><span>생존 {yesPct}% · {m.voteYes}표</span><span>사망 {noPct}% · {m.voteNo}표</span></div>
+      <div class="vote-foot">
+        <span class="vote-note">최근 90일 판정 게이지 · 브라우저 기준 익명 · 월 1회 재판정</span>
+        <button class="vote-share" onclick={share}>{shareLabel}</button>
+      </div>
+    </div>
+
+    <div class="comments">
+      <div class="comments-head"><h3>댓글 {m.commentCount}</h3></div>
+      <div class="cform">
+        {#if !user.current}
+          <div class="auth">
+            <input class="nick" bind:value={draftNick} placeholder="닉네임 (선택)" />
+            <span class="or">또는</span>
+            <button class="google" onclick={login}>Google 계정으로 로그인</button>
+          </div>
+        {/if}
+        <textarea bind:value={draftText} placeholder="이 밈에 대해 한마디 남겨 보세요"></textarea>
+        <div class="submit-row"><button class="btn-solid" onclick={submitComment}>등록</button></div>
+      </div>
+      <div class="clist">
+        {#if !comments.length}
+          <div class="empty">첫 댓글을 남겨 보세요.</div>
+        {:else}
+          {#each comments as c (c.id)}
+            <div class="citem">
+              {#if c.is_user}
+                <div class="avatar user">{(c.nick || '?').slice(0, 1)}</div>
+              {:else}
+                <div class="avatar anon"></div>
+              {/if}
+              <div class="col">
+                <div class="cmeta">
+                  <span class="cnick {c.is_user ? 'user' : 'anon'}">{c.nick}</span>
+                  {#if c.is_user}<span class="badge user">로그인</span>{:else}<span class="badge anon">익명</span>{/if}
+                  <span class="cwhen">{timeAgo(c.created_at)}</span>
+                </div>
+                <p class="ctext">{c.body}</p>
+              </div>
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>

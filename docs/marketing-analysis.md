@@ -77,7 +77,11 @@
 2. ✅ **이름 통일** — memedics 단일로 확정·치환 완료. (§4-1)
 3. ✅ **투표 신뢰 보강** — 표기 조정 + DB 트리거 레이트리밋(잔여: IP 기반은 SSR 이전 시). (§4-4)
 4. ✅ **공유 루프** — 투표 결과 공유 카드 + 생사판정 카피 + 딥링크. (§4-3)
-5. **SEO/SSR** — architecture.md Phase 1~2 착수(SvelteKit 이전). 가장 큼. (§4-2)
+5. ✅ **SEO/SSR** — SvelteKit(adapter-vercel) 이전 Phase 1~2 구현(2026-07-15).
+   `/`(순위·목록 SSR) + `/m/[id]`(상세 SSR — title "○○ 뜻", OG, canonical) +
+   sitemap.xml/robots.txt + 구 해시 링크(#m=) 리다이렉트 + 투표·댓글·공유 카드 포팅.
+   레거시 admin/withdraw는 static/으로 병행. **배포 스왑은 대기**: vercel.json이
+   아직 구 정적 사이트를 가리킴(스트랭글러 — 스왑 전 파리티 확인: 스와이프 덱 미포팅). (§4-2)
 6. ✅ **판정 시계열 1단계** — 1표 영구제가 게이지를 전성기에 화석화하는 문제 해결.
    `db/votes_lifecycle.sql`: PK에 month_bucket 추가(월 1회 재판정, 번복 역사 보존 =
    사망 곡선 데이터), 게이지는 최근 90일 내 투표자별 최신 판정만. 프론트 월 쿨다운
