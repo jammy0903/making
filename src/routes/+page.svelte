@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { newCards, steadyCards, deadCards, tagText, metaNew, metaSteady } from '$lib/cards';
+  import Deck from '$lib/components/Deck.svelte';
 
   let { data } = $props();
 
@@ -33,6 +34,8 @@
   <p class="lede">새로 뜬 밈과 오래 살아남은 밈을 모아 둡니다. 판정하지 않고, 있는 그대로 보여드립니다. 해석은 읽는 사람의 몫.</p>
   <div class="rule"></div>
 </div>
+
+<Deck cards={data.cards} />
 
 <div class="wrap">
   <div class="tabs">
