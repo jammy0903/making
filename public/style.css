@@ -1,0 +1,511 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+/* ─── 헤더 ──────────────────────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #111;
+  border-bottom: 1px solid #222;
+  backdrop-filter: blur(12px);
+}
+
+.header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 24px;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.header-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: #FF6B6B;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.header-badge:empty {
+  display: none;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.last-update {
+  font-size: 12px;
+  color: #555;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.icon-btn:hover {
+  background: #222;
+  color: #fff;
+}
+
+.icon-btn.spinning svg {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── 메인 ──────────────────────────────────────── */
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+/* ─── 피드 ──────────────────────────────────────── */
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── 카드 ──────────────────────────────────────── */
+
+.meme-card {
+  background: #151515;
+  border: 1px solid #222;
+  border-radius: 14px;
+  padding: 18px 20px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.meme-card:hover {
+  border-color: #333;
+  transform: translateY(-1px);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-rank {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF6B6B;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.card-score {
+  font-size: 12px;
+  color: #555;
+}
+
+.card-phrase {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.card-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 12px;
+  color: #777;
+}
+
+.card-sources {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.source-tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.tag-dcinside {
+  background: rgba(59, 72, 144, 0.2);
+  color: #7b8fd6;
+}
+
+.tag-fmkorea {
+  background: rgba(45, 156, 219, 0.2);
+  color: #6bc0e8;
+}
+
+.tag-instiz {
+  background: rgba(242, 153, 74, 0.2);
+  color: #f2994a;
+}
+
+.tag-yeosig {
+  background: rgba(187, 107, 217, 0.2);
+  color: #d49be6;
+}
+
+.tag-youtube {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff5c5c;
+}
+
+/* ─── 샘플 ──────────────────────────────────────── */
+
+.card-samples {
+  margin-top: 10px;
+}
+
+.card-samples summary {
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.card-samples summary:hover {
+  color: #888;
+}
+
+.sample-list {
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px solid #222;
+}
+
+.sample-item {
+  font-size: 12px;
+  color: #666;
+  padding: 5px 0;
+  line-height: 1.5;
+}
+
+/* ─── 로딩/빈상태 ────────────────────────────────── */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 0;
+  color: #555;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #222;
+  border-top-color: #FF6B6B;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-bottom: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 100px 20px;
+  color: #444;
+}
+
+.empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ─── 모달 ──────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal {
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #222;
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.modal-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid #222;
+}
+
+/* ─── 설정 폼 ─────────────────────────────────── */
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+select, input[type="password"] {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  color: #e0e0e0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+select:focus, input:focus {
+  border-color: #FF6B6B;
+}
+
+.hint {
+  font-size: 11px;
+  color: #444;
+  margin-top: 4px;
+}
+
+/* ─── 체크박스 ────────────────────────────────── */
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  display: none;
+}
+
+.check-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 2px solid #333;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.checkbox-label input:checked + .check-dot {
+  border-color: transparent;
+}
+
+.checkbox-label input:checked + .check-dot.source-dc { background: #3b4890; }
+.checkbox-label input:checked + .check-dot.source-fm { background: #2d9cdb; }
+.checkbox-label input:checked + .check-dot.source-instiz { background: #f2994a; }
+.checkbox-label input:checked + .check-dot.source-yeosig { background: #bb6bd9; }
+.checkbox-label input:checked + .check-dot.source-youtube { background: #ff0000; }
+
+/* ─── 버튼 ──────────────────────────────────────── */
+
+.btn-primary {
+  background: #FF6B6B;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: #ff5252;
+}
+
+.btn-secondary {
+  background: #1a1a1a;
+  color: #999;
+  border: 1px solid #2a2a2a;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #222;
+  color: #fff;
+}
+
+.btn-danger {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: rgba(231, 76, 60, 0.2);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#save-status {
+  font-size: 13px;
+  color: #27ae60;
+}
+
+/* ─── 반응형 ─────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .header-inner {
+    padding: 12px 16px;
+  }
+
+  .main {
+    padding: 12px 14px 30px;
+  }
+
+  .meme-card {
+    padding: 14px 16px;
+  }
+
+  .card-phrase {
+    font-size: 18px;
+  }
+
+  .last-update {
+    display: none;
+  }
+}

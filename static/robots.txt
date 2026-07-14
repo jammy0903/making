@@ -1,6 +1,0 @@
-# allow crawling everything by default
-# (관리자 경로는 robots.txt에 안 적음 — Disallow가 오히려 경로를 노출하므로.
-#  비밀 경로 + noindex 메타·헤더 + 비밀번호로 보호)
-User-agent: *
-
-Sitemap: https://codeinsight.online/sitemap.xml
