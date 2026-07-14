@@ -7,6 +7,7 @@ import * as instiz from './src/crawlers/instiz.js';
 import * as yeosig from './src/crawlers/yeosig.js';
 import * as youtube from './src/crawlers/youtube.js';
 import * as pinterest from './src/crawlers/pinterest.js';
+import * as x from './src/crawlers/x.js';
 import { prepareMemes, matchToRows } from './src/matcher.js';
 import * as supa from './src/supabase.js';
 import * as storage from './src/storage.js';
@@ -20,7 +21,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube, pinterest };
+const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube, pinterest, x };
 
 // 밈 사전 캐시 (Supabase memes 테이블에서 로드)
 let memeDict = [];
