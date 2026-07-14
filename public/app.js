@@ -65,6 +65,16 @@ async function init() {
 async function loadCards() {
   const rows = await sbGet('meme_cards?select=*&order=created_at.desc');
   state.cards = rows.map(mapCard);
+  // 측정 순위(meme_ranking) 병합 — 여러 소스 순위를 합친 avg_rank(낮을수록 상위)
+  try {
+    const ranks = await sbGet('meme_ranking?select=meme_id,avg_rank,source_count');
+    const byId = new Map(ranks.map((r) => [String(r.meme_id), r]));
+    for (const c of state.cards) {
+      const r = byId.get(String(c.id));
+      c.rank = r && r.avg_rank != null ? Number(r.avg_rank) : null;
+      c.rankSources = r ? r.source_count : 0;
+    }
+  } catch (e) { /* 뷰 없거나 데이터 없으면 순위 없이 진행 */ }
 }
 function mapCard(r) {
   const created = r.created_at ? new Date(r.created_at) : new Date();
@@ -75,15 +85,23 @@ function mapCard(r) {
     status: r.status || 'new', days, months: Math.floor(days / 30),
     mentions: r.mentions || 0, commentCount: r.comment_count || 0,
     voteYes: r.vote_yes || 0, voteNo: r.vote_no || 0,
+    rank: null, rankSources: 0,
   };
 }
 function newCards() { return state.cards.filter(c => c.status === 'new'); }
-function steadyCards() { return state.cards.filter(c => c.status === 'steady'); }
+// 스테디 = 측정 순위(avg_rank)순. 순위 없는 밈은 뒤로.
+function steadyCards() {
+  return state.cards.filter(c => c.status === 'steady')
+    .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
+}
 function findCard(id) { return state.cards.find(c => String(c.id) === String(id)); }
 
 function tagText(m) { return (m.tags || []).join(' '); }
 function metaNew(m) { const age = m.days === 0 ? '오늘 등록' : `${m.days}일 전 등록`; return `${age} · 댓글 ${m.commentCount}개`; }
-function metaSteady(m) { return `등록 ${m.months}개월 전 · 최근 댓글 ${m.commentCount}개`; }
+function metaSteady(m) {
+  const src = m.rankSources ? `${m.rankSources}개 소스 측정` : '측정 대기';
+  return `${src} · 등록 ${m.months}개월 전`;
+}
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
@@ -209,12 +227,12 @@ function pageSteady() {
     body = `<div style="border-top:1px solid var(--line);padding-top:6px;">` + list.map(m => `
       <div class="idx-row" data-act="open" data-id="${m.id}">
         <div class="idx-line"><span class="idx-term">${m.name?`<span class="nm">${esc(m.name)}</span>`:''}${esc(tagText(m))}</span>
-          <span class="idx-lead"></span><span class="idx-count">${m.months}개월 · 댓글 ${m.commentCount}</span></div>
+          <span class="idx-lead"></span><span class="idx-count">${m.rankSources ? `${m.rankSources}개 소스` : '측정 대기'}</span></div>
         ${m.desc?`<p class="idx-desc">${esc(m.desc)}</p>`:''}
       </div>`).join('') + `</div>`;
   }
   return `<div class="wrap page"><div class="list-head">
-      <div class="note">카테고리별로, 지금도 댓글이 이어지는 순서대로 모았습니다.</div>${seg}
+      <div class="note">여러 소스에서 측정한 활성도 순위입니다. 앞의 번호가 순위 · 판정하지 않고 있는 그대로.</div>${seg}
     </div>${cats}${body}</div>`;
 }
 
