@@ -278,7 +278,7 @@ function pageSteady() {
     dead.map(m => `
       <div class="obit-row" data-act="open" data-id="${m.id}">
         <span class="obit-name">${esc(m.name)}</span>
-        <span class="obit-date">${m.died ? esc(String(m.died).slice(0, 10)) + ' 사망 선고' : ''}</span>
+        <span class="obit-date">사망 선고</span>
       </div>`).join('') + `</div>` : '';
   return `<div class="wrap page"><div class="list-head">
       <div class="note">여러 소스에서 측정한 활성도 순위입니다. 앞의 번호가 순위 · 판정하지 않고 있는 그대로.</div>${seg}
@@ -289,7 +289,7 @@ function pageDetail() {
   const m = findCard(state.selectedId);
   if (!m) return `<div class="wrap-narrow page"><button class="back" data-act="backList">← 목록으로</button></div>`;
   const reg = m.status === 'new' ? (m.days === 0 ? '오늘 등록' : `등록 ${m.days}일 전`) : `등록 ${m.months}개월 전`;
-  const obit = m.status === 'dead' && m.died ? ` · <span class="obit-mark">† ${esc(String(m.died).slice(0, 10))} 사망 선고</span>` : '';
+  const obit = m.status === 'dead' ? ` · <span class="obit-mark">† 사망 선고</span>` : '';
   const total = m.voteYes + m.voteNo;
   const yesPct = total ? Math.round(m.voteYes/total*100) : 0;
   const noPct = total ? 100 - yesPct : 0;
