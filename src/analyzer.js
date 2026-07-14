@@ -16,6 +16,7 @@ function normalize(text) {
   let s = text;
   s = s.replace(/https?:\/\/\S+/g, '');       // URL
   s = s.replace(/<[^>]+>/g, '');               // HTML
+  s = s.replace(/\d{1,2}:\d{2}(:\d{2})?/g, ' '); // 타임스탬프 (1:23, 01:52:18) — 유튜브 댓글 노이즈
   s = s.replace(BOARD_WORDS, '');              // 게시판 노이즈
   s = s.replace(NOISE_RE, '');                 // ㅋㅋㅋ, ..., !!
   s = s.replace(/\([^)]*\)/g, '');             // (괄호 안 내용)
@@ -23,6 +24,20 @@ function normalize(text) {
   s = s.replace(/[^\wㄱ-ㅎㅏ-ㅣ가-힣\s]/g, ' '); // 특수문자→공백
   s = s.replace(/\s+/g, ' ').trim();
   return s;
+}
+
+// ─── 노이즈 표현 필터 ───────────────────────────────
+// 추출된 표현이 "순수 어미"거나 "순수 숫자"뿐이면 밈이 아니므로 버린다.
+// (어간 없이 어미 조각만 있는 경우만 매칭 — 실제 단어가 섞이면 통과)
+const PURE_ENDING_RE =
+  /^(?:이었|하였|되었|봤|졌|났|줬|했|겠|았|었|왔|됐|였|드)*(?:습니다|ㅂ니다|니다|합니다|입니다|드립니다|됩니다|십니다|세요|해요|어요|아요|에요|예요|네요|더라|더라고요?|는데요?|ㄴ데|구나|군요|는군요|는다|ㄴ다|더군요?|잖아요?|거든요?|답니다|랍니다|구요|더라구요?)$/;
+
+function isNoisePhrase(phrase) {
+  const s = phrase.replace(/\s/g, '');
+  if (!s) return true;
+  if (/^\d+$/.test(s)) return true;        // 순수 숫자
+  if (PURE_ENDING_RE.test(s)) return true; // 순수 어미
+  return false;
 }
 
 // ─── 1단계: 문장 유사도 클러스터링 ──────────────────
@@ -150,7 +165,7 @@ function extractKeywords(posts) {
   }
 
   return [...freq.entries()]
-    .filter(([, d]) => d.count >= 5 && d.sources.size >= 2)
+    .filter(([, d]) => d.count >= 5)
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 30)
     .map(([word, data]) => ({ word, ...data, sources: [...data.sources] }));
@@ -251,7 +266,7 @@ function findRepeatedSubstrings(posts, minLen = 4, maxLen = 20) {
 
   const results = [];
   for (const [sub, data] of substringFreq) {
-    if (data.count >= 3 && data.sources.size >= 2) {
+    if (data.count >= 3) {
       results.push({
         phrase: sub,
         count: data.count,
@@ -288,7 +303,6 @@ export function analyzePosts(posts) {
     if (members.length < 3) continue;
 
     const sources = new Set(members.map((m) => m.source));
-    if (sources.size < 2) continue;
 
     const sorted = [...members].sort((a, b) => a.norm.length - b.norm.length);
     const rep = sorted[Math.floor(sorted.length * 0.3)];
@@ -356,7 +370,7 @@ export function analyzePosts(posts) {
   }
 
   // === 최종 스코어링 ===
-  const trends = [...results.values()];
+  const trends = [...results.values()].filter((t) => !isNoisePhrase(t.phrase));
   for (const t of trends) {
     const freqScore = Math.log2(t.count + 1) * 12;
     const sourceScore = t.sourceCount * 30;
