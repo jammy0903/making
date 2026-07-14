@@ -1,0 +1,33 @@
+name: 배포 (GitHub Pages)
+
+# public/ 정적 프론트를 GitHub Pages로 배포. 코드 바뀔 때만 재배포
+# (데이터는 브라우저가 Supabase에서 매번 라이브로 읽으므로 데이터 갱신엔 재배포 불필요).
+on:
+  push:
+    branches: [main]
+    paths: ['public/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v4
