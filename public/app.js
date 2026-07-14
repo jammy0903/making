@@ -82,6 +82,12 @@ async function init() {
 async function loadCards() {
   const rows = await sbGet('meme_cards?select=*&order=created_at.desc');
   state.cards = rows.map(mapCard);
+  // 재심 후보: 90일 판정이 10표 미만인 스테디 밈에서 무작위 3개 — 덱에 섞어 재판정 트래픽을 만든다
+  state.retrials = state.cards
+    .filter(c => c.status === 'steady' && c.voteYes + c.voteNo < 10)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3)
+    .map(c => ({ ...c, retrial: true }));
   // 측정 순위(meme_ranking) 병합 — 백분위 축소 score(낮을수록 상위).
   // score 컬럼 없는 구 뷰면 요청이 400으로 떨어져 catch로 순위 없이 진행된다(뷰 먼저 갱신할 것).
   try {
@@ -103,6 +109,7 @@ function mapCard(r) {
     status: r.status || 'new', days, months: Math.floor(days / 30),
     mentions: r.mentions || 0, commentCount: r.comment_count || 0,
     voteYes: r.vote_yes || 0, voteNo: r.vote_no || 0,
+    died: r.died_at || null,
     rank: null, rankSources: 0,
   };
 }
@@ -112,6 +119,13 @@ function steadyCards() {
   return state.cards.filter(c => c.status === 'steady')
     .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
 }
+// 부고 = 사망 선고된 밈, 최근 사망 순
+function deadCards() {
+  return state.cards.filter(c => c.status === 'dead')
+    .sort((a, b) => new Date(b.died || 0) - new Date(a.died || 0));
+}
+// 덱 = 새로 뜬 밈 + 재심(판정 표가 굶주린 스테디 밈, 로드마다 무작위 3개)
+function deckList() { return newCards().concat(state.retrials || []); }
 function findCard(id) { return state.cards.find(c => String(c.id) === String(id)); }
 
 function tagText(m) { return (m.tags || []).join(' '); }
@@ -158,7 +172,7 @@ function masthead() {
 }
 
 function deckSection() {
-  const list = newCards();
+  const list = deckList();
   const dlen = list.length;
   let cards = '';
   if (!state.deckDone && dlen > 0) {
@@ -173,9 +187,10 @@ function deckSection() {
         style="z-index:${30-off};transform:${transform};box-shadow:${shadow};cursor:${top?'grab':'default'};transition:transform .24s ease;">
         ${m.photo ? photoSlot('', '사진 / 동영상', m.photoUrl) : ''}
         <div class="card-body">
+          ${m.retrial ? `<div class="deck-retrial">재심 · 살았나 죽었나</div>` : ''}
           ${nameHtml(m)}<div class="m-tags">${esc(tagText(m))}</div>
           ${descHtml(m)}<div class="spacer"></div>
-          <div class="m-meta">${metaNew(m)}</div>
+          <div class="m-meta">${m.retrial ? metaSteady(m) : metaNew(m)}</div>
         </div></div>`;
     }
   }
@@ -185,7 +200,7 @@ function deckSection() {
       <button class="btn-accent" data-act="resetDeck">처음부터 다시</button></div>` : '';
   const counter = dlen ? `${Math.min(state.deckIndex + 1, dlen)} / ${dlen}` : '0 / 0';
   return `<div class="wrap deck-section">
-    <div class="deck-title">넘겨보기 · 새로 뜬 밈</div>
+    <div class="deck-title">넘겨보기 · 새로 뜬 밈 & 재심</div>
     <div class="deck-holder">
       <div class="deck-stage">${cards}${empty}${done}</div>
       <div class="deck-nav">
@@ -256,15 +271,25 @@ function pageSteady() {
         ${m.desc?`<p class="idx-desc">${esc(m.desc)}</p>`:''}
       </div>`).join('') + `</div>`;
   }
+  // 부고 — 사망 선고된 밈. 삭제가 아니라 전시(사전이니까). 상세에서 재판정하면 부활 신호가 된다.
+  const dead = deadCards();
+  const obits = dead.length ? `<div class="obits">
+      <div class="obits-head">† 부고 <span class="obits-sub">두 신호(언급 소멸·판정 여론)가 겹쳐 사망 선고된 밈 · ${dead.length}</span></div>` +
+    dead.map(m => `
+      <div class="obit-row" data-act="open" data-id="${m.id}">
+        <span class="obit-name">${esc(m.name)}</span>
+        <span class="obit-date">${m.died ? esc(String(m.died).slice(0, 10)) + ' 사망 선고' : ''}</span>
+      </div>`).join('') + `</div>` : '';
   return `<div class="wrap page"><div class="list-head">
       <div class="note">여러 소스에서 측정한 활성도 순위입니다. 앞의 번호가 순위 · 판정하지 않고 있는 그대로.</div>${seg}
-    </div>${cats}${body}</div>`;
+    </div>${cats}${body}${obits}</div>`;
 }
 
 function pageDetail() {
   const m = findCard(state.selectedId);
   if (!m) return `<div class="wrap-narrow page"><button class="back" data-act="backList">← 목록으로</button></div>`;
   const reg = m.status === 'new' ? (m.days === 0 ? '오늘 등록' : `등록 ${m.days}일 전`) : `등록 ${m.months}개월 전`;
+  const obit = m.status === 'dead' && m.died ? ` · <span class="obit-mark">† ${esc(String(m.died).slice(0, 10))} 사망 선고</span>` : '';
   const total = m.voteYes + m.voteNo;
   const yesPct = total ? Math.round(m.voteYes/total*100) : 0;
   const noPct = total ? 100 - yesPct : 0;
@@ -310,7 +335,7 @@ function pageDetail() {
       ${m.photo ? photoSlot('detail-media','사진 / 동영상', m.photoUrl) : ''}
       ${m.name ? `<div class="headword">${esc(m.name)}</div>` : ''}
       <div class="tag-head">${esc(tagText(m))}</div>
-      <div class="reg">${reg}${m.src ? ` · 출처 <a href="#">${esc(m.src)}</a>` : ''}</div>
+      <div class="reg">${reg}${obit}${m.src ? ` · 출처 <a href="#">${esc(m.src)}</a>` : ''}</div>
       ${m.desc ? `<p class="detail-desc">${esc(m.desc)}</p>` : ''}
 
       <div class="vote">
@@ -419,7 +444,7 @@ async function deleteComment(id) {
 // 덱 스와이프
 function commitNext() {
   const ni = state.deckIndex + 1;
-  if (ni >= newCards().length) setState({ deckDone: true }); else setState({ deckIndex: ni });
+  if (ni >= deckList().length) setState({ deckDone: true }); else setState({ deckIndex: ni });
 }
 function flyAndAdvance(el, dir) { el.style.transition = 'transform .23s ease'; el.style.transform = `translate(${dir*720}px,0) rotate(${dir*30}deg)`; setTimeout(commitNext, 230); }
 function attachDeck() {
@@ -466,7 +491,7 @@ const ACTIONS = {
     setTimeout(() => { const b = app.querySelector('.vote-share'); if (b) b.textContent = '결과 카드 공유'; }, 2500);
   },
   deckPass: () => commitNext(),
-  deckPrev: () => { if (state.deckDone) return setState({ deckDone: false, deckIndex: Math.max(0, newCards().length - 1) }); if (state.deckIndex > 0) setState({ deckIndex: state.deckIndex - 1 }); },
+  deckPrev: () => { if (state.deckDone) return setState({ deckDone: false, deckIndex: Math.max(0, deckList().length - 1) }); if (state.deckIndex > 0) setState({ deckIndex: state.deckIndex - 1 }); },
   resetDeck: () => setState({ deckDone: false, deckIndex: 0 }),
 };
 app.addEventListener('click', (e) => { const el = e.target.closest('[data-act]'); if (!el) return; const fn = ACTIONS[el.dataset.act]; if (fn) fn(el.dataset.id); });
