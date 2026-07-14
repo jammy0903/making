@@ -6,6 +6,7 @@ import * as fmkorea from './src/crawlers/fmkorea.js';
 import * as instiz from './src/crawlers/instiz.js';
 import * as yeosig from './src/crawlers/yeosig.js';
 import * as youtube from './src/crawlers/youtube.js';
+import * as pinterest from './src/crawlers/pinterest.js';
 import { prepareMemes, matchToRows } from './src/matcher.js';
 import * as supa from './src/supabase.js';
 import * as storage from './src/storage.js';
@@ -19,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube };
+const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube, pinterest };
 
 // 밈 사전 캐시 (Supabase memes 테이블에서 로드)
 let memeDict = [];
@@ -119,6 +120,15 @@ app.post('/api/refresh', async (req, res) => {
 app.get('/api/status', (req, res) => {
   const lastCrawl = storage.getLastCrawl();
   res.json({ lastCrawl });
+});
+
+// 프론트가 Supabase에 직접 붙기 위한 공개 설정.
+// anon 키는 공개 노출이 안전하도록 설계된 값(RLS로 방어). service role 키는 절대 내보내지 않는다.
+app.get('/api/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.PUBLIC_SUPABASE_URL || '',
+    anonKey: process.env.PUBLIC_SUPABASE_ANON_KEY || '',
+  });
 });
 
 // 설정 조회
