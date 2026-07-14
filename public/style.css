@@ -107,6 +107,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .list-head .count { font-size: 13px; color: var(--mute3); }
 .list-head .note { font-size: 13px; color: var(--mute3); max-width: 520px; line-height: 1.6; }
 .page { padding: 28px 0 100px; }
+.empty { padding: 40px 6px; color: var(--mute3); font-size: 14px; line-height: 1.7; }
 
 /* ── New: rows ── */
 .rows { border-top: 1px solid var(--line); }
