@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
     yeosig: true,
     youtube: true,
     pinterest: true,
+    x: true,
   },
 };
 
