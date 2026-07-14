@@ -1,7 +1,7 @@
 // 인메모리 스토리지 (chrome.storage 대체)
 
 const DEFAULT_SETTINGS = {
-  crawlInterval: 30,
+  crawlInterval: 180, // 유튜브 search.list 할당량(호출당 100 units) 고려한 기본 주기(분)
   sources: {
     dcinside: true,
     fmkorea: true,
