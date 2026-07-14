@@ -3,7 +3,7 @@
 //  - 밈 카드: meme_cards 뷰 (밈 + 언급량 + 댓글수 + 투표집계)
 //  - 방문자 댓글: meme_comments, 투표: meme_votes
 
-const SB = { url: '', key: '' };
+const SB = window.__SB__ || { url: '', key: '' }; // config.js에서 주입(정적 배포)
 function sbHeaders(extra) { return { apikey: SB.key, Authorization: `Bearer ${SB.key}`, ...extra }; }
 async function sbGet(path) {
   const r = await fetch(`${SB.url}/rest/v1/${path}`, { headers: sbHeaders() });
@@ -53,9 +53,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 // ─── 데이터 로드 ────────────────────────────────────
 async function init() {
   try {
-    const cfg = await (await fetch('/api/config')).json();
-    SB.url = cfg.supabaseUrl; SB.key = cfg.anonKey;
-    if (!SB.url || !SB.key) throw new Error('Supabase 설정 없음(.env 확인)');
+    if (!SB.url || !SB.key) throw new Error('Supabase 설정 없음(config.js 확인)');
     await loadCards();
     setState({ loading: false });
   } catch (err) {
