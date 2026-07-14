@@ -30,13 +30,6 @@ function memeKeywords(m) {
   return out;
 }
 
-// 결과에서 그룹의 "가장 최근 데이터 포인트"를 뽑는다 → { ratio, period }
-function latestPoint(results, title) {
-  const r = (results || []).find((x) => x.title === title);
-  const data = r?.data || [];
-  return data.length ? data[data.length - 1] : null;
-}
-
 async function fetchBatch(startDate, endDate, groups) {
   const body = { startDate, endDate, timeUnit: 'date', keywordGroups: groups };
   let res = await naverPost('/v1/datalab/search', body);
@@ -48,7 +41,10 @@ async function fetchBatch(startDate, endDate, groups) {
   return res.json();
 }
 
-export async function run(memes) {
+// backfill=false: 최신 1일만 기록(매일 크롤). backfill=true: 조회 범위 전체 일자 소급 기록.
+//   데이터랩은 한 호출에 기간 전체 시계열을 주므로, 백필도 호출 수는 같고 저장 행만 늘어난다.
+//   → 배포 첫날 지난 몇 달치 시계열을 채운 채 시작할 수 있다.
+export async function run(memes, { backfill = false } = {}) {
   if (!isConfigured) return; // 키 없으면 조용히 스킵(API 호출 안 함)
   const targets = (memes || [])
     .map((m) => ({ id: m.id, keywords: memeKeywords(m) }))
@@ -57,7 +53,8 @@ export async function run(memes) {
 
   const now = new Date();
   const endDate = ymd(now);
-  const startDate = ymd(new Date(now.getTime() - 30 * 86400000));
+  const daysBack = backfill ? 120 : 30; // 백필은 ~4개월 소급
+  const startDate = ymd(new Date(now.getTime() - daysBack * 86400000));
   const nowIso = now.toISOString();
   const anchorGroup = { groupName: '__anchor', keywords: ['밈'] };
 
@@ -69,32 +66,32 @@ export async function run(memes) {
     const groups = chunk.map((m) => ({ groupName: String(m.id), keywords: m.keywords }));
     groups.push(anchorGroup);
 
-    let json = await fetchBatch(startDate, endDate, groups);
-    let anchor = json && latestPoint(json.results, '__anchor');
-    if (json && (!anchor || anchor.ratio === 0)) {
-      await sleep(CALL_DELAY_MS);
-      json = await fetchBatch(startDate, endDate, groups); // anchor 0 → 1회 재시도
-      anchor = json && latestPoint(json.results, '__anchor');
-    }
-    if (!json || !anchor || anchor.ratio === 0) { skipped += chunk.length; await sleep(CALL_DELAY_MS); continue; }
+    const json = await fetchBatch(startDate, endDate, groups);
+    if (!json) { skipped += chunk.length; await sleep(CALL_DELAY_MS); continue; }
+
+    // 정규화는 "같은 날의 anchor"로. period별 anchor ratio를 미리 맵으로.
+    const anchorData = (json.results || []).find((r) => r.title === '__anchor')?.data || [];
+    const anchorAt = new Map(anchorData.map((d) => [d.period, d.ratio]));
 
     for (const m of chunk) {
-      const pt = latestPoint(json.results, String(m.id));
-      if (!pt) continue;
-      const value = Math.round((pt.ratio / anchor.ratio) * 1000) / 1000; // 정규화값
-      const day = pt.period; // YYYY-MM-DD
-      rows.push({
-        meme_id: m.id,
-        comment_id: `${SOURCE}:${day}`,
-        source: SOURCE,
-        hour_bucket: nowIso,
-        day_bucket: day,
-        value,
-      });
+      const data = (json.results || []).find((r) => r.title === String(m.id))?.data || [];
+      const points = backfill ? data : data.slice(-1); // 백필=전체, 평상시=최신 1일
+      for (const pt of points) {
+        const a = anchorAt.get(pt.period);
+        if (!a || a === 0) continue; // 그 날 anchor 0이면 정규화 불가 → 스킵
+        rows.push({
+          meme_id: m.id,
+          comment_id: `${SOURCE}:${pt.period}`,
+          source: SOURCE,
+          hour_bucket: nowIso,
+          day_bucket: pt.period,
+          value: Math.round((pt.ratio / a) * 1000) / 1000,
+        });
+      }
     }
     await sleep(CALL_DELAY_MS);
   }
 
   await supa.upsertMetrics(rows);
-  console.log(`[naver_trend] 완료: ${rows.length}개 밈 값 기록, ${skipped}개 스킵(anchor 0/실패). 누적 호출 ${callCount()}`);
+  console.log(`[naver_trend] ${backfill ? '백필' : '완료'}: ${rows.length}행 기록, ${skipped}개 배치 스킵. 누적 호출 ${callCount()}`);
 }
