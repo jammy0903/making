@@ -18,7 +18,7 @@ async function api(path, opts = {}) {
 }
 
 // ─── 상태 ───
-const state = { user: null, checking: true, tab: 'candidates', candidates: [], memes: [], editing: null };
+const state = { user: null, checking: true, tab: 'candidates', candidates: [], memes: [], members: [], editing: null };
 function set(p) { Object.assign(state, p); render(); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
@@ -45,8 +45,15 @@ async function saveMeme(data, id) {
 // ─── 액션(전역 — 인라인 onclick용) ───
 async function go(tab) {
   state.tab = tab; state.editing = null;
-  try { tab === 'candidates' ? await loadCandidates() : await loadMemes(); } catch (e) {}
+  try {
+    if (tab === 'candidates') await loadCandidates();
+    else if (tab === 'members') await loadMembers();
+    else await loadMemes();
+  } catch (e) {}
   render();
+}
+async function loadMembers() {
+  state.members = await api('profiles?select=email,full_name,created_at&order=created_at.desc');
 }
 function startRegister(id) {
   const c = state.candidates.find((x) => x.id === id);
@@ -97,6 +104,7 @@ function shell(inner) {
     <div class="admin-tabs">
       <button class="${state.tab === 'candidates' ? 'on' : ''}" onclick="go('candidates')">후보 검토</button>
       <button class="${state.tab === 'memes' ? 'on' : ''}" onclick="go('memes')">밈 관리</button>
+      <button class="${state.tab === 'members' ? 'on' : ''}" onclick="go('members')">회원</button>
     </div>` : '';
   return `<div class="admin-wrap">
     <div class="admin-head"><h1>memedics · 관리자</h1><span style="font-size:13px;color:var(--mute)">${who}</span></div>
@@ -125,6 +133,15 @@ function memesView() {
   return `<div class="searchbar"><input id="meme-q" placeholder="이름 검색 후 Enter" onkeydown="if(event.key==='Enter')searchMemes()"></div>
     <div style="margin-bottom:10px"><button class="btn-accent" onclick="newMeme()">+ 새 밈</button> <span style="font-size:12px;color:var(--mute3)">${state.memes.length}개</span></div>
     ${rows || '<div class="empty">없음</div>'}`;
+}
+function membersView() {
+  if (!state.members.length) return `<div class="empty">가입한 회원이 없습니다.</div>`;
+  return `<div style="margin-bottom:12px;font-size:13px;color:var(--mute3)">가입/로그인 ${state.members.length}명</div>` +
+    state.members.map((m) => `
+    <div class="adm-row">
+      <div class="t">${esc(m.full_name || '(이름 없음)')}</div>
+      <div class="m">${esc(m.email || '')} · 가입 ${esc((m.created_at || '').slice(0, 10))}</div>
+    </div>`).join('');
 }
 function editForm() {
   const m = state.editing.meme || {};
@@ -156,7 +173,11 @@ function render() {
   if (state.checking) { root.innerHTML = shell(`<div class="center">확인 중…</div>`); return; }
   if (!state.user) { root.innerHTML = shell(`<div class="center"><button class="btn-solid" onclick="login()">Google로 로그인</button></div>`); return; }
   if (!ADMINS.includes(state.user.email)) { root.innerHTML = shell(`<div class="center">권한 없음: ${esc(state.user.email)}<br><br><button class="btn" onclick="logout()">로그아웃</button></div>`); return; }
-  root.innerHTML = shell(state.editing ? editForm() : (state.tab === 'candidates' ? candidatesView() : memesView()));
+  const view = state.editing ? editForm()
+    : state.tab === 'candidates' ? candidatesView()
+    : state.tab === 'members' ? membersView()
+    : memesView();
+  root.innerHTML = shell(view);
 }
 
 // ─── 시작 ───

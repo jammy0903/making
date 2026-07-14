@@ -117,6 +117,10 @@ button { font-family: var(--sans); cursor: pointer; }
 .list-head .note { font-size: 13px; color: var(--mute3); max-width: 520px; line-height: 1.6; }
 .page { padding: 28px 0 100px; }
 .empty { padding: 40px 6px; color: var(--mute3); font-size: 14px; line-height: 1.7; }
+.cactions { display: flex; gap: 12px; align-items: center; margin-top: 7px; }
+.clink { background: none; border: none; color: var(--mute2); font-size: 12px; padding: 0; }
+.clink:hover { color: var(--accent); text-decoration: underline; }
+.cedit { width: 100%; min-height: 60px; resize: vertical; border: 1px solid var(--line2); padding: 8px 10px; font-family: var(--sans); font-size: 14px; background: #FCFCFA; margin: 6px 0; }
 
 /* ── New: rows ── */
 .rows { border-top: 1px solid var(--line); }
