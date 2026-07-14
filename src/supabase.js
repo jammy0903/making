@@ -54,6 +54,31 @@ export async function insertMentions(rows) {
   return res.json();
 }
 
+// 일자 지표 값 upsert (네이버 트렌드/블로그/카페). PK(meme_id, comment_id) 충돌 시 갱신.
+// rows: { meme_id, comment_id:'source:날짜', source, hour_bucket, day_bucket, value }
+export async function upsertMetrics(rows) {
+  if (!isConfigured || rows.length === 0) return 0;
+  const res = await fetch(`${URL}/rest/v1/mention_counts`, {
+    method: 'POST',
+    headers: headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify(rows),
+  });
+  if (!res.ok) throw new Error(`upsertMetrics ${res.status}: ${await res.text()}`);
+  return rows.length;
+}
+
+// 신상 밈 후보 삽입. url UNIQUE 충돌은 무시. 반환: 새로 들어간 행(중복 제외).
+export async function insertCandidates(rows) {
+  if (!isConfigured || rows.length === 0) return [];
+  const res = await fetch(`${URL}/rest/v1/discovery_candidates`, {
+    method: 'POST',
+    headers: headers({ Prefer: 'resolution=ignore-duplicates,return=representation' }),
+    body: JSON.stringify(rows),
+  });
+  if (!res.ok) throw new Error(`insertCandidates ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // 밈별 누적 언급량 랭킹 (뷰 meme_rankings)
 export async function fetchRankings() {
   if (!isConfigured) return [];
