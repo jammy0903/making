@@ -1,9 +1,6 @@
 // Supabase REST(PostgREST) 서버측 조회 — 공개 읽기(anon 키, RLS 방어)라 서버에서도 anon 사용.
 // service role은 크롤러(server.js/src/supabase.js)만 쥔다(architecture.md 원칙).
-import { env } from '$env/dynamic/public';
-
-const SB_URL = env.PUBLIC_SUPABASE_URL || '';
-const SB_KEY = env.PUBLIC_SUPABASE_ANON_KEY || '';
+import { SB_URL, SB_KEY } from '$lib/sb';
 
 type Fetch = typeof globalThis.fetch;
 

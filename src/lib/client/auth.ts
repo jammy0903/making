@@ -1,9 +1,9 @@
 // 공유 Supabase Auth (Google 암시적 OAuth) — public/auth.js 이식. 클라 전용(localStorage).
 // 레이아웃 onMount에서 initAuth()를 호출해 OAuth 콜백 해시를 처리한다.
-import { env } from '$env/dynamic/public';
+import { SB_URL, SB_KEY } from '$lib/sb';
 
 const KEY = 'mmd-token';
-const SB = { url: env.PUBLIC_SUPABASE_URL || '', key: env.PUBLIC_SUPABASE_ANON_KEY || '' };
+const SB = { url: SB_URL, key: SB_KEY };
 
 function saveHashToken() {
   if (!location.hash.includes('access_token')) return;

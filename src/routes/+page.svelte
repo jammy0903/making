@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { newCards, steadyCards, deadCards, tagText, metaNew, metaSteady } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
 
@@ -25,7 +26,7 @@
 <svelte:head>
   <title>memedics — 한국 밈 트렌드 사전</title>
   <meta name="description" content="새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 밈 사전, memedics." />
-  <link rel="canonical" href="https://memedics.vercel.app/" />
+  <link rel="canonical" href="{page.url.origin}/" />
 </svelte:head>
 
 <div class="wrap masthead">
