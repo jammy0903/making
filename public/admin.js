@@ -3,38 +3,18 @@
 
 const SB = window.__SB__ || { url: '', key: '' };
 const ADMINS = ['jamm2ic@gmail.com', 'l89192164@gmail.com'];
-const TKEY = 'mmd-admin-token';
 const root = document.getElementById('admin');
 
-// ─── 인증(암시적 OAuth) ───
-function saveHashToken() {
-  if (!location.hash.includes('access_token')) return;
-  const p = new URLSearchParams(location.hash.slice(1));
-  const at = p.get('access_token');
-  if (at) {
-    localStorage.setItem(TKEY, JSON.stringify({ at, exp: Date.now() + Number(p.get('expires_in') || 3600) * 1000 }));
-    history.replaceState(null, '', location.pathname);
-  }
-}
-function token() {
-  try { const t = JSON.parse(localStorage.getItem(TKEY) || 'null'); if (t && t.exp > Date.now() + 5000) return t.at; } catch (e) {}
-  return null;
-}
-function login() {
-  location.href = `${SB.url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + location.pathname)}`;
-}
-function logout() { localStorage.removeItem(TKEY); state.user = null; render(); }
-
-function h(extra) { return { apikey: SB.key, Authorization: `Bearer ${token()}`, ...extra }; }
+// ─── 인증 (공유 auth.js 사용) ───
+function login() { window.mmdAuth.login(); }
+function logout() { window.mmdAuth.logout(); }
+async function whoami() { return window.mmdAuth.whoami(); }
+function h(extra) { return window.mmdAuth.headers(extra); }
 async function api(path, opts = {}) {
   const r = await fetch(`${SB.url}/rest/v1/${path}`, { ...opts, headers: h(opts.headers) });
   if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
   const txt = await r.text();
   return txt ? JSON.parse(txt) : null;
-}
-async function whoami() {
-  const r = await fetch(`${SB.url}/auth/v1/user`, { headers: h() });
-  return r.ok ? r.json() : null;
 }
 
 // ─── 상태 ───
@@ -181,9 +161,8 @@ function render() {
 
 // ─── 시작 ───
 async function init() {
-  saveHashToken();
   if (!SB.url || !SB.key) { root.innerHTML = 'config.js 없음'; return; }
-  if (!token()) { set({ checking: false, user: null }); return; }
+  if (!window.mmdAuth.token()) { set({ checking: false, user: null }); return; }
   let u = null;
   try { u = await whoami(); } catch (e) {}
   state.checking = false; state.user = u;

@@ -4,7 +4,7 @@
 //  - 방문자 댓글: meme_comments, 투표: meme_votes
 
 const SB = window.__SB__ || { url: '', key: '' }; // config.js에서 주입(정적 배포)
-function sbHeaders(extra) { return { apikey: SB.key, Authorization: `Bearer ${SB.key}`, ...extra }; }
+function sbHeaders(extra) { return window.mmdAuth.headers(extra); } // 로그인 시 유저 토큰, 아니면 anon
 async function sbGet(path) {
   const r = await fetch(`${SB.url}/rest/v1/${path}`, { headers: sbHeaders() });
   if (!r.ok) throw new Error(`GET ${path} ${r.status}`);
@@ -54,6 +54,10 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 async function init() {
   try {
     if (!SB.url || !SB.key) throw new Error('Supabase 설정 없음(config.js 확인)');
+    try {
+      const u = await window.mmdAuth.whoami();
+      if (u) state.user = { id: u.id, email: u.email, name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || u.email };
+    } catch (e) {}
     await loadCards();
     setState({ loading: false });
   } catch (err) {
@@ -120,6 +124,13 @@ function photoSlot(cls, label, url) {
 }
 function nameHtml(m, cls) { return m.name ? `<span class="m-name ${cls || ''}">${esc(m.name)}</span>` : ''; }
 function descHtml(m, cls) { return m.desc ? `<p class="m-desc ${cls || ''}">${esc(m.desc)}</p>` : ''; }
+
+function topbar() {
+  const auth = state.user
+    ? `<span class="tb-user">${esc(state.user.name)}</span> · <button class="tb-link" data-act="logout">로그아웃</button>`
+    : `<button class="tb-link" data-act="loginGoogle">Google 로그인</button>`;
+  return `<div class="topbar"><div class="wrap tb-inner"><span class="tb-brand">memedics</span><span class="tb-auth">${auth}</span></div></div>`;
+}
 
 function masthead() {
   return `<div class="wrap masthead">
@@ -303,9 +314,10 @@ function pageDetail() {
 
 // ─── 메인 렌더 ──────────────────────────────────────
 function draw() {
-  if (state.loading) { app.innerHTML = masthead() + `<div class="wrap page"><div class="empty">불러오는 중…</div></div>`; return; }
-  if (state.error) { app.innerHTML = masthead() + `<div class="wrap page"><div class="empty">데이터를 불러올 수 없습니다.<br>${esc(state.error)}</div></div>`; return; }
-  let html = masthead();
+  const top = topbar();
+  if (state.loading) { app.innerHTML = top + masthead() + `<div class="wrap page"><div class="empty">불러오는 중…</div></div>`; return; }
+  if (state.error) { app.innerHTML = top + masthead() + `<div class="wrap page"><div class="empty">데이터를 불러올 수 없습니다.<br>${esc(state.error)}</div></div>`; return; }
+  let html = top + masthead();
   if (state.page !== 'detail') {
     html += deckSection() + tabs();
     html += state.page === 'new' ? pageNew() : pageSteady();
@@ -340,9 +352,9 @@ async function submitComment() {
   const text = (state.draftText || '').trim();
   if (!id || !text) return;
   const isUser = !!state.user;
-  const nick = isUser ? state.user.name : ((state.draftNick || '').trim() || '익명');
+  const nick = isUser ? (state.user.name || state.user.email) : ((state.draftNick || '').trim() || '익명');
   try {
-    const inserted = await sbPost('meme_comments', { meme_id: Number(id), nick, body: text, is_user: isUser });
+    const inserted = await sbPost('meme_comments', { meme_id: Number(id), nick, body: text, is_user: isUser, user_id: isUser ? state.user.id : null });
     const row = Array.isArray(inserted) ? inserted[0] : inserted;
     const card = findCard(id); if (card) card.commentCount++;
     setState({ detailComments: [row, ...state.detailComments], draftText: '' });
@@ -380,8 +392,8 @@ const ACTIONS = {
   setCat: (id) => setState({ steadyCat: id }),
   open: (id) => openDetail(id),
   voteYes: () => vote('yes'), voteNo: () => vote('no'), submit: () => submitComment(),
-  loginGoogle: () => setState({ user: { name: '독자' + (10 + Math.floor(Math.random()*89)) } }),
-  logout: () => setState({ user: null }), report: () => setState({ reported: true }),
+  loginGoogle: () => window.mmdAuth.login(),
+  logout: () => window.mmdAuth.logout(), report: () => setState({ reported: true }),
   deckPass: () => commitNext(),
   deckPrev: () => { if (state.deckDone) return setState({ deckDone: false, deckIndex: Math.max(0, newCards().length - 1) }); if (state.deckIndex > 0) setState({ deckIndex: state.deckIndex - 1 }); },
   resetDeck: () => setState({ deckDone: false, deckIndex: 0 }),
