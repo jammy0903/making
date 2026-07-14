@@ -6,7 +6,7 @@ import * as fmkorea from './src/crawlers/fmkorea.js';
 import * as instiz from './src/crawlers/instiz.js';
 import * as yeosig from './src/crawlers/yeosig.js';
 import * as youtube from './src/crawlers/youtube.js';
-import { analyzePosts } from './src/analyzer.js';
+import { matchComments } from './src/matcher.js';
 import * as storage from './src/storage.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -46,37 +46,37 @@ async function runCrawl() {
 
   if (allPosts.length === 0) {
     console.log('[밈 레이더] 수집된 데이터 없음');
-    return [];
+    return storage.getMentions();
   }
 
-  // 기존 데이터와 합치기
-  const existingData = storage.getCrawlData();
-  const combined = [...existingData, ...allPosts];
-  storage.saveCrawlData(combined);
+  // dedup 키 보강: youtube 댓글은 고유 id가 있고, 없는 소스는 source+text로 대체
+  for (const p of allPosts) {
+    if (p.id == null) p.id = `${p.source}:${p.text}`;
+  }
 
-  // 3단계 밈 분석
-  const trends = analyzePosts(combined);
-
-  storage.saveTrends(trends);
+  // 사전 대조 측정 — seen 셋으로 이미 센 댓글은 건너뛰고 신규만 카운트
+  const counts = matchComments(allPosts, { seen: storage.getSeen() });
+  storage.addMentions(counts);
   storage.setLastCrawl(Date.now());
 
-  console.log(`[밈 레이더] 완료! ${trends.length}개 트렌드 발견`);
-  return trends;
+  const mentions = storage.getMentions();
+  const totalNew = counts.reduce((a, c) => a + c.count, 0);
+  console.log(`[밈 레이더] 완료! 신규 밈 언급 ${totalNew}건 측정 (누적 반영)`);
+  return mentions;
 }
 
 // ─── API 라우트 ──────────────────────────────────
 
-// 트렌드 조회
-app.get('/api/trends', (req, res) => {
-  const trends = storage.getTrends();
-  res.json({ trends });
+// 밈 언급 랭킹 조회
+app.get('/api/mentions', (req, res) => {
+  res.json({ mentions: storage.getMentions() });
 });
 
-// 수동 크롤링
+// 수동 크롤링(측정)
 app.post('/api/refresh', async (req, res) => {
   try {
-    const trends = await runCrawl();
-    res.json({ trends });
+    const mentions = await runCrawl();
+    res.json({ mentions });
   } catch (err) {
     console.error('크롤링 오류:', err);
     res.status(500).json({ error: err.message });

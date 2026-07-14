@@ -81,6 +81,7 @@ async function crawlTopic(topic, apiKey, publishedAfter) {
     if (text.length > MAX_COMMENT_LEN) text = text.substring(0, MAX_COMMENT_LEN);
     if (text.length > 2 && isKorean(text)) {
       posts.push({
+        id: item.id, // commentThread 고유 id — 중복 카운트 방지(dedup)용
         text,
         source: SOURCE,
         topic: topic.key,
