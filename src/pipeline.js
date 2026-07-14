@@ -19,10 +19,10 @@ export const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube };
 export async function loadMemeDict() {
   try {
     const dict = prepareMemes(await supa.fetchMemes());
-    console.log(`[밈 레이더] 밈 사전 ${dict.length}개 로드`);
+    console.log(`[memedics] 밈 사전 ${dict.length}개 로드`);
     return dict;
   } catch (err) {
-    console.error('[밈 레이더] 밈 사전 로드 실패:', err.message);
+    console.error('[memedics] 밈 사전 로드 실패:', err.message);
     return [];
   }
 }
@@ -30,30 +30,30 @@ export async function loadMemeDict() {
 // 댓글/텍스트 소스 크롤 → 사전 대조 매칭 → mention_counts 기록. 반환: 신규 삽입 수.
 //   sources: {name:bool} 켤 소스 필터(생략 시 전체). 소스별 실패는 격리.
 export async function runCommentCrawl(memeDict, sources) {
-  console.log('[밈 레이더] 크롤링 시작...');
+  console.log('[memedics] 크롤링 시작...');
   const allPosts = [];
   await Promise.all(
     Object.entries(crawlers)
       .filter(([name]) => !sources || sources[name])
       .map(([name, c]) =>
         c.crawl()
-          .then((posts) => { console.log(`[밈 레이더] ${name}: ${posts.length}개 수집`); allPosts.push(...posts); })
-          .catch((err) => console.error(`[밈 레이더] ${name} 크롤링 실패:`, err.message))
+          .then((posts) => { console.log(`[memedics] ${name}: ${posts.length}개 수집`); allPosts.push(...posts); })
+          .catch((err) => console.error(`[memedics] ${name} 크롤링 실패:`, err.message))
       )
   );
 
-  if (allPosts.length === 0) { console.log('[밈 레이더] 수집된 데이터 없음'); return 0; }
+  if (allPosts.length === 0) { console.log('[memedics] 수집된 데이터 없음'); return 0; }
 
   // dedup 키 보강 후 매칭
   for (const p of allPosts) if (p.id == null) p.id = `${p.source}:${p.text}`;
   const rows = matchToRows(allPosts, memeDict);
-  if (rows.length === 0) { console.log('[밈 레이더] 매칭된 밈 언급 없음'); return 0; }
+  if (rows.length === 0) { console.log('[memedics] 매칭된 밈 언급 없음'); return 0; }
 
   const bucket = new Date();
   bucket.setMinutes(0, 0, 0);
   const hourBucket = bucket.toISOString();
   const inserted = await supa.insertMentions(rows.map((r) => ({ ...r, hour_bucket: hourBucket })));
-  console.log(`[밈 레이더] 완료! 매칭 ${rows.length}건 중 신규 ${inserted.length}건 DB 기록(dedup)`);
+  console.log(`[memedics] 완료! 매칭 ${rows.length}건 중 신규 ${inserted.length}건 DB 기록(dedup)`);
   return inserted.length;
 }
 

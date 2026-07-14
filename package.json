@@ -1,7 +1,7 @@
 {
-  "name": "mime-korea",
+  "name": "memedics",
   "version": "1.0.0",
-  "description": "밈 레이더 - 한국 커뮤니티 밈 트렌드 웹앱",
+  "description": "memedics — 한국 커뮤니티 밈 트렌드 사전",
   "type": "module",
   "main": "server.js",
   "scripts": {
