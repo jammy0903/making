@@ -51,16 +51,23 @@ create table if not exists meme_votes (
 create index if not exists meme_votes_meme_idx on meme_votes (meme_id);
 
 -- ─────────────────────────────────────────────────────────────
+-- 3.5) 크롤한 언급의 이미지 URL — 이미지 있는 소스(핀터레스트 등)만 채워진다.
+--      핀 이미지를 밈 카드에 띄우기 위한 대표 이미지 소스.
+-- ─────────────────────────────────────────────────────────────
+alter table mention_counts add column if not exists image_url text;
+
+-- ─────────────────────────────────────────────────────────────
 -- 4) 프론트용 집계 뷰 — 카드 한 장에 필요한 값 전부
 --    mentions   = 우리가 측정한 언급량(mention_counts 행 수) → "얼마나 회자되나" 신호
 --    comment_count = 방문자 댓글 수
 --    vote_yes/no   = 투표 집계
 --    last_activity = 최근 활동 시각(스테디 "지금도 이어지는 순" 정렬용)
+--    photo_url  = 운영자가 넣은 memes.photo_url 우선, 없으면 최근 크롤 언급의 이미지
 -- ─────────────────────────────────────────────────────────────
 create or replace view meme_cards as
 select
   m.id, m.name, m.description, m.tags, m.category, m.source,
-  m.status, m.photo_url, m.created_at,
+  m.status, coalesce(m.photo_url, mi.image_url) as photo_url, m.created_at,
   coalesce(mc.mentions, 0)       as mentions,
   coalesce(cc.comment_count, 0)  as comment_count,
   coalesce(vc.vote_yes, 0)       as vote_yes,
@@ -75,6 +82,12 @@ left join (
   select meme_id, count(*) as mentions, max(hour_bucket) as last_mention
   from mention_counts group by meme_id
 ) mc on mc.meme_id = m.id
+-- 대표 이미지: 그 밈에 매칭된 언급 중 이미지가 있는 가장 최근 것 1건
+left join lateral (
+  select image_url from mention_counts
+  where meme_id = m.id and image_url is not null
+  order by hour_bucket desc limit 1
+) mi on true
 left join (
   select meme_id, count(*) as comment_count, max(created_at) as last_comment
   from meme_comments group by meme_id

@@ -40,7 +40,11 @@ const state = {
   deckIndex: 0, deckDone: false,
   narrow: window.innerWidth < 720,
 };
-const CATS = ['전체', '방송인', '크리에이터', '일반인', '캐릭터', '기타'];
+// 카테고리 칩은 스테디 밈에 실제로 존재하는 분류에서 자동 생성(하드코딩 유지보수 불필요)
+function steadyCatList() {
+  const set = new Set(steadyCards().map(c => c.cat).filter(Boolean));
+  return ['전체', ...set];
+}
 const app = document.getElementById('app');
 
 function setState(patch, render = true) { Object.assign(state, patch); if (render) draw(); }
@@ -91,7 +95,13 @@ function timeAgo(iso) {
 }
 
 // ─── 조각 ───────────────────────────────────────────
-function photoSlot(cls, label) { return `<div class="photo-slot ${cls}">${label}</div>`; }
+// url이 있으면 실제 이미지를, 없으면 플레이스홀더 박스를 렌더한다.
+function photoSlot(cls, label, url) {
+  const inner = url
+    ? `<img src="${esc(url)}" alt="${esc(label)}" loading="lazy" referrerpolicy="no-referrer">`
+    : label;
+  return `<div class="photo-slot ${cls}">${inner}</div>`;
+}
 function nameHtml(m, cls) { return m.name ? `<span class="m-name ${cls || ''}">${esc(m.name)}</span>` : ''; }
 function descHtml(m, cls) { return m.desc ? `<p class="m-desc ${cls || ''}">${esc(m.desc)}</p>` : ''; }
 
@@ -118,7 +128,7 @@ function deckSection() {
       const shadow = top ? '0 14px 32px rgba(20,60,64,0.16)' : '0 4px 14px rgba(0,0,0,0.05)';
       cards += `<div class="deck-card" data-top="${top?1:0}" data-id="${m.id}"
         style="z-index:${30-off};transform:${transform};box-shadow:${shadow};cursor:${top?'grab':'default'};transition:transform .24s ease;">
-        ${m.photo ? photoSlot('', '사진 / 동영상') : ''}
+        ${m.photo ? photoSlot('', '사진 / 동영상', m.photoUrl) : ''}
         <div class="card-body">
           ${nameHtml(m)}<div class="m-tags">${esc(tagText(m))}</div>
           ${descHtml(m)}<div class="spacer"></div>
@@ -164,12 +174,12 @@ function pageNew() {
       <div class="row" data-act="open" data-id="${m.id}">
         <div class="col"><div class="rowline">${nameHtml(m)}<span class="m-tags">${esc(tagText(m))}</span></div>
           ${descHtml(m)}<div class="m-meta">${metaNew(m)}</div></div>
-        ${m.photo ? photoSlot('thumb','사진') : ''}
+        ${m.photo ? photoSlot('thumb','사진', m.photoUrl) : ''}
       </div>`).join('') + `</div>`;
   } else {
     body = `<div class="cards">` + list.map(m => `
       <div class="card" data-act="open" data-id="${m.id}">
-        ${m.photo ? photoSlot('cardphoto','사진 / 동영상') : ''}
+        ${m.photo ? photoSlot('cardphoto','사진 / 동영상', m.photoUrl) : ''}
         ${nameHtml(m)}<div class="m-tags">${esc(tagText(m))}</div>${descHtml(m)}
         <div class="spacer"></div><div class="foot">${metaNew(m)}</div>
       </div>`).join('') + `</div>`;
@@ -182,7 +192,7 @@ function pageNew() {
 function pageSteady() {
   const a = state.steadyVariant === 'a';
   const seg = `<div class="seg"><button class="${a?'on':''}" data-act="steadyVarA">사전형</button><button class="${!a?'on':''}" data-act="steadyVarB">색인형</button></div>`;
-  const cats = `<div class="cats">` + CATS.map(c => `<button class="cat ${state.steadyCat===c?'on':''}" data-act="setCat" data-id="${esc(c)}">${esc(c)}</button>`).join('') + `</div>`;
+  const cats = `<div class="cats">` + steadyCatList().map(c => `<button class="cat ${state.steadyCat===c?'on':''}" data-act="setCat" data-id="${esc(c)}">${esc(c)}</button>`).join('') + `</div>`;
   let list = steadyCards();
   if (state.steadyCat !== '전체') list = list.filter(m => m.cat === state.steadyCat);
   let body;
@@ -244,7 +254,7 @@ function pageDetail() {
   return `<div class="wrap-narrow page">
     <button class="back" data-act="backList">← 목록으로</button>
     <div class="detail">
-      ${m.photo ? photoSlot('detail-media','사진 / 동영상') : ''}
+      ${m.photo ? photoSlot('detail-media','사진 / 동영상', m.photoUrl) : ''}
       ${m.name ? `<div class="headword">${esc(m.name)}</div>` : ''}
       <div class="tag-head">${esc(tagText(m))}</div>
       <div class="reg">${reg}${m.src ? ` · 출처 <a href="#">${esc(m.src)}</a>` : ''}</div>
