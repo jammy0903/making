@@ -9,9 +9,12 @@ on:
         default: all
         type: choice
         options: [all, comments, naver, backfill]
-  # schedule:
-  #   - cron: '0 */3 * * *'   # 3시간마다 (댓글 소스). UTC 기준
-  #   - cron: '0 15 * * *'    # 매일 1회 (네이버). mode는 아래에서 분기 필요
+  schedule:
+    # 매일 1회 전체 크롤(댓글+네이버). 14:00 UTC = 23:00 KST(한국 하루 끝) —
+    # 블로그 "오늘 글 수"를 그날 거의 다 반영하고, UTC 날짜=한국 날짜가 맞는 시각.
+    - cron: '0 14 * * *'
+    # 댓글을 더 자주 원하면 아래를 풀되, 유튜브 일일 쿼터(10k units) 주의.
+    # - cron: '0 2,8,20 * * *'   # 이땐 mode를 comments로 분기 필요
 
 jobs:
   crawl:
