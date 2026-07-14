@@ -40,7 +40,7 @@ const state = {
   deckIndex: 0, deckDone: false,
   narrow: window.innerWidth < 720,
 };
-const CATS = ['전체', '무한도전', '래퍼', '가수', '배우', '일반인', '외국'];
+const CATS = ['전체', '방송인', '크리에이터', '일반인', '캐릭터', '기타'];
 const app = document.getElementById('app');
 
 function setState(patch, render = true) { Object.assign(state, patch); if (render) draw(); }
