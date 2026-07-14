@@ -79,6 +79,16 @@ async function doReject(id) {
 function editMeme(id) { set({ editing: { meme: state.memes.find((m) => m.id === id) } }); }
 function newMeme() { set({ editing: { meme: {} } }); }
 function cancelEdit() { state.editing = null; go(state.tab); }
+async function deleteMeme(id) {
+  if (!confirm('이 밈을 삭제합니다. 측정 데이터·댓글·투표도 함께 삭제됩니다. 계속할까요?')) return;
+  const msg = document.getElementById('save-msg'); if (msg) msg.textContent = '삭제 중…';
+  try {
+    await api(`memes?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    cancelEdit();
+  } catch (e) {
+    if (msg) msg.textContent = '삭제 실패: ' + e.message + ' (측정 데이터 FK면 cascade SQL 필요)';
+  }
+}
 async function searchMemes() { try { await loadMemes(val('meme-q')); } catch (e) {} render(); }
 async function saveEdit() {
   const data = {
@@ -156,7 +166,11 @@ function editForm() {
       <div class="field"><label>출처 (source)</label><input id="f-src" value="${esc(m.source || '')}"></div>
       <div class="field"><label>사진 URL (photo_url)</label><input id="f-photo" value="${esc(m.photo_url || '')}"></div>
     </div>
-    <div style="margin-top:16px;"><button class="btn-solid" onclick="saveEdit()">저장</button><span class="status-msg" id="save-msg"></span></div>`;
+    <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+      <button class="btn-solid" onclick="saveEdit()">저장</button>
+      ${m.id ? `<button class="btn" style="border-color:#c0392b;color:#c0392b" onclick="deleteMeme(${m.id})">삭제</button>` : ''}
+      <span class="status-msg" id="save-msg"></span>
+    </div>`;
 }
 function render() {
   if (state.checking) { root.innerHTML = shell(`<div class="center">확인 중…</div>`); return; }
