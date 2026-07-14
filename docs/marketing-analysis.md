@@ -80,8 +80,9 @@
 5. ✅ **SEO/SSR** — SvelteKit(adapter-vercel) 이전 Phase 1~2 구현(2026-07-15).
    `/`(순위·목록 SSR) + `/m/[id]`(상세 SSR — title "○○ 뜻", OG, canonical) +
    sitemap.xml/robots.txt + 구 해시 링크(#m=) 리다이렉트 + 투표·댓글·공유 카드 포팅.
-   레거시 admin/withdraw는 static/으로 병행. **배포 스왑은 대기**: vercel.json이
-   아직 구 정적 사이트를 가리킴(스트랭글러 — 스왑 전 파리티 확인: 스와이프 덱 미포팅). (§4-2)
+   레거시 admin/withdraw는 static/으로 병행. 스와이프 덱(새 밈+재심)도 포팅 완료 —
+   **기능 파리티 달성**. 남은 것은 배포 스왑만: vercel.json 정적 강제 제거 +
+   Vercel 환경변수(PUBLIC_SUPABASE_*) + 배포 후 Search Console sitemap 제출. (§4-2)
 6. ✅ **판정 시계열 1단계** — 1표 영구제가 게이지를 전성기에 화석화하는 문제 해결.
    `db/votes_lifecycle.sql`: PK에 month_bucket 추가(월 1회 재판정, 번복 역사 보존 =
    사망 곡선 데이터), 게이지는 최근 90일 내 투표자별 최신 판정만. 프론트 월 쿨다운
