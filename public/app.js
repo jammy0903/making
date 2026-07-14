@@ -29,13 +29,16 @@ function voterId() {
 function votedMap() { try { return JSON.parse(localStorage.getItem('meme-voted') || '{}'); } catch (e) { return {}; } }
 function markVoted(id, choice) { const m = votedMap(); m[id] = choice; localStorage.setItem('meme-voted', JSON.stringify(m)); }
 
+const ADMINS = ['jamm2ic@gmail.com', 'l89192164@gmail.com'];
+function isAdmin() { return state.user && ADMINS.includes(state.user.email); }
+
 // ─── 상태 ───────────────────────────────────────────
 const state = {
   page: 'new', lastList: 'new',
   newVariant: 'a', steadyVariant: 'a', steadyCat: '전체',
   cards: [], loading: true, error: '',
   selectedId: null,
-  detailComments: [], detailLoading: false,
+  detailComments: [], detailLoading: false, editingComment: null,
   user: null, draftNick: '', draftText: '', reported: false,
   deckIndex: 0, deckDone: false,
   narrow: window.innerWidth < 720,
@@ -127,7 +130,7 @@ function descHtml(m, cls) { return m.desc ? `<p class="m-desc ${cls || ''}">${es
 
 function topbar() {
   const auth = state.user
-    ? `<span class="tb-user">${esc(state.user.name)}</span> · <button class="tb-link" data-act="logout">로그아웃</button>`
+    ? `<span class="tb-user">${esc(state.user.name)}</span> · <button class="tb-link" data-act="logout">로그아웃</button> · <a class="tb-link" href="withdraw.html">탈퇴</a>`
     : `<button class="tb-link" data-act="loginGoogle">Google 로그인</button>`;
   return `<div class="topbar"><div class="wrap tb-inner"><span class="tb-brand">memedics</span><span class="tb-auth">${auth}</span></div></div>`;
 }
@@ -259,13 +262,19 @@ function pageDetail() {
   else if (!state.detailComments.length) clist = `<div class="empty">첫 댓글을 남겨 보세요.</div>`;
   else clist = state.detailComments.map(c => {
     const user = !!c.is_user;
+    const canEdit = state.user && (String(c.user_id) === String(state.user.id) || isAdmin());
+    const editing = state.editingComment === c.id;
+    const bodyHtml = editing
+      ? `<textarea class="cedit" id="cedit-${c.id}">${esc(c.body)}</textarea>
+         <div class="cactions"><button class="btn-solid" data-act="saveC" data-id="${c.id}">저장</button><button class="clink" data-act="cancelC">취소</button></div>`
+      : `<p class="ctext">${esc(c.body)}</p>${canEdit ? `<div class="cactions"><button class="clink" data-act="editC" data-id="${c.id}">수정</button><button class="clink" data-act="delC" data-id="${c.id}">삭제</button></div>` : ''}`;
     return `<div class="citem">
       ${user ? `<div class="avatar user">${esc((c.nick||'?').slice(0,1))}</div>` : `<div class="avatar anon"></div>`}
       <div class="col"><div class="cmeta">
           <span class="cnick ${user?'user':'anon'}">${esc(c.nick)}</span>
           ${user ? `<span class="badge user">로그인</span>` : `<span class="badge anon">익명</span>`}
           <span class="cwhen">${esc(timeAgo(c.created_at))}</span>
-        </div><p class="ctext">${esc(c.body)}</p></div>
+        </div>${bodyHtml}</div>
     </div>`;
   }).join('');
 
@@ -332,7 +341,7 @@ async function openDetail(id) {
   const from = (state.page === 'new' || state.page === 'steady') ? state.page : state.lastList;
   setState({ page: 'detail', selectedId: id, reported: false, lastList: from, draftText: '', draftNick: '', detailComments: [], detailLoading: true });
   try {
-    const rows = await sbGet(`meme_comments?meme_id=eq.${Number(id)}&select=nick,body,is_user,created_at&order=created_at.desc`);
+    const rows = await sbGet(`meme_comments?meme_id=eq.${Number(id)}&select=id,nick,body,is_user,user_id,created_at&order=created_at.desc`);
     setState({ detailComments: rows, detailLoading: false });
   } catch (e) { setState({ detailLoading: false }); }
 }
@@ -359,6 +368,26 @@ async function submitComment() {
     const card = findCard(id); if (card) card.commentCount++;
     setState({ detailComments: [row, ...state.detailComments], draftText: '' });
   } catch (e) { alert('댓글 등록 실패: ' + e.message); }
+}
+function editComment(id) { state.editingComment = id; draw(); }
+function cancelEditComment() { state.editingComment = null; draw(); }
+async function saveComment(id) {
+  const ta = document.getElementById('cedit-' + id); const body = ta ? ta.value.trim() : '';
+  if (!body) return;
+  try {
+    await fetch(`${SB.url}/rest/v1/meme_comments?id=eq.${id}`, { method: 'PATCH', headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }), body: JSON.stringify({ body }) });
+    const c = state.detailComments.find((x) => x.id === id); if (c) c.body = body;
+    state.editingComment = null; draw();
+  } catch (e) { alert('수정 실패: ' + e.message); }
+}
+async function deleteComment(id) {
+  if (!confirm('이 댓글을 삭제할까요?')) return;
+  try {
+    await fetch(`${SB.url}/rest/v1/meme_comments?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders({ Prefer: 'return=minimal' }) });
+    state.detailComments = state.detailComments.filter((c) => c.id !== id);
+    const card = findCard(state.selectedId); if (card && card.commentCount > 0) card.commentCount--;
+    draw();
+  } catch (e) { alert('삭제 실패: ' + e.message); }
 }
 
 // 덱 스와이프
@@ -392,6 +421,8 @@ const ACTIONS = {
   setCat: (id) => setState({ steadyCat: id }),
   open: (id) => openDetail(id),
   voteYes: () => vote('yes'), voteNo: () => vote('no'), submit: () => submitComment(),
+  editC: (id) => editComment(Number(id)), cancelC: () => cancelEditComment(),
+  saveC: (id) => saveComment(Number(id)), delC: (id) => deleteComment(Number(id)),
   loginGoogle: () => window.mmdAuth.login(),
   logout: () => window.mmdAuth.logout(), report: () => setState({ reported: true }),
   deckPass: () => commitNext(),
