@@ -28,6 +28,19 @@ export async function fetchMemes() {
   return res.json();
 }
 
+// 스테디 밈만 로드 (핀터레스트 검색어 생성용 — name/keywords).
+// status 컬럼이 없거나 DB 미연결이면 throw → 호출측이 폴백 검색어로 넘어간다.
+// 크롤러가 DB에 매달리지 않도록 5초 타임아웃.
+export async function fetchSteadyMemes() {
+  if (!isConfigured) return [];
+  const res = await fetch(
+    `${URL}/rest/v1/memes?select=name,keywords&status=eq.steady&order=id`,
+    { headers: headers(), signal: AbortSignal.timeout(5000) }
+  );
+  if (!res.ok) throw new Error(`fetchSteadyMemes ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // 언급 행 삽입. PK(meme_id, comment_id) 충돌은 무시(=dedup).
 // 반환: 실제로 새로 삽입된 행 배열(이미 센 댓글은 제외되어 안 옴).
 export async function insertMentions(rows) {
