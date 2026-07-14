@@ -10,6 +10,10 @@ import * as pinterest from './src/crawlers/pinterest.js';
 import { prepareMemes, matchToRows } from './src/matcher.js';
 import * as supa from './src/supabase.js';
 import * as storage from './src/storage.js';
+import * as naverClient from './src/naver/client.js';
+import * as naverTrend from './src/naver/trend.js';
+import * as naverPosts from './src/naver/posts.js';
+import * as naverScout from './src/naver/scout.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -91,6 +95,31 @@ async function runCrawl() {
   return inserted.length;
 }
 
+// ─── 네이버 일일 크롤 (트렌드·블로그/카페·발굴) ──────
+// 3종 각각 try/catch로 격리 — 하나가 실패해도 나머지·본체에 영향 없음.
+async function runNaver() {
+  if (!naverClient.isConfigured) {
+    console.error('[네이버] NAVER_CLIENT_ID/SECRET 미설정 — 네이버 크롤러 3종 건너뜀');
+    return;
+  }
+  naverClient.resetCalls();
+  console.log('[네이버] 일일 크롤 시작...');
+
+  let memes = [];
+  try {
+    memes = await supa.fetchMemes(); // 원본(id·name·keywords) — 네이버 크롤러가 직접 사용
+  } catch (err) {
+    console.error('[네이버] 밈 로드 실패:', err.message);
+  }
+
+  try { await naverTrend.run(memes); } catch (err) { console.error('[네이버] trend 실패:', err.message); }
+  try { await naverPosts.run(memes); } catch (err) { console.error('[네이버] posts 실패:', err.message); }
+  try { await naverScout.run(memes); } catch (err) { console.error('[네이버] scout 실패:', err.message); }
+
+  const used = naverClient.callCount();
+  console.log(`[네이버] 완료. 이번 실행 API 호출 ${used}회 / 일일한도 25,000 (${(used / 25000 * 100).toFixed(1)}%)`);
+}
+
 // ─── API 라우트 ──────────────────────────────────
 
 // 밈 언급 랭킹 조회 (Supabase 뷰 meme_rankings)
@@ -114,6 +143,12 @@ app.post('/api/refresh', async (req, res) => {
     console.error('크롤링 오류:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// 네이버 일일 크롤 수동 트리거 (오래 걸리므로 fire-and-forget)
+app.post('/api/naver/run', (req, res) => {
+  runNaver().catch((e) => console.error('[네이버] 크롤 실패:', e.message));
+  res.json({ started: true });
 });
 
 // 상태 조회
@@ -169,4 +204,11 @@ app.listen(PORT, async () => {
     await loadMemes();
     runCrawl().catch((e) => console.error('[밈 레이더] 크롤 실패:', e.message));
   }, settings.crawlInterval * 60 * 1000);
+
+  // 네이버 크롤은 하루 1회. 시작 시엔 자동 실행하지 않는다(재시작마다 호출 소모 방지).
+  // 최초 실행은 POST /api/naver/run 으로 트리거하거나 24h 주기를 기다린다.
+  // (서버리스/크론 환경이면 이 주기 대신 스케줄러로 /api/naver/run 을 호출할 것.)
+  setInterval(() => {
+    runNaver().catch((e) => console.error('[네이버] 크롤 실패:', e.message));
+  }, 24 * 60 * 60 * 1000);
 });
