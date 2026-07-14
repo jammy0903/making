@@ -27,7 +27,15 @@ function voterId() {
   return v;
 }
 function votedMap() { try { return JSON.parse(localStorage.getItem('meme-voted') || '{}'); } catch (e) { return {}; } }
-function markVoted(id, choice) { const m = votedMap(); m[id] = choice; localStorage.setItem('meme-voted', JSON.stringify(m)); }
+function markVoted(id, choice) { const m = votedMap(); m[id] = { c: choice, t: Date.now() }; localStorage.setItem('meme-voted', JSON.stringify(m)); }
+// 판정은 월 1회 — 달이 바뀌면 재판정 가능(DB PK의 month_bucket과 동일 기준)
+function sameMonth(t) { const d = new Date(t), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth(); }
+// 구형식(값이 문자열이던 시절) 기록을 {c,t}로 1회 이관 — 시각 미상이라 이번 달 잠금으로 간주
+function migrateVoted() {
+  const m = votedMap(); let dirty = false;
+  for (const k in m) if (typeof m[k] === 'string') { m[k] = { c: m[k], t: Date.now() }; dirty = true; }
+  if (dirty) localStorage.setItem('meme-voted', JSON.stringify(m));
+}
 
 const ADMINS = ['jamm2ic@gmail.com', 'l89192164@gmail.com'];
 function isAdmin() { return state.user && ADMINS.includes(state.user.email); }
@@ -56,6 +64,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 // ─── 데이터 로드 ────────────────────────────────────
 async function init() {
   try {
+    migrateVoted();
     if (!SB.url || !SB.key) throw new Error('Supabase 설정 없음(config.js 확인)');
     try {
       const u = await window.mmdAuth.whoami();
@@ -63,6 +72,9 @@ async function init() {
     } catch (e) {}
     await loadCards();
     setState({ loading: false });
+    // 공유 카드 딥링크(#m=id) — 공유받은 사람이 해당 밈 상세로 바로 착지
+    const dm = location.hash.match(/^#m=(\d+)$/);
+    if (dm && findCard(dm[1])) openDetail(dm[1]);
   } catch (err) {
     setState({ loading: false, error: err.message });
   }
@@ -70,13 +82,14 @@ async function init() {
 async function loadCards() {
   const rows = await sbGet('meme_cards?select=*&order=created_at.desc');
   state.cards = rows.map(mapCard);
-  // 측정 순위(meme_ranking) 병합 — 여러 소스 순위를 합친 avg_rank(낮을수록 상위)
+  // 측정 순위(meme_ranking) 병합 — 백분위 축소 score(낮을수록 상위).
+  // score 컬럼 없는 구 뷰면 요청이 400으로 떨어져 catch로 순위 없이 진행된다(뷰 먼저 갱신할 것).
   try {
-    const ranks = await sbGet('meme_ranking?select=meme_id,avg_rank,source_count');
+    const ranks = await sbGet('meme_ranking?select=meme_id,avg_rank,source_count,score');
     const byId = new Map(ranks.map((r) => [String(r.meme_id), r]));
     for (const c of state.cards) {
       const r = byId.get(String(c.id));
-      c.rank = r && r.avg_rank != null ? Number(r.avg_rank) : null;
+      c.rank = r ? Number(r.score ?? r.avg_rank ?? Infinity) : null;
       c.rankSources = r ? r.source_count : 0;
     }
   } catch (e) { /* 뷰 없거나 데이터 없으면 순위 없이 진행 */ }
@@ -138,7 +151,7 @@ function topbar() {
 function masthead() {
   return `<div class="wrap masthead">
     <div class="eyebrow">Meme Dictionary</div>
-    <h1>밈 사전</h1>
+    <h1>memedics</h1>
     <p class="lede">새로 뜬 밈과 오래 살아남은 밈을 모아 둡니다. 판정하지 않고, 있는 그대로 보여드립니다. 해석은 읽는 사람의 몫.</p>
     <div class="rule"></div>
   </div>`;
@@ -255,7 +268,11 @@ function pageDetail() {
   const total = m.voteYes + m.voteNo;
   const yesPct = total ? Math.round(m.voteYes/total*100) : 0;
   const noPct = total ? 100 - yesPct : 0;
-  const didVote = !!votedMap()[m.id];
+  const ve = votedMap()[m.id];
+  const votedNow = !!(ve && sameMonth(ve.t));               // 이번 달 판정 완료 → 잠금
+  const voteHint = votedNow
+    ? '이번 달 판정 완료 · 다음 달 다시'
+    : (ve ? `지난 판정: ${ve.c === 'yes' ? '살았다' : '죽었다'} · 다시 판정 가능` : '');
 
   let clist;
   if (state.detailLoading) clist = `<div class="empty">댓글 불러오는 중…</div>`;
@@ -298,15 +315,19 @@ function pageDetail() {
 
       <div class="vote">
         <div class="vote-row">
-          <span class="vote-q">지금도 웃겨?</span>
-          <div class="vote-btns ${didVote?'voted':''}">
-            <button class="vote-btn" data-act="voteYes">예</button>
-            <button class="vote-btn" data-act="voteNo">아니</button>
+          <div class="vote-btns ${votedNow?'voted':''}">
+            <button class="vote-btn" data-act="voteYes">살았다</button>
+            <button class="vote-btn" data-act="voteNo">죽었다</button>
           </div>
           <span class="vote-total">${total}표 참여</span>
+          ${voteHint ? `<span class="vote-hint">${voteHint}</span>` : ''}
         </div>
         <div class="vote-bar"><div style="width:${yesPct}%"></div></div>
-        <div class="vote-legend"><span>예 ${yesPct}% · ${m.voteYes}표</span><span>아니 ${noPct}% · ${m.voteNo}표</span></div>
+        <div class="vote-legend"><span>생존 ${yesPct}% · ${m.voteYes}표</span><span>사망 ${noPct}% · ${m.voteNo}표</span></div>
+        <div class="vote-foot">
+          <span class="vote-note">최근 90일 판정 게이지 · 브라우저 기준 익명 · 월 1회 재판정</span>
+          <button class="vote-share" data-act="shareCard">결과 카드 공유</button>
+        </div>
       </div>
 
       <div class="comments">
@@ -336,9 +357,13 @@ function draw() {
 }
 
 // ─── 액션 ───────────────────────────────────────────
-function go(page) { setState({ page, selectedId: null, reported: false }); }
+function go(page) {
+  history.replaceState(null, '', location.pathname); // 딥링크 해시 제거
+  setState({ page, selectedId: null, reported: false });
+}
 async function openDetail(id) {
   const from = (state.page === 'new' || state.page === 'steady') ? state.page : state.lastList;
+  history.replaceState(null, '', '#m=' + id); // 주소창 복사만으로도 공유 가능하게
   setState({ page: 'detail', selectedId: id, reported: false, lastList: from, draftText: '', draftNick: '', detailComments: [], detailLoading: true });
   try {
     const rows = await sbGet(`meme_comments?meme_id=eq.${Number(id)}&select=id,nick,body,is_user,user_id,created_at&order=created_at.desc`);
@@ -347,7 +372,8 @@ async function openDetail(id) {
 }
 async function vote(dir) {
   const id = state.selectedId;
-  if (!id || votedMap()[id]) return;
+  const ve = votedMap()[id];
+  if (!id || (ve && sameMonth(ve.t))) return; // 이번 달 이미 판정했으면 무시
   markVoted(id, dir); // 낙관적 잠금
   const card = findCard(id);
   if (card) { if (dir === 'yes') card.voteYes++; else card.voteNo++; }
@@ -425,6 +451,20 @@ const ACTIONS = {
   saveC: (id) => saveComment(Number(id)), delC: (id) => deleteComment(Number(id)),
   loginGoogle: () => window.mmdAuth.login(),
   logout: () => window.mmdAuth.logout(), report: () => setState({ reported: true }),
+  shareCard: async () => {
+    const m = findCard(state.selectedId);
+    const btn = app.querySelector('.vote-share');
+    if (!m || !btn) return;
+    btn.disabled = true;
+    try {
+      const r = await window.mmdShare.voteCard(m);
+      if (r === 'downloaded+copied') btn.textContent = '이미지 저장 · 링크 복사됨 ✓';
+      else if (r === 'downloaded') btn.textContent = '이미지 저장됨 ✓';
+      else if (r === 'shared') btn.textContent = '공유됨 ✓';
+    } catch (e) { btn.textContent = '공유 실패'; console.error('공유 카드 오류:', e); }
+    btn.disabled = false;
+    setTimeout(() => { const b = app.querySelector('.vote-share'); if (b) b.textContent = '결과 카드 공유'; }, 2500);
+  },
   deckPass: () => commitNext(),
   deckPrev: () => { if (state.deckDone) return setState({ deckDone: false, deckIndex: Math.max(0, newCards().length - 1) }); if (state.deckIndex > 0) setState({ deckIndex: state.deckIndex - 1 }); },
   resetDeck: () => setState({ deckDone: false, deckIndex: 0 }),
