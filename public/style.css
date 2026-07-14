@@ -189,6 +189,19 @@ button { font-family: var(--sans); cursor: pointer; }
 .vote-btn:hover { background: var(--accent); color: #fff; }
 .vote-total { font-size: 12px; color: var(--mute3); }
 .vote-hint { font-size: 12px; color: var(--accent-dark); }
+
+/* 재심 덱 배지 */
+.deck-retrial { display: inline-block; align-self: flex-start; margin-bottom: 8px; padding: 3px 10px; font-size: 11px; letter-spacing: 0.04em; color: var(--accent-dark); border: 1px solid var(--accent-line); background: var(--accent-bg); }
+
+/* 부고 구역 */
+.obits { margin-top: 44px; border-top: 2px solid var(--ink); padding-top: 14px; }
+.obits-head { font-family: var(--serif); font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.obits-sub { font-family: var(--sans); font-size: 12px; font-weight: 400; color: var(--mute3); margin-left: 8px; }
+.obit-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 2px; border-bottom: 1px solid var(--line3); cursor: pointer; }
+.obit-row:hover { background: var(--line4); }
+.obit-name { font-family: var(--serif); font-weight: 600; color: var(--mute); }
+.obit-date { font-size: 12px; color: var(--mute3); white-space: nowrap; }
+.obit-mark { color: var(--mute); }
 .vote-bar { display: flex; height: 6px; margin-top: 18px; background: var(--line); overflow: hidden; }
 .vote-bar > div { background: var(--accent); }
 .vote-legend { display: flex; justify-content: space-between; margin-top: 9px; font-size: 12px; color: var(--mute); }
