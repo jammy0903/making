@@ -1,28 +1,3 @@
-# OS
-.DS_Store
-Thumbs.db
-
-# 에디터
-.vscode/
-.idea/
-*.swp
-
-# 로그/임시
-*.log
 node_modules/
-
-# SvelteKit / Vite
-.svelte-kit/
-/build
-.output
-.vercel
-.netlify
-.wrangler
 .env
-.env.*
-!.env.example
-!.env.enc
-vite.config.ts.timestamp-*
-
-# 생성 산출물 (이미지/영상 바이너리)
-산출물/
+data/
