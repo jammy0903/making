@@ -183,15 +183,20 @@ button { font-family: var(--sans); cursor: pointer; }
 /* vote block */
 .vote { margin-top: 44px; padding: 22px 24px; background: var(--accent-bg); border: 1px solid var(--accent-border); }
 .vote-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.vote-q { font-size: 14px; color: #4A4A45; }
 .vote-btns { display: flex; gap: 8px; }
 .vote-btns.voted { opacity: 0.45; pointer-events: none; }
 .vote-btn { border: 1px solid var(--accent-line); background: #fff; color: var(--accent); padding: 6px 20px; font-size: 14px; white-space: nowrap; }
 .vote-btn:hover { background: var(--accent); color: #fff; }
 .vote-total { font-size: 12px; color: var(--mute3); }
+.vote-hint { font-size: 12px; color: var(--accent-dark); }
 .vote-bar { display: flex; height: 6px; margin-top: 18px; background: var(--line); overflow: hidden; }
 .vote-bar > div { background: var(--accent); }
 .vote-legend { display: flex; justify-content: space-between; margin-top: 9px; font-size: 12px; color: var(--mute); }
+.vote-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.vote-note { font-size: 11px; color: var(--mute3); }
+.vote-share { border: 1px solid var(--accent-line); background: #fff; color: var(--accent); padding: 5px 14px; font-size: 12px; white-space: nowrap; }
+.vote-share:hover { background: var(--accent); color: #fff; }
+.vote-share:disabled { opacity: 0.6; pointer-events: none; }
 
 /* comments */
 .comments { margin-top: 60px; }
