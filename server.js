@@ -6,7 +6,6 @@ import * as fmkorea from './src/crawlers/fmkorea.js';
 import * as instiz from './src/crawlers/instiz.js';
 import * as yeosig from './src/crawlers/yeosig.js';
 import * as youtube from './src/crawlers/youtube.js';
-import * as pinterest from './src/crawlers/pinterest.js';
 import { prepareMemes, matchToRows } from './src/matcher.js';
 import * as supa from './src/supabase.js';
 import * as storage from './src/storage.js';
@@ -24,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube, pinterest };
+const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube };
 
 // 밈 사전 캐시 (Supabase memes 테이블에서 로드)
 let memeDict = [];
@@ -148,6 +147,17 @@ app.post('/api/refresh', async (req, res) => {
 // 네이버 일일 크롤 수동 트리거 (오래 걸리므로 fire-and-forget)
 app.post('/api/naver/run', (req, res) => {
   runNaver().catch((e) => console.error('[네이버] 크롤 실패:', e.message));
+  res.json({ started: true });
+});
+
+// 데이터랩 백필 — 배포 첫날 지난 몇 달치 트렌드 시계열 소급 적재(1회성)
+app.post('/api/naver/backfill', (req, res) => {
+  (async () => {
+    if (!naverClient.isConfigured) return console.error('[네이버] 키 미설정 — 백필 스킵');
+    naverClient.resetCalls();
+    const memes = await supa.fetchMemes().catch(() => []);
+    await naverTrend.run(memes, { backfill: true });
+  })().catch((e) => console.error('[네이버] 백필 실패:', e.message));
   res.json({ started: true });
 });
 

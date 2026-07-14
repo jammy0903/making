@@ -9,7 +9,6 @@ const DEFAULT_SETTINGS = {
     instiz: true,
     yeosig: true,
     youtube: true,
-    pinterest: true,
   },
 };
 

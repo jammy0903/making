@@ -1,8 +1,9 @@
 // 크롤러 ② naver_posts — 블로그·카페 검색 (새 글 수 = 사용량)
 //
 // GET /v1/search/blog.json, /v1/search/cafearticle.json (sort=date). 밈별 대표 키워드 1개.
-//  - 블로그: postdate 필드로 "최근 7일 내 글 수" 집계 → value
-//  - 카페: 응답에 날짜 필드가 있으면 동일하게 7일 집계, 없으면 total 스냅샷을 value로 저장
+//  - 블로그: postdate로 "오늘 하루 글 수"를 세서 일자별로 저장 → 7일치는 DB에서 합산.
+//    (7일 창으로 세면 display 상한 100에서 포화됨. 하루 단위면 100 넘는 밈이 드물어 포화 거의 없음.)
+//  - 카페: 응답에 날짜 필드가 있으면 오늘 글 수, 없으면 total 스냅샷을 value로 저장
 //          (전일 대비 증분은 일자별 스냅샷에서 다운스트림 계산). 필드 유무는 런타임 확인.
 //  - 검색 0건은 정상(value=0으로 기록). 요청 에러(res.ok=false)는 스킵(에러≠0 구분).
 //
@@ -12,7 +13,6 @@ import * as supa from '../supabase.js';
 import { naverGet, sleep, sanitizeKeyword, callCount, isConfigured } from './client.js';
 
 const DISPLAY = 100;
-const RECENT_DAYS = 7;
 const CALL_DELAY_MS = 150;
 
 function ymd(d) { return d.toISOString().slice(0, 10); }
@@ -49,7 +49,7 @@ export async function run(memes) {
   const now = new Date();
   const day = ymd(now);
   const nowIso = now.toISOString();
-  const sinceYmd = yyyymmdd(new Date(now.getTime() - RECENT_DAYS * 86400000));
+  const todayYmd = yyyymmdd(now); // "오늘 글 수"만 센다(포화 방지). 7일치는 DB에서 합산.
 
   const rows = [];
   let errors = 0;
@@ -58,22 +58,22 @@ export async function run(memes) {
     const q = primaryQuery(m);
     if (!q) continue;
 
-    // 블로그: 최근 7일 글 수
+    // 블로그: 오늘 하루 글 수(포화 방지). 7일치는 랭킹 뷰에서 합산.
     const blog = await search('/v1/search/blog.json', q);
     if (blog) {
       const items = blog.items || [];
-      const recent = countRecent(items, sinceYmd);
-      const value = recent == null ? items.length : recent; // 날짜필드 없으면(이례적) 페이지 건수
+      const today = countRecent(items, todayYmd);
+      const value = today == null ? items.length : today; // 날짜필드 없으면(이례적) 페이지 건수
       rows.push({ meme_id: m.id, comment_id: `naver_blog:${day}`, source: 'naver_blog', hour_bucket: nowIso, day_bucket: day, value });
     } else errors++;
     await sleep(CALL_DELAY_MS);
 
-    // 카페: 날짜 필드 있으면 7일 집계, 없으면 total 스냅샷
+    // 카페: 날짜 필드 있으면 오늘 글 수, 없으면 total 스냅샷
     const cafe = await search('/v1/search/cafearticle.json', q);
     if (cafe) {
       const items = cafe.items || [];
-      const recent = countRecent(items, sinceYmd);
-      const value = recent == null ? (cafe.total || 0) : recent; // 날짜필드 없음 → 전체 건수 스냅샷
+      const today = countRecent(items, todayYmd);
+      const value = today == null ? (cafe.total || 0) : today; // 날짜필드 없음 → 전체 건수 스냅샷
       rows.push({ meme_id: m.id, comment_id: `naver_cafe:${day}`, source: 'naver_cafe', hour_bucket: nowIso, day_bucket: day, value });
     } else errors++;
     await sleep(CALL_DELAY_MS);
