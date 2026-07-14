@@ -19,7 +19,7 @@
   --line3: #EDECE6;
   --line4: #F0EFE9;
   --serif: 'Noto Serif KR', serif;
-  --sans: 'Noto Sans KR', sans-serif;
+  --sans: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * { box-sizing: border-box; }
