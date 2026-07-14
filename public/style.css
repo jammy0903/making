@@ -123,6 +123,7 @@ button { font-family: var(--sans); cursor: pointer; }
   display: flex; align-items: center; justify-content: center;
   background: #FCFCFA; color: var(--mute4); font-size: 12px; overflow: hidden;
 }
+.photo-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .row .thumb { width: 88px; height: 88px; flex: none; border: 1px solid var(--line); }
 
 /* ── New: cards ── */

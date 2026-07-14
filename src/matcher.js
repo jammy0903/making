@@ -74,13 +74,14 @@ function memeHits(text, memes) {
 }
 
 // DB 삽입용: (댓글, 밈) 매칭을 행으로. comment_id 없는 댓글은 건너뜀.
-//  반환: [{ meme_id, comment_id, source }]
+//  반환: [{ meme_id, comment_id, source, image_url }]
+//  image_url: 이미지가 있는 소스(핀터레스트 등)만 채워지고, 나머지는 null.
 export function matchToRows(comments, memes) {
   const rows = [];
   for (const c of comments) {
     if (c.id == null) continue;
     for (const m of memeHits(c.text, memes)) {
-      rows.push({ meme_id: m.id, comment_id: c.id, source: c.source });
+      rows.push({ meme_id: m.id, comment_id: c.id, source: c.source, image_url: c.image ?? null });
     }
   }
   return rows;
