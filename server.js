@@ -89,17 +89,17 @@ app.get('*', (req, res) => {
 // ─── 서버 시작 ───────────────────────────────────
 
 app.listen(PORT, async () => {
-  console.log(`[밈 레이더] 서버 시작: http://localhost:${PORT}`);
+  console.log(`[memedics] 서버 시작: http://localhost:${PORT}`);
 
   // 밈 사전 로드 후 첫 크롤링 (실패해도 서버는 계속 — 프론트 서빙 유지)
   await refreshMemes();
-  crawl().catch((e) => console.error('[밈 레이더] 크롤 실패:', e.message));
+  crawl().catch((e) => console.error('[memedics] 크롤 실패:', e.message));
 
   // 설정 주기마다: 사전 갱신 + 크롤링
   const settings = storage.getSettings();
   setInterval(async () => {
     await refreshMemes();
-    crawl().catch((e) => console.error('[밈 레이더] 크롤 실패:', e.message));
+    crawl().catch((e) => console.error('[memedics] 크롤 실패:', e.message));
   }, settings.crawlInterval * 60 * 1000);
 
   // 네이버 크롤은 하루 1회. 시작 시엔 자동 실행하지 않는다(재시작마다 호출 소모 방지).
