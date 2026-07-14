@@ -1,0 +1,33 @@
+name: 밈 크롤
+
+# 수동 실행(workflow_dispatch)으로 먼저 검증. 안정되면 아래 schedule 주석을 풀어 크론으로.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '실행 모드'
+        default: all
+        type: choice
+        options: [all, comments, naver, backfill]
+  # schedule:
+  #   - cron: '0 */3 * * *'   # 3시간마다 (댓글 소스). UTC 기준
+  #   - cron: '0 15 * * *'    # 매일 1회 (네이버). mode는 아래에서 분기 필요
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci || npm install
+      - name: crawl
+        run: node scripts/crawl-once.js ${{ github.event.inputs.mode || 'all' }}
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          youtube_data_api_key: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
