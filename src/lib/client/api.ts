@@ -1,8 +1,8 @@
 // 방문자 쓰기(투표·댓글) — 브라우저에서 Supabase REST 직결(anon + RLS). public/app.js 이식.
-import { env } from '$env/dynamic/public';
+import { SB_URL, SB_KEY } from '$lib/sb';
 import { headers } from '$lib/client/auth';
 
-const SB = { url: env.PUBLIC_SUPABASE_URL || '', key: env.PUBLIC_SUPABASE_ANON_KEY || '' };
+const SB = { url: SB_URL, key: SB_KEY };
 
 async function sbPost(path: string, body: unknown, prefer = 'return=representation') {
   const r = await fetch(`${SB.url}/rest/v1/${path}`, {
