@@ -1,12 +1,18 @@
-<!DOCTYPE html>
+// 관리자 진입 — 추측하기 어려운 경로로 숨김(구 /admin.html 대체).
+// 에셋(config/auth/admin.js·style.css)은 static/에 그대로 있고 루트 절대경로로 로드된다.
+// noindex로 검색 색인 차단. 실제 쓰기 권한은 Google 로그인 + 관리자 이메일 + RLS가 최종 방어.
+import type { RequestHandler } from './$types';
+
+const HTML = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
   <title>memedics · 관리자</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
   <style>
     .admin-wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px 100px; }
     .admin-head { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:24px; }
@@ -32,8 +38,18 @@
 </head>
 <body>
   <div id="admin"></div>
-  <script src="config.js"></script>
-  <script src="auth.js"></script>
-  <script src="admin.js"></script>
+  <script src="/config.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/admin.js"></script>
 </body>
-</html>
+</html>`;
+
+export const prerender = true;
+
+export const GET: RequestHandler = () =>
+  new Response(HTML, {
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'x-robots-tag': 'noindex, nofollow',
+    },
+  });
