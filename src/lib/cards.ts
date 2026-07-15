@@ -15,6 +15,22 @@ export function deadCards(cards: MemeCard[]) {
 export function tagText(m: MemeCard) {
   return (m.tags || []).join(' ');
 }
+
+// 사전 검색 — 이름/설명/분류/태그를 공백 제거·소문자로 비교. 이름 일치 우선.
+const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
+export function searchCards(cards: MemeCard[], q: string) {
+  const n = norm(q);
+  if (!n) return [];
+  const hit = cards.filter((c) =>
+    norm([c.name, c.desc, c.cat, ...(c.tags || [])].join(' ')).includes(n)
+  );
+  return hit.sort((a, b) => (norm(a.name).includes(n) ? 0 : 1) - (norm(b.name).includes(n) ? 0 : 1));
+}
+
+// 상태 라벨 (검색 결과에서 밈이 어느 구역인지)
+export function statusLabel(m: MemeCard) {
+  return m.status === 'new' ? '새 밈' : m.status === 'dead' ? '† 부고' : '스테디';
+}
 export function metaNew(m: MemeCard) {
   const age = m.days === 0 ? '오늘 등록' : `${m.days}일 전 등록`;
   return `${age} · 댓글 ${m.commentCount}개`;
