@@ -8,18 +8,25 @@
     fetchMySubmissions,
     withdrawSubmission,
     fetchRegisteredMemes,
+    uploadMedia,
     type Submission,
     type RegisteredMeme,
   } from '$lib/client/api';
   import { timeAgo } from '$lib/cards';
 
   const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
+  const MAX_IMG = 10 * 1024 * 1024; // 10MB
+  const MAX_VID = 50 * 1024 * 1024; // 50MB (버킷 제한과 동일)
 
   let name = $state('');
   let description = $state('');
   let example = $state('');
   let sourceUrl = $state('');
   let tagsText = $state('');
+  let photoUrl = $state('');
+  let videoUrl = $state('');
+  let upPhoto = $state(false); // 업로드 중
+  let upVideo = $state(false);
 
   let mine = $state<Submission[]>([]);
   let memesIdx = $state<RegisteredMeme[]>([]);
@@ -67,6 +74,30 @@
     if (user.current && !loaded) load();
   });
 
+  // 파일 선택 → 즉시 업로드 → URL 보관
+  async function pickMedia(e: Event, kind: 'photo' | 'video') {
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !user.current) return;
+    err = '';
+    const max = kind === 'photo' ? MAX_IMG : MAX_VID;
+    if (file.size > max) {
+      err = `${kind === 'photo' ? '사진' : '동영상'} 용량이 너무 커요 (최대 ${Math.round(max / 1024 / 1024)}MB).`;
+      input.value = '';
+      return;
+    }
+    if (kind === 'photo') upPhoto = true; else upVideo = true;
+    try {
+      const url = await uploadMedia(file, user.current);
+      if (kind === 'photo') photoUrl = url; else videoUrl = url;
+    } catch (e2) {
+      err = '업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      console.error('업로드 오류:', e2);
+      input.value = '';
+    }
+    if (kind === 'photo') upPhoto = false; else upVideo = false;
+  }
+
   async function submit() {
     const nm = name.trim();
     err = '';
@@ -79,6 +110,10 @@
       err = dup?.kind === 'pending' ? '이미 신청해 검토 중인 밈이에요.' : '이미 등록된 밈이에요. 목록에서 확인해 주세요.';
       return;
     }
+    if (upPhoto || upVideo) {
+      err = '미디어 업로드가 끝날 때까지 기다려 주세요.';
+      return;
+    }
     if (!user.current) return;
     busy = true;
     try {
@@ -89,6 +124,8 @@
           example: example.trim(),
           source_url: sourceUrl.trim(),
           tags: tagsText.split(/[,\n]/).map((t) => t.trim()).filter(Boolean),
+          photo_url: photoUrl,
+          video_url: videoUrl,
         },
         user.current
       );
@@ -98,6 +135,8 @@
       example = '';
       sourceUrl = '';
       tagsText = '';
+      photoUrl = '';
+      videoUrl = '';
       ok = '신청이 접수됐어요. 관리자 검토 후 등록됩니다.';
     } catch (e) {
       err = '신청에 실패했어요. 잠시 후 다시 시도해 주세요.';
@@ -175,6 +214,35 @@
         <label for="s-tags">태그 (쉼표로 구분, 선택)</label>
         <input id="s-tags" bind:value={tagsText} placeholder="유행어, 커뮤니티" />
       </div>
+
+      <div class="subrow">
+        <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label>사진 (선택 · 최대 10MB)</label>
+        {#if photoUrl}
+          <div class="media-prev">
+            <img src={photoUrl} alt="첨부 사진" />
+            <button type="button" class="media-x" onclick={() => (photoUrl = '')}>사진 제거</button>
+          </div>
+        {:else}
+          <input type="file" accept="image/*" disabled={upPhoto} onchange={(e) => pickMedia(e, 'photo')} />
+          {#if upPhoto}<div class="media-up">업로드 중…</div>{/if}
+        {/if}
+      </div>
+      <div class="subrow">
+        <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label>동영상 (선택 · 최대 50MB)</label>
+        {#if videoUrl}
+          <div class="media-prev">
+            <!-- svelte-ignore a11y_media_has_caption -->
+            <video src={videoUrl} controls muted playsinline></video>
+            <button type="button" class="media-x" onclick={() => (videoUrl = '')}>동영상 제거</button>
+          </div>
+        {:else}
+          <input type="file" accept="video/*" disabled={upVideo} onchange={(e) => pickMedia(e, 'video')} />
+          {#if upVideo}<div class="media-up">업로드 중…</div>{/if}
+        {/if}
+      </div>
+
       <div class="subfoot">
         {#if err}<span class="cerr" role="alert">{err}</span>{/if}
         {#if ok}<span class="cok" role="status">{ok}</span>{/if}

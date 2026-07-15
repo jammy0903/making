@@ -118,6 +118,8 @@
             >
               {#if m.photoUrl}
                 <div class="photo-slot"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+              {:else if m.videoUrl}
+                <div class="photo-slot vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
               {/if}
               <div class="card-body">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
