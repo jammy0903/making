@@ -71,10 +71,11 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
   - [~] 검색광고 연관키워드 채널 — **코드 완성, 인증 403에서 막힘 (2026-07-16)**
     - `src/naver/adkeywords.js` 구현 완료: HMAC-SHA256 서명, `/keywordstool` 연관키워드+월간검색수,
       `fetchMemeCandidates()`(시드 밈/신조어/유행어, **"X뜻" 접미사 후보 = 최강 신호** 추출)
-    - env: `accesslicensekey_naver` / `secret_naver` / `customerid` (.env에 있음, 값 형식 검증됨 — CR·따옴표 없음)
-    - **403 auth-failed**: 코드가 아니라 키 문제로 추정 — ①발급 직후 활성화 지연(수십 분 걸리기도 함)
-      ②발급 버튼을 두 번 눌러 라이선스/비밀키 짝 불일치. **다음 단계**: 시간 두고 재시도 →
-      계속 403이면 광고시스템 > 도구 > API 사용 관리에서 **비밀키 재발급** 후 .env 갱신
+    - env: `accesslicensekey_naver`(74자) / `secret_naver`(52자 base64, 어제 "50자" 메모는 awk가 끝 `=`를 구분자로 오인한 착오) / `customerid`(7자) — 셋 다 CR·따옴표·앞뒤공백 없음(trimEq)
+    - **403 auth-failed = 네이버 자격증명 짝 문제로 확정 (2026-07-16 코드레벨 전수 검증)**:
+      - 서명 알고리즘 공식 예제와 1:1 동일 · 시계 스큐 네이버 서버 대비 −1초(정상) · **4개 엔드포인트(keywordstool/campaigns/bizmoney/channels) 전부 동일 403** → 코드·파라미터·시계 전부 결백
+      - 남은 원인 2택(둘 다 콘솔): ①비밀키가 현 라이선스의 짝이 아님(발급 2회/복사 어긋남) ②customer ID(2554148)가 라이선스 발급 광고계정과 불일치
+      - **다음 단계(수동)**: 광고시스템 > 도구 > API 사용 관리에서 **라이선스 삭제 후 재발급 → 비밀키 통째 복사 → .env `secret_naver`(필요시 `accesslicensekey_naver`)·`customerid`(내 정보의 고객ID와 대조) 갱신**
     - 인증 뚫리면: ①`scripts/discover-search.js`의 collectCandidates에 채널 B로 합류
       (`fetchMemeCandidates()` — evidence에 monthly 포함) ②GH Actions 시크릿 3개 등록
       (`gh secret set accesslicensekey_naver` 등 — .env 값으로) ③crawl.yml env에 전달
