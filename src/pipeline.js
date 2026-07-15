@@ -4,6 +4,7 @@
 import * as dcinside from './crawlers/dcinside.js';
 import * as youtube from './crawlers/youtube.js';
 import { prepareMemes, matchToRows } from './matcher.js';
+import { accumulate as accumulateDiscovery } from './discovery/accumulate.js';
 import * as supa from './supabase.js';
 import * as naverClient from './naver/client.js';
 import * as naverTrend from './naver/trend.js';
@@ -46,6 +47,15 @@ export async function runCommentCrawl(memeDict, sources) {
 
   // dedup 키 보강 후 매칭
   for (const p of allPosts) if (p.id == null) p.id = `${p.source}:${p.text}`;
+
+  // 발굴 Phase 0: 원문·n-gram 누적 (docs/discovery-plan.md).
+  // 매칭 0건이어도 누적은 해야 하므로 아래 early-return보다 먼저. 실패는 측정 크롤과 격리.
+  try {
+    await accumulateDiscovery(allPosts, memeDict);
+  } catch (err) {
+    console.error('[discovery] 누적 실패(측정 크롤은 계속):', err.message);
+  }
+
   const rows = matchToRows(allPosts, memeDict);
   if (rows.length === 0) { console.log('[memedics] 매칭된 밈 언급 없음'); return 0; }
 

@@ -79,6 +79,54 @@ export async function insertCandidates(rows) {
   return res.json();
 }
 
+// ── 발굴(discovery) Phase 0 — docs/discovery-plan.md ──
+
+// 크롤 원문 삽입. post_id UNIQUE 충돌은 무시. 반환: 새로 들어간 행(=처음 보는 원문).
+// ignore-duplicates는 기본이 PK(id) 기준이라 on_conflict=post_id 명시 필수.
+export async function insertRawTexts(rows) {
+  if (!isConfigured || rows.length === 0) return [];
+  const res = await fetch(`${URL}/rest/v1/raw_texts?on_conflict=post_id`, {
+    method: 'POST',
+    headers: headers({ Prefer: 'resolution=ignore-duplicates,return=representation' }),
+    body: JSON.stringify(rows),
+  });
+  if (!res.ok) throw new Error(`insertRawTexts ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// n-gram 일별 카운트 가산 upsert (RPC bump_ngram_daily — 충돌 시 count를 더함)
+export async function bumpNgramDaily(rows) {
+  if (!isConfigured || rows.length === 0) return 0;
+  const res = await fetch(`${URL}/rest/v1/rpc/bump_ngram_daily`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ rows }),
+  });
+  if (!res.ok) throw new Error(`bumpNgramDaily ${res.status}: ${await res.text()}`);
+  return rows.length;
+}
+
+// 사람이 반려한 후보 용어 목록 (누적 시 제외용)
+export async function fetchRejectedTerms() {
+  if (!isConfigured) return [];
+  const res = await fetch(`${URL}/rest/v1/rejected_terms?select=term`, { headers: headers() });
+  if (!res.ok) throw new Error(`fetchRejectedTerms ${res.status}: ${await res.text()}`);
+  return (await res.json()).map((r) => r.term);
+}
+
+// 보존 기간 밖 데이터 삭제 (raw_texts / ngram_daily)
+export async function cleanupDiscovery(rawDays, ngramDays) {
+  if (!isConfigured) return;
+  const cutoff = (d) => new Date(Date.now() - d * 86400_000).toISOString().slice(0, 10);
+  for (const [table, days] of [['raw_texts', rawDays], ['ngram_daily', ngramDays]]) {
+    const res = await fetch(`${URL}/rest/v1/${table}?day=lt.${cutoff(days)}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    if (!res.ok) throw new Error(`cleanupDiscovery(${table}) ${res.status}: ${await res.text()}`);
+  }
+}
+
 // 밈별 누적 언급량 랭킹 (뷰 meme_rankings)
 export async function fetchRankings() {
   if (!isConfigured) return [];
