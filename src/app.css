@@ -51,6 +51,7 @@ body {
   font-family: var(--sans);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word; /* 긴 URL·토큰이 가로 스크롤 유발하지 않게 */
 }
 a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-line); }
 a:hover { color: var(--accent-dark); border-bottom-color: var(--accent); }
@@ -330,11 +331,57 @@ button { font-family: var(--sans); cursor: pointer; }
 
 /* ── Responsive ── */
 @media (max-width: 720px) {
+  .masthead { padding-top: 40px; }
   .masthead h1 { font-size: 34px; }
-  .wrap, .wrap-narrow { padding: 0 20px; }
+  .wrap, .wrap-narrow { padding: 0 18px; }
   .deck-holder { max-width: 100%; }
   .cards { grid-template-columns: 1fr; }
+
+  /* 상단바 — 로그인 상태에서 넘치지 않게 (긴 닉네임 말줄임) */
+  .tb-inner { gap: 10px; }
+  .tb-auth { font-size: 12px; }
+  .tb-user { display: inline-block; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+  /* 목록 간격 축소 → 본문 폭 확보 */
+  .row { gap: 14px; }
+  .row .thumb { width: 64px; height: 64px; }
+  .dict-row { gap: 14px; }
+  .dict-idx { width: 22px; }
+
+  /* 상세 */
   .detail-media { height: 240px; }
   .headword, .tag-head { font-size: 18px; }
-  .row .thumb { width: 64px; height: 64px; }
+  .detail-desc { font-size: 17px; line-height: 1.8; }
+  .vote { padding: 18px 16px; }
+  .comments { margin-top: 44px; }
+  .comments-head h3 { font-size: 20px; }
+  .citem { padding: 18px 2px; gap: 12px; }
+
+  /* 터치 타깃 확대(패딩으로 텍스트 중앙 유지) */
+  .tab { padding: 10px 0 12px; }
+  .seg button { padding: 11px 16px; }
+  .cat { padding: 10px 15px; }
+  .more { padding: 12px 26px; }
+  .vote-btn { padding: 10px 20px; }
+
+  /* iOS: 입력 포커스 자동확대 방지(폰트 16px 미만이면 확대됨) */
+  .searchbar input,
+  .cform textarea,
+  .cform input.nick,
+  .cedit { font-size: 16px; }
+}
+
+@media (max-width: 420px) {
+  .masthead h1 { font-size: 30px; }
+  .wrap, .wrap-narrow { padding: 0 15px; }
+  .tabs { gap: 20px; }
+
+  /* 정렬 세그먼트 — 한 줄 꽉 채워 큼직하게 */
+  .list-head .seg { width: 100%; }
+  .list-head .seg button { flex: 1; }
+
+  /* 살았다/죽었다 — 나란히 꽉 채운 큰 버튼 */
+  .vote-row { gap: 10px; }
+  .vote-btns { width: 100%; }
+  .vote-btn { flex: 1; }
 }
