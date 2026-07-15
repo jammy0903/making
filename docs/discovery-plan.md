@@ -68,7 +68,16 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
         (`SURGE_RATIO=3`, `RISE_X=1.5` — datalab.js 상수)
   - [x] GH Actions 크론 통합 — crawl 후 `discover-search --apply --max=20`(격리, continue-on-error)
   - [x] 관리자 후보검토 탭 term형 렌더(근거 요약) + 반려 시 rejected_terms 환류(RLS 정책 적용)
-  - [ ] (사용자) 네이버 **검색광고 API 키 발급** → `src/naver/adkeywords.js` (연관키워드+절대검색량)
+  - [~] 검색광고 연관키워드 채널 — **코드 완성, 인증 403에서 막힘 (2026-07-16)**
+    - `src/naver/adkeywords.js` 구현 완료: HMAC-SHA256 서명, `/keywordstool` 연관키워드+월간검색수,
+      `fetchMemeCandidates()`(시드 밈/신조어/유행어, **"X뜻" 접미사 후보 = 최강 신호** 추출)
+    - env: `accesslicensekey_naver` / `secret_naver` / `customerid` (.env에 있음, 값 형식 검증됨 — CR·따옴표 없음)
+    - **403 auth-failed**: 코드가 아니라 키 문제로 추정 — ①발급 직후 활성화 지연(수십 분 걸리기도 함)
+      ②발급 버튼을 두 번 눌러 라이선스/비밀키 짝 불일치. **다음 단계**: 시간 두고 재시도 →
+      계속 403이면 광고시스템 > 도구 > API 사용 관리에서 **비밀키 재발급** 후 .env 갱신
+    - 인증 뚫리면: ①`scripts/discover-search.js`의 collectCandidates에 채널 B로 합류
+      (`fetchMemeCandidates()` — evidence에 monthly 포함) ②GH Actions 시크릿 3개 등록
+      (`gh secret set accesslicensekey_naver` 등 — .env 값으로) ③crawl.yml env에 전달
   - [ ] 임계 튜닝 — 매일 큐 관찰하며 조정. 신선한 밈 발화를 처음 잡는 날이 진짜 검증
 - [ ] **[승격] 정리글 스카우트 강화** — `src/naver/scout.js`("밈 정리" 글 낚기) 고도화. **2순위**
 - [ ] 사람 큐레이션 — 운영자 + `/submit`(이미 작동). 유지·확대. **3순위**
