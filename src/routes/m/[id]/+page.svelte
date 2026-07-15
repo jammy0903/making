@@ -358,20 +358,6 @@
 
     <div class="comments">
       <div class="comments-head"><h3>댓글 {m.commentCount}</h3></div>
-      <div class="cform">
-        {#if !user.current}
-          <div class="auth">
-            <input class="nick" bind:value={draftNick} placeholder="닉네임 (선택)" />
-            <span class="or">또는</span>
-            <button class="google" onclick={login}>Google 계정으로 로그인</button>
-          </div>
-        {/if}
-        <textarea bind:value={draftText} placeholder="이 밈에 대해 한마디 남겨 보세요"></textarea>
-        <div class="submit-row">
-          {#if cErr}<span class="cerr" role="alert">{cErr}</span>{/if}
-          <button class="btn-solid" onclick={submitComment}>등록</button>
-        </div>
-      </div>
       <div class="clist">
         {#if !comments.length}
           <div class="empty">첫 댓글을 남겨 보세요.</div>
@@ -416,6 +402,20 @@
             </div>
           {/each}
         {/if}
+      </div>
+      <div class="cform">
+        {#if !user.current}
+          <div class="auth">
+            <input class="nick" bind:value={draftNick} placeholder="닉네임 (선택)" />
+            <span class="or">또는</span>
+            <button class="google" onclick={login}>Google 계정으로 로그인</button>
+          </div>
+        {/if}
+        <textarea bind:value={draftText} placeholder="이 밈에 대해 한마디 남겨 보세요"></textarea>
+        <div class="submit-row">
+          {#if cErr}<span class="cerr" role="alert">{cErr}</span>{/if}
+          <button class="btn-solid" onclick={submitComment}>등록</button>
+        </div>
       </div>
     </div>
   </div>
