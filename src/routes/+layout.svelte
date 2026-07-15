@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { initAuth, login, logout, whoami, type AuthUser } from '$lib/client/auth';
   import { setUser, user } from '$lib/client/session.svelte';
+  import WalkingDog from '$lib/components/WalkingDog.svelte';
 
   let { children } = $props();
 
@@ -79,3 +80,6 @@
     <div class="ft-copy">© 2026 memedics</div>
   </div>
 </footer>
+
+<!-- 하우스 광고: 화면 아래를 걸어다니는 강아지 (dog-walk 크롬 확장) -->
+<WalkingDog />
