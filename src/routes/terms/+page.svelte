@@ -49,5 +49,5 @@
   </p>
 
   <h2>6. 문의</h2>
-  <p>약관 관련 문의: <a href="mailto:contact@memedics.space">contact@memedics.space</a></p>
+  <p>약관 관련 문의: <a href="mailto:jamm2ic@gmail.com">jamm2ic@gmail.com</a></p>
 </div>

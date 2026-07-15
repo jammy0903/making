@@ -69,7 +69,7 @@
       <a href="/about">소개</a>
       <a href="/privacy">개인정보처리방침</a>
       <a href="/terms">이용약관</a>
-      <a href="mailto:contact@memedics.space">문의</a>
+      <a href="mailto:jamm2ic@gmail.com">문의</a>
     </nav>
     <div class="ft-copy">© 2026 memedics</div>
   </div>

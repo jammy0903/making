@@ -40,6 +40,6 @@
   </p>
 
   <p style="margin-top:30px">
-    문의: <a href="mailto:contact@memedics.space">contact@memedics.space</a>
+    문의: <a href="mailto:jamm2ic@gmail.com">jamm2ic@gmail.com</a>
   </p>
 </div>
