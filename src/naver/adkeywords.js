@@ -1,5 +1,10 @@
-// 네이버 검색광고 keywordstool — 시드의 연관키워드 + 절대 월간검색수 (발굴 공급 채널 B).
-// 설계: docs/search-demand-design.md §3-B. 데이터랩(상대값)의 약점을 절대량으로 보완.
+// 네이버 검색광고 keywordstool — term의 절대 월간검색수 조회 (설계: search-demand-design.md §3-B).
+//
+// ⚠️ 발굴용이 아니다(2026-07-16 실측): keywordstool은 광고주용 상업 키워드 도구라
+// 신조어("알빠노"·"테무깡")엔 연관키워드가 자기 자신뿐이고, 확장하면 프랜차이즈 상업어만 나온다.
+// 살릴 가치는 하나 — 아무 term이나 넣으면 그 **절대 월간검색량**을 준다(데이터랩은 상대 ratio만 줌).
+// 그래서 이 모듈은 다른 채널(구글트렌드·스카우트)이 올린 후보의 절대량을 **보강**하는 데만 쓴다.
+// 주의: 갓 태어난 신조어는 과소 집계됨(알빠노=20) → evidence·랭킹 참고용이지 하드 필터 아님.
 //
 // 인증: X-Signature = base64(HMAC-SHA256(`${timestamp}.${method}.${path}`, SECRET))
 // 키는 환경변수로만(하드코딩 금지). 두 표기 모두 인식(정식 이름 / 사용자가 .env에 쓴 이름).
@@ -44,25 +49,27 @@ export async function fetchRelatedKeywords(seeds) {
   }));
 }
 
-// 발굴용 후보 추출: 시드 연관키워드 중 ①한글 위주 ②"~뜻"으로 끝나는 것은 접미사 제거
-// ("알빠노뜻"을 검색한다 = 뜻 수요가 실존한다는 가장 강한 신호) ③검색량 하한 필터.
-export async function fetchMemeCandidates({ seeds = ['밈', '신조어', '유행어'], minMonthly = 300, top = 30 } = {}) {
-  const rows = await fetchRelatedKeywords(seeds);
-  const out = [];
-  for (const { term, monthly } of rows) {
-    if (monthly < minMonthly) continue;
-    let t = term.trim();
-    let tteut = false;
-    if (t.endsWith('뜻')) { t = t.slice(0, -1).trim(); tteut = true; } // "X뜻" → X (+강신호)
-    if (!/^[가-힣0-9A-Za-z ]{2,12}$/.test(t)) continue;
-    if (!/[가-힣]/.test(t)) continue; // 한글 포함만
-    out.push({ term: t, monthly, tteutQuery: tteut });
+const normKey = (s) => s.replace(/\s+/g, '').toLowerCase(); // keywordstool은 공백 제거·영문 대문자화
+
+// 후보 term들의 절대 월간검색량 조회. keywordstool은 hintKeywords에 넣은 term 자신의
+// 볼륨을 항상 에코하므로(공백 5개 한도), 이를 배치로 회수한다.
+// 반환: Map(원본term → monthly). 조회 실패/미회수 term은 Map에 없음(null 취급).
+export async function fetchVolumes(terms) {
+  const uniq = [...new Set(terms.map((t) => t.trim()).filter(Boolean))];
+  const out = new Map();
+  for (let i = 0; i < uniq.length; i += 5) {
+    const batch = uniq.slice(i, i + 5);
+    let rows;
+    try {
+      rows = await fetchRelatedKeywords(batch);
+    } catch {
+      continue; // 한 배치 실패는 격리 — 나머지 term은 계속 조회
+    }
+    const vol = new Map(rows.map((r) => [normKey(r.term), r.monthly]));
+    for (const t of batch) {
+      const v = vol.get(normKey(t));
+      if (v != null) out.set(t, v);
+    }
   }
-  // 중복(뜻 유무만 다른 경우)은 tteutQuery=true 우선으로 합침
-  const best = new Map();
-  for (const c of out) {
-    const prev = best.get(c.term);
-    if (!prev || (c.tteutQuery && !prev.tteutQuery) || c.monthly > prev.monthly) best.set(c.term, { ...prev, ...c });
-  }
-  return [...best.values()].sort((a, b) => (b.tteutQuery - a.tteutQuery) || (b.monthly - a.monthly)).slice(0, top);
+  return out;
 }

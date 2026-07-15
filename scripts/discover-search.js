@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { fetchTrendingKR } from '../src/discovery/gtrends.js';
 import * as datalab from '../src/naver/datalab.js';
 import { hasTteutSuggestion } from '../src/naver/autocomplete.js';
+import * as adkw from '../src/naver/adkeywords.js';
 import { normalizeForMatch } from '../src/matcher.js';
 import * as supa from '../src/supabase.js';
 import { sleep } from '../src/naver/client.js';
@@ -105,6 +106,18 @@ async function main() {
   }
 
   console.log(`\n[결과] 통과 ${passed.length} / 검증 ${fresh.length}`);
+
+  // ── 절대 검색량 보강(검색광고 채널 B) — 통과분에만, 실패해도 진행 ──
+  let volumes = new Map();
+  if (passed.length && adkw.isConfigured) {
+    try {
+      volumes = await adkw.fetchVolumes(passed.map((p) => p.term));
+      console.log(`[절대량] 검색광고에서 ${volumes.size}/${passed.length}건 회수`);
+    } catch (err) {
+      console.warn(`[절대량] 보강 실패(무시): ${err.message}`);
+    }
+  }
+
   if (passed.length && APPLY) {
     const rows = passed.map((p) => ({
       title: p.term,
@@ -116,6 +129,7 @@ async function main() {
       evidence: {
         src: p.src,
         traffic: p.traffic ?? null,
+        monthly: volumes.get(p.term) ?? null, // 절대 월간검색량(검색광고). 신조어는 과소집계 — 참고용
         autocomplete: p.autocomplete,
         tteut: { recent: p.verdict.recentT, base: p.verdict.baseT, transition: p.verdict.transition },
         x: { recent: p.verdict.recentX, base: p.verdict.baseX },

@@ -68,17 +68,16 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
         (`SURGE_RATIO=3`, `RISE_X=1.5` — datalab.js 상수)
   - [x] GH Actions 크론 통합 — crawl 후 `discover-search --apply --max=20`(격리, continue-on-error)
   - [x] 관리자 후보검토 탭 term형 렌더(근거 요약) + 반려 시 rejected_terms 환류(RLS 정책 적용)
-  - [~] 검색광고 연관키워드 채널 — **코드 완성, 인증 403에서 막힘 (2026-07-16)**
-    - `src/naver/adkeywords.js` 구현 완료: HMAC-SHA256 서명, `/keywordstool` 연관키워드+월간검색수,
-      `fetchMemeCandidates()`(시드 밈/신조어/유행어, **"X뜻" 접미사 후보 = 최강 신호** 추출)
-    - env: `accesslicensekey_naver`(74자) / `secret_naver`(52자 base64, 어제 "50자" 메모는 awk가 끝 `=`를 구분자로 오인한 착오) / `customerid`(7자) — 셋 다 CR·따옴표·앞뒤공백 없음(trimEq)
-    - **403 auth-failed = 네이버 자격증명 짝 문제로 확정 (2026-07-16 코드레벨 전수 검증)**:
-      - 서명 알고리즘 공식 예제와 1:1 동일 · 시계 스큐 네이버 서버 대비 −1초(정상) · **4개 엔드포인트(keywordstool/campaigns/bizmoney/channels) 전부 동일 403** → 코드·파라미터·시계 전부 결백
-      - 남은 원인 2택(둘 다 콘솔): ①비밀키가 현 라이선스의 짝이 아님(발급 2회/복사 어긋남) ②customer ID(2554148)가 라이선스 발급 광고계정과 불일치
-      - **다음 단계(수동)**: 광고시스템 > 도구 > API 사용 관리에서 **라이선스 삭제 후 재발급 → 비밀키 통째 복사 → .env `secret_naver`(필요시 `accesslicensekey_naver`)·`customerid`(내 정보의 고객ID와 대조) 갱신**
-    - 인증 뚫리면: ①`scripts/discover-search.js`의 collectCandidates에 채널 B로 합류
-      (`fetchMemeCandidates()` — evidence에 monthly 포함) ②GH Actions 시크릿 3개 등록
-      (`gh secret set accesslicensekey_naver` 등 — .env 값으로) ③crawl.yml env에 전달
+  - [x] 검색광고 채널 — **403 해결 + 용도 재정의 완료 (2026-07-16)**
+    - **403 원인 = customer ID 오류**: `2554148`(틀림) → **`4446758`(정답)**. 코드·서명·비밀키는 처음부터 결백
+      (서명 공식 1:1 동일 · 시계 스큐 −1초 · 4개 엔드포인트 동일 403 → 계정 전체 인증 실패였음). `.env customerid` 갱신함
+    - **핵심 실측 발견 — keywordstool은 발굴 채널로 죽은 카드**: 광고주용 상업 키워드 도구라
+      신조어("알빠노"·"테무깡")엔 연관키워드가 자기 자신뿐이고, 확장하면 프랜차이즈 상업어(빽다방·메가커피창업)만 나온다.
+      → 어제 만든 `fetchMemeCandidates()`(시드 확장 발굴)는 근본적으로 헛다리. **삭제**함
+    - **살린 가치 = 절대 검색량 보강**: 아무 term이나 넣으면 절대 월간검색량을 준다(데이터랩은 상대 ratio만).
+      `fetchVolumes(terms)` 신설(5개 배치, hint term 자기 볼륨 에코 이용) → `discover-search.js`가 통과 후보의
+      절대량을 evidence.monthly로 첨부. ⚠️ 신조어는 과소집계(알빠노=20) — 참고·랭킹용이지 하드 필터 아님
+    - CI 통합 완료: GH 시크릿 3개 등록(`NAVER_AD_API_KEY`/`_SECRET`/`_CUSTOMER_ID`) + crawl.yml discover-search env 전달
   - [ ] 임계 튜닝 — 매일 큐 관찰하며 조정. 신선한 밈 발화를 처음 잡는 날이 진짜 검증
 - [ ] **[승격] 정리글 스카우트 강화** — `src/naver/scout.js`("밈 정리" 글 낚기) 고도화. **2순위**
 - [ ] 사람 큐레이션 — 운영자 + `/submit`(이미 작동). 유지·확대. **3순위**
