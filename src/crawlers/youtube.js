@@ -11,6 +11,8 @@
 // ⚠️ 할당량: search.list = 호출당 100 units. 주제 N개면 크롤 1회에 약 N×100 units.
 //    기본 일일 할당량 10,000 units 기준, 주제 수와 크롤 주기를 고려할 것.
 
+import { fetchJson, reason } from './http.js';
+
 const SOURCE = 'youtube';
 const API = 'https://www.googleapis.com/youtube/v3';
 
@@ -18,6 +20,7 @@ const REGION = 'KR';
 const COMMENTS_PER_VIDEO = 50;  // 주제별 영상 1개에서 수집할 댓글 수
 const MAX_COMMENT_LEN = 200;    // 긴 댓글은 잘라서 밈 표현에 집중
 const RECENT_DAYS = 7;          // 최근 며칠 내 영상만 화제 후보로
+const CONCURRENCY = 4;          // 주제 동시 요청 수 — 과다 동시연결(연결실패) 방지
 
 // 주제별 검색어 — 각 주제에서 최근 조회수 1위 영상을 골라 댓글 수집.
 // 항목을 추가/수정하면 주제가 늘거나 바뀐다 (할당량 주의).
@@ -49,12 +52,13 @@ async function crawlTopic(topic, apiKey, publishedAfter) {
     `&q=${encodeURIComponent(topic.q)}&regionCode=${REGION}&relevanceLanguage=ko` +
     `&publishedAfter=${publishedAfter}&maxResults=1&key=${apiKey}`;
 
-  const sRes = await fetch(searchUrl);
-  if (!sRes.ok) {
-    console.error(`[YouTube] ${topic.label} 검색 실패: ${sRes.status} ${sRes.statusText}`);
+  let sData;
+  try {
+    sData = await fetchJson(searchUrl);
+  } catch (err) {
+    console.error(`[YouTube] ${topic.label} 검색 실패: ${reason(err)}`);
     return [];
   }
-  const sData = await sRes.json();
   const videoId = sData.items?.[0]?.id?.videoId;
   if (!videoId) {
     console.error(`[YouTube] ${topic.label} 화제 영상 없음`);
@@ -66,13 +70,14 @@ async function crawlTopic(topic, apiKey, publishedAfter) {
     `${API}/commentThreads?part=snippet&videoId=${videoId}&order=relevance` +
     `&maxResults=${COMMENTS_PER_VIDEO}&textFormat=plainText&key=${apiKey}`;
 
-  const cRes = await fetch(cUrl);
-  // 댓글 비활성화된 영상은 403 — 조용히 건너뜀
-  if (!cRes.ok) {
-    console.error(`[YouTube] ${topic.label} 댓글 조회 실패: ${cRes.status} (${videoId})`);
+  let cData;
+  try {
+    cData = await fetchJson(cUrl);
+  } catch (err) {
+    // 댓글 비활성화된 영상은 403 — 조용히 건너뜀
+    console.error(`[YouTube] ${topic.label} 댓글 조회 실패: ${reason(err)} (${videoId})`);
     return [];
   }
-  const cData = await cRes.json();
 
   const posts = [];
   for (const item of cData.items || []) {
@@ -103,17 +108,22 @@ export async function crawl() {
 
   const publishedAfter = new Date(Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  // 주제별로 병렬 수집 (한 주제가 실패해도 나머지는 계속)
-  const results = await Promise.all(
-    TOPICS.map((topic) =>
-      crawlTopic(topic, apiKey, publishedAfter).catch((err) => {
-        console.error(`[YouTube] ${topic.label} 크롤링 실패:`, err.message);
-        return [];
-      })
-    )
-  );
+  // 동시 연결이 몰리면 일부가 연결실패하므로 CONCURRENCY만큼만 병렬로. 한 주제 실패는 격리.
+  const posts = [];
+  for (let i = 0; i < TOPICS.length; i += CONCURRENCY) {
+    const batch = TOPICS.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((topic) =>
+        crawlTopic(topic, apiKey, publishedAfter).catch((err) => {
+          console.error(`[YouTube] ${topic.label} 크롤링 실패: ${reason(err)}`);
+          return [];
+        })
+      )
+    );
+    for (const r of results) posts.push(...r);
+  }
 
-  return results.flat();
+  return posts;
 }
 
 export const source = SOURCE;
