@@ -112,6 +112,11 @@ button { font-family: var(--sans); cursor: pointer; }
 .deck-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
 .deck-counter { font-size: 13px; color: var(--mute3); }
 .deck-hint { text-align: center; margin-top: 10px; font-size: 12px; color: var(--mute4); }
+.deck-vote { display: flex; gap: 8px; margin-top: 16px; }
+.dv { flex: 1; padding: 12px 6px; font-size: 14px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); white-space: nowrap; transition: background .12s, color .12s, border-color .12s; }
+.dv-yes:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.dv-not:hover { background: var(--mute2); color: #fff; border-color: var(--mute2); }
+.dv-dead:hover { background: #B4402E; color: #fff; border-color: #B4402E; }
 
 /* card text bits (shared) */
 .m-name { font-family: var(--serif); font-weight: 600; font-size: 16px; color: var(--mute); margin: 0 0 7px; }
@@ -296,7 +301,8 @@ button { font-family: var(--sans); cursor: pointer; }
 /* vote block */
 .vote { margin-top: 44px; padding: 22px 24px; background: var(--accent-bg); border: 1px solid var(--accent-border); }
 .vote-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.vote-btns { display: flex; gap: 8px; }
+.vote-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.vote-notmeme { font-size: 12px; color: var(--mute3); margin-top: 7px; }
 .vote-btns.voted { opacity: 0.45; pointer-events: none; }
 .vote-btn { border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 6px 20px; font-size: 14px; white-space: nowrap; }
 .vote-btn:hover { background: var(--accent); color: #fff; }

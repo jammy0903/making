@@ -18,7 +18,7 @@ async function api(path, opts = {}) {
 }
 
 // ─── 상태 ───
-const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], memes: [], members: [], submissions: [], editing: null };
+const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], notmemes: [], memes: [], members: [], submissions: [], editing: null };
 function set(p) { Object.assign(state, p); render(); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
@@ -56,6 +56,7 @@ async function go(tab) {
     if (tab === 'candidates') await loadCandidates();
     else if (tab === 'submissions') await loadSubmissions();
     else if (tab === 'deaths') await loadDeaths();
+    else if (tab === 'notmemes') await loadNotmemes();
     else if (tab === 'members') await loadMembers();
     else await loadMemes();
   } catch (e) {}
@@ -79,6 +80,24 @@ async function dismissDeath(id) {
 }
 async function loadMembers() {
   state.members = await api('profiles?select=email,full_name,created_at&order=created_at.desc');
+}
+// '밈 아님' 후보 — 회원 다수가 '밈이 아니다'로 판정(notmeme_candidates 뷰). 확정=삭제.
+async function loadNotmemes() {
+  state.notmemes = await api('notmeme_candidates?select=*&order=notmeme_pct.desc');
+}
+async function confirmNotmeme(id) {
+  const n = state.notmemes.find((x) => x.id === id);
+  if (!confirm(`"${n ? n.name : id}"을(를) '밈 아님'으로 확정해 삭제합니다. 측정·댓글·투표도 함께 삭제됩니다. 계속할까요?`)) return;
+  try {
+    await api(`memes?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    state.notmemes = state.notmemes.filter((x) => x.id !== id); render();
+  } catch (e) { alert('삭제 실패: ' + e.message); }
+}
+async function dismissNotmeme(id) {
+  try {
+    await patchMeme(id, { notmeme_review_at: new Date().toISOString() });
+    state.notmemes = state.notmemes.filter((x) => x.id !== id); render();
+  } catch (e) { alert('기각 실패: ' + e.message); }
 }
 // 회원 밈 신청(사람 제안) — 기계 후보와 별개. 등록/반려는 관리자.
 async function loadSubmissions() {
@@ -153,6 +172,7 @@ function shell(inner) {
       <button class="${state.tab === 'candidates' ? 'on' : ''}" onclick="go('candidates')">후보 검토</button>
       <button class="${state.tab === 'submissions' ? 'on' : ''}" onclick="go('submissions')">신청</button>
       <button class="${state.tab === 'deaths' ? 'on' : ''}" onclick="go('deaths')">사망 검토</button>
+      <button class="${state.tab === 'notmemes' ? 'on' : ''}" onclick="go('notmemes')">밈 아님</button>
       <button class="${state.tab === 'memes' ? 'on' : ''}" onclick="go('memes')">밈 관리</button>
       <button class="${state.tab === 'members' ? 'on' : ''}" onclick="go('members')">회원</button>
     </div>` : '';
@@ -197,6 +217,19 @@ function submissionsView() {
       <div class="adm-actions">
         <button class="btn-accent" onclick="startRegisterSub(${s.id})">등록</button>
         <button class="btn" onclick="rejectSub(${s.id})">반려</button>
+      </div>
+    </div>`).join('');
+}
+function notmemesView() {
+  if (!state.notmemes.length) return `<div class="empty">'밈 아님' 후보가 없습니다. (조건: 10표↑ · '밈 아님' 70%↑)</div>`;
+  return `<div style="margin-bottom:12px;font-size:13px;color:var(--mute3)">회원 다수가 '밈이 아니다'로 판정한 항목입니다. 삭제는 사람이 결정합니다.</div>` +
+    state.notmemes.map((n) => `
+    <div class="adm-row">
+      <div class="t">${esc(n.name)} <span style="font-size:12px;color:var(--mute)">${esc(n.category || '미분류')}</span></div>
+      <div class="m">'밈 아님' ${esc(n.notmeme_pct)}% (${n.notmeme_votes}/${n.votes}표)</div>
+      <div class="adm-actions">
+        <button class="btn" style="border-color:#c0392b;color:#c0392b" onclick="confirmNotmeme(${n.id})">밈 아님 확정(삭제)</button>
+        <button class="btn" onclick="dismissNotmeme(${n.id})">기각 (60일 보류)</button>
       </div>
     </div>`).join('');
 }
@@ -260,6 +293,7 @@ function render() {
     : state.tab === 'candidates' ? candidatesView()
     : state.tab === 'submissions' ? submissionsView()
     : state.tab === 'deaths' ? deathsView()
+    : state.tab === 'notmemes' ? notmemesView()
     : state.tab === 'members' ? membersView()
     : memesView();
   root.innerHTML = shell(view);
