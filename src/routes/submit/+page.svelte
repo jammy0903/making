@@ -182,7 +182,7 @@
       </div>
     </div>
 
-    <h2>내 신청</h2>
+    <h2>내가 신청한 밈</h2>
     {#if !loaded}
       <div class="empty">불러오는 중…</div>
     {:else if !mine.length}
