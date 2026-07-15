@@ -34,3 +34,14 @@ jobs:
           youtube_data_api_key: ${{ secrets.YOUTUBE_DATA_API_KEY }}
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+      # 검색수요 발굴(1순위): 구글트렌드→데이터랩 "X 뜻" 검증→관리자 큐.
+      # 실패해도 크롤 결과에 영향 없게 격리(continue-on-error).
+      - name: discover-search
+        if: ${{ (github.event.inputs.mode || 'all') == 'all' }}
+        continue-on-error: true
+        run: node scripts/discover-search.js --apply --max=20
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
