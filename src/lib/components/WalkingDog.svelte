@@ -7,7 +7,7 @@
 	const AD_URL =
 		'https://chromewebstore.google.com/detail/glciecgcibkmbkkllmhagignmmjghkmj'; // 강아지 산책 크롬 웹스토어
 	const AD_LABEL = '강아지 산책 · 클릭';
-	const BREEDS = ['golden', 'corgi', 'sesame', 'poodle', 'chihuahua', 'chow'];
+	const BREEDS = ['golden', 'corgi', 'ig', 'poodle', 'chihuahua', 'chow']; // ig = 이탈리안그레이하운드
 	const base = (b: string, f: string) => `/ads/dogs/${b}-${f}.webp`;
 
 	const SPEED = 70; // px/초
