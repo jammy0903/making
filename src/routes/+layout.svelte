@@ -37,7 +37,10 @@
 
 <div class="topbar">
   <div class="wrap tb-inner">
-    <a class="tb-brand" href="/" style="border:none;color:inherit">memedics</a>
+    <a class="tb-brand" href="/" style="border:none;color:inherit" aria-label="memedics 홈">
+      <img class="tb-logo" src="/logo-mark.png" alt="" width="24" height="24" />
+      <span>memedics</span>
+    </a>
     <span class="tb-auth">
       <button
         class="tb-theme"
