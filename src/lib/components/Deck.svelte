@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { newCards, tagText, metaNew, metaSteady } from '$lib/cards';
+  import { newCards, tagText, metaNew, metaSteady, coverImage } from '$lib/cards';
   import { castVote, markVoted, type VoteChoice } from '$lib/client/api';
   import type { MemeCard } from '$lib/server/db';
 
@@ -116,8 +116,11 @@
               aria-label={m.name}
               onpointerdown={off === 0 ? down : undefined}
             >
-              {#if m.photoUrl}
-                <div class="photo-slot"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+              {#if coverImage(m)}
+                <div class="photo-slot">
+                  <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                  {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
+                </div>
               {:else if m.videoUrl}
                 <div class="photo-slot vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
               {/if}

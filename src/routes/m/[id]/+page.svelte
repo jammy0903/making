@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { tagText, timeAgo } from '$lib/cards';
+  import { tagText, timeAgo, gallery } from '$lib/cards';
   import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, type VoteChoice } from '$lib/client/api';
 
   const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
@@ -17,6 +17,13 @@
     m = { ...data.meme };
     comments = [...data.comments];
   });
+
+  const shots = $derived(gallery(m));
+  let carIdx = $state(0);
+  function onCarScroll(e: Event) {
+    const el = e.currentTarget as HTMLElement;
+    carIdx = Math.round(el.scrollLeft / el.clientWidth);
+  }
 
   let draftNick = $state('');
   let draftText = $state('');
@@ -148,12 +155,26 @@
 <div class="wrap-narrow page">
   <a class="back" href="/" style="border:none">← 목록으로</a>
   <div class="detail">
-    {#if m.photoUrl}
-      <div class="photo-slot detail-media"><img src={m.photoUrl} alt={m.name} referrerpolicy="no-referrer" /></div>
-    {/if}
-    {#if m.videoUrl}
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <div class="detail-video"><video src={m.videoUrl} controls playsinline preload="metadata"></video></div>
+    {#if shots.length}
+      <div class="carousel">
+        <div class="car-track" onscroll={onCarScroll}>
+          {#each shots as s, i (s.url)}
+            <div class="car-item">
+              {#if s.type === 'video'}
+                <!-- svelte-ignore a11y_media_has_caption -->
+                <video src={s.url} controls playsinline preload="metadata"></video>
+              {:else}
+                <img src={s.url} alt={`${m.name} ${i + 1}`} referrerpolicy="no-referrer" />
+              {/if}
+            </div>
+          {/each}
+        </div>
+        {#if shots.length > 1}
+          <div class="car-dots">
+            {#each shots as _, i (i)}<span class="car-dot {carIdx === i ? 'on' : ''}"></span>{/each}
+          </div>
+        {/if}
+      </div>
     {/if}
     {#if m.name}<div class="headword">{m.name}</div>{/if}
     <div class="tag-head">{tagText(m)}</div>

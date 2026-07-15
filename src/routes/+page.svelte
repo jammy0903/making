@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, searchCards, statusLabel, tagText, metaNew, metaSteady } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, tagText, metaNew, metaSteady, coverImage } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
 
   let { data } = $props();
@@ -96,8 +96,11 @@
               </div>
               {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
             </div>
-            {#if m.photoUrl}
-              <div class="photo-slot thumb"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+            {#if coverImage(m)}
+              <div class="photo-slot thumb">
+                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
+              </div>
             {:else if m.videoUrl}
               <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
             {/if}
@@ -144,8 +147,11 @@
               {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
               <div class="m-meta">{metaNew(m)}</div>
             </div>
-            {#if m.photoUrl}
-              <div class="photo-slot thumb"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+            {#if coverImage(m)}
+              <div class="photo-slot thumb">
+                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
+              </div>
             {:else if m.videoUrl}
               <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
             {/if}

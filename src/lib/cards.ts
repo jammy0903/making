@@ -1,5 +1,20 @@
 // 카드 파생값 공용 헬퍼 (서버 SSR·클라 공용 — 순수 함수만)
-import type { MemeCard } from '$lib/server/db';
+import type { MemeCard, MediaItem } from '$lib/server/db';
+
+// 표시할 미디어 목록: media 배열 우선, 없으면 photo_url/video_url 폴백(하위호환)
+export function gallery(m: MemeCard): MediaItem[] {
+  if (m.media && m.media.length) return m.media;
+  const out: MediaItem[] = [];
+  if (m.photoUrl) out.push({ type: 'image', url: m.photoUrl });
+  if (m.videoUrl) out.push({ type: 'video', url: m.videoUrl });
+  return out;
+}
+// 카드 썸네일용 대표 이미지(없으면 빈 문자열)
+export function coverImage(m: MemeCard): string {
+  if (m.photoUrl) return m.photoUrl;
+  const img = (m.media || []).find((x) => x.type === 'image');
+  return img ? img.url : '';
+}
 
 export function newCards(cards: MemeCard[]) {
   return cards.filter((c) => c.status === 'new');
