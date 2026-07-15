@@ -26,7 +26,7 @@ function arr(s) { return (s || '').split(/[,\n]/).map((x) => x.trim()).filter(Bo
 
 // ─── 데이터 ───
 async function loadCandidates() {
-  state.candidates = await api('discovery_candidates?status=eq.pending&select=id,title,url,source_type,found_at&order=found_at.desc&limit=100');
+  state.candidates = await api('discovery_candidates?status=eq.pending&select=id,title,url,source_type,found_at,kind,term,evidence,score&order=found_at.desc&limit=100');
 }
 async function rejectCandidate(id) {
   await api(`discovery_candidates?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'rejected' }) });
@@ -118,10 +118,20 @@ function startRegisterSub(id) {
 }
 function startRegister(id) {
   const c = state.candidates.find((x) => x.id === id);
-  set({ editing: { cand: c, meme: {} } });
+  // term형(검색수요 발굴)이면 이름·키워드를 미리 채움
+  const meme = c.kind === 'term' && c.term ? { name: c.term, keywords: [c.term] } : {};
+  set({ editing: { cand: c, meme } });
 }
 async function doReject(id) {
-  try { await rejectCandidate(id); state.candidates = state.candidates.filter((c) => c.id !== id); render(); }
+  try {
+    await rejectCandidate(id);
+    // term형이면 rejected_terms에도 기록 → 발굴 파이프라인이 다시 안 올림(환류)
+    const c = state.candidates.find((x) => x.id === id);
+    if (c && c.kind === 'term' && c.term) {
+      try { await api('rejected_terms', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ term: c.term, note: 'candidate reject' }) }); } catch (e2) {}
+    }
+    state.candidates = state.candidates.filter((x) => x.id !== id); render();
+  }
   catch (e) { alert('반려 실패: ' + e.message); }
 }
 function editMeme(id) { set({ editing: { meme: state.memes.find((m) => m.id === id) } }); }
@@ -189,15 +199,25 @@ function shell(inner) {
 }
 function candidatesView() {
   if (!state.candidates.length) return `<div class="empty">대기 중인 후보가 없습니다.</div>`;
-  return state.candidates.map((c) => `
+  return state.candidates.map((c) => {
+    // term형(검색수요 발굴): 링크 대신 단어 + 근거 요약
+    const head = c.kind === 'term'
+      ? `<span style="font-weight:600">${esc(c.term || c.title)}</span> <span style="font-size:12px;color:var(--accent)">검색수요</span>`
+      : `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a>`;
+    const ev = c.kind === 'term' && c.evidence
+      ? `<div class="m">근거: "뜻" 검색 ${c.score >= 99 ? '0→양수 전환' : `${Number(c.score).toFixed(1)}배 급증`}${c.evidence.autocomplete ? ' · 자동완성 있음' : ''}${c.evidence.traffic ? ` · 트래픽 ${esc(c.evidence.traffic)}` : ''}</div>`
+      : '';
+    return `
     <div class="adm-row">
-      <div class="t"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a></div>
+      <div class="t">${head}</div>
       <div class="m">${esc(c.source_type || '')} · ${esc((c.found_at || '').slice(0, 10))}</div>
+      ${ev}
       <div class="adm-actions">
         <button class="btn-accent" onclick="startRegister(${c.id})">등록</button>
         <button class="btn" onclick="doReject(${c.id})">반려</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function deathsView() {
   if (!state.deaths.length) return `<div class="empty">사망 후보가 없습니다. (조건: 최근 90일 사망 판정 70%↑ · 10표↑ · 30일 언급 0)</div>`;
