@@ -57,7 +57,15 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
 
 - [x] Phase 0 — 누적 시작 (시작일: **2026-07-15**). ⚠️ 재정렬로 **주력 아님**(신조어 보조용). 계속 돌림.
 - [x] 1순위 강화 조사 — 후보 공급 채널 확정·실검증 (위 표)
-- [ ] **[승격] 검색 수요 감지** — ①구글트렌드 RSS 수집기 ②데이터랩 X/"X 뜻" 검증(`src/naver/datalab.js`) ③(가입 후) 검색광고 연관키워드. **1순위**
+- [x] 1순위 설계서 작성 — **[search-demand-design.md](./search-demand-design.md)** (아키텍처·API 상세·판정 규칙·실패 모드)
+- [ ] **[승격] 검색 수요 감지 구현** — 게이트 없음(누적 불필요, 즉시 가능). **1순위**
+  - [ ] `src/discovery/gtrends.js` — 구글트렌드 RSS(geo=KR) 수집기 (키 불필요, 파싱 실패 격리)
+  - [ ] `src/naver/datalab.js` — X·"X 뜻" 동시 조회 + **앵커 정규화** (설계서 §4)
+  - [ ] `src/naver/autocomplete.js` — "X 뜻" 자동완성 가점 (비공식, 실패 무시)
+  - [ ] `discovery_candidates` term형 확장 SQL (kind/term/evidence/score — Phase 2 스키마 선행)
+  - [ ] `scripts/discover-search.js` 드라이런 → 판정 임계 튜닝
+  - [ ] GH Actions 크론 통합 (크롤 후 이어서)
+  - [ ] (사용자) 네이버 **검색광고 API 키 발급** → `src/naver/adkeywords.js` (연관키워드+절대검색량)
 - [ ] **[승격] 정리글 스카우트 강화** — `src/naver/scout.js`("밈 정리" 글 낚기) 고도화. **2순위**
 - [ ] 사람 큐레이션 — 운영자 + `/submit`(이미 작동). 유지·확대. **3순위**
 - [ ] (보조) 버스트 감지 `burst.js` — 신조어 조기감지용. 게이트: 누적 14일+ (구 Phase 1)
