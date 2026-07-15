@@ -127,6 +127,18 @@
   const desc = $derived(m.desc || `${m.name} — 밈 뜻과 활성도를 memedics에서 확인하세요.`);
   const pageUrl = $derived(`${page.url.origin}/m/${m.id}`);
   const ogImage = $derived(m.photoUrl || `${page.url.origin}/og-default.png`);
+  // 구조화 데이터 — 밈 사전 용어("○○ 뜻" 검색 리치결과)
+  const memeLd = $derived(
+    JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'DefinedTerm',
+      name: m.name,
+      description: desc,
+      url: pageUrl,
+      inLanguage: 'ko',
+      inDefinedTermSet: { '@type': 'DefinedTermSet', name: 'memedics 밈 사전', url: `${page.url.origin}/` },
+    })
+  );
 
   async function vote(choice: VoteChoice) {
     if (votedNow) return;
@@ -220,6 +232,7 @@
   <meta property="og:url" content={pageUrl} />
   <meta property="og:image" content={ogImage} />
   <meta name="twitter:card" content="summary_large_image" />
+  {@html `<script type="application/ld+json">${memeLd}</script>`}
 </svelte:head>
 
 <div class="wrap-narrow page">

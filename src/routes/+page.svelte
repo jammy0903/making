@@ -10,9 +10,27 @@
 
   let tab = $state<'new' | 'steady'>('new');
   let steadyCat = $state('전체');
-  let q = $state('');
+  let q = $state(page.url.searchParams.get('q') ?? ''); // /?q=밈 검색 유입 지원(SearchAction)
 
   const query = $derived(q.trim());
+
+  // 구조화 데이터 — 사이트명 인식 + 검색창(사이트링크 검색박스)
+  const siteLd = $derived(
+    JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'memedics',
+      alternateName: ['밈 사전', '한국 밈 트렌드 사전'],
+      url: `${page.url.origin}/`,
+      description: '새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 한국 밈 트렌드 사전.',
+      inLanguage: 'ko',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${page.url.origin}/?q={q}` },
+        'query-input': 'required name=q',
+      },
+    })
+  );
   const results = $derived(query ? searchCards(data.cards, query) : []);
 
   // 해시태그 필터 — URL ?tag= 로 상태 유지(상세 페이지에서도 링크로 진입)
@@ -71,6 +89,8 @@
   <meta property="og:url" content="{page.url.origin}/" />
   <meta property="og:image" content="{page.url.origin}/og-default.png" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="keywords" content="밈, 밈 뜻, 한국 밈, 밈 트렌드, 유행어, 밈 사전, meme" />
+  {@html `<script type="application/ld+json">${siteLd}</script>`}
 </svelte:head>
 
 {#snippet tagChips(m: MemeCard)}
@@ -81,7 +101,7 @@
 
 <div class="wrap masthead">
   <div class="eyebrow">Meme Dictionary</div>
-  <h1>memedics</h1>
+  <h1><a href="/" onclick={() => (q = '')} style="color:inherit;text-decoration:none" aria-label="memedics 홈">memedics</a></h1>
   <p class="lede">새로 뜬 밈과 오래 살아남은 밈을 모아 둡니다. 판정하지 않고, 있는 그대로 보여드립니다. 해석은 읽는 사람의 몫.</p>
   <div class="rule"></div>
 </div>
