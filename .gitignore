@@ -13,3 +13,7 @@ client_secret*.json
 
 # Windows 탐색기 다운로드 메타 찌꺼기
 *:Zone.Identifier
+
+# 발굴 수동 수집 원본 덤프 — README만 추적, 덤프는 제외
+discovery-inbox/*
+!discovery-inbox/README.md
