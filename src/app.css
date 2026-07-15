@@ -219,6 +219,8 @@ button { font-family: var(--sans); cursor: pointer; }
 .tabs { display: flex; gap: 30px; align-items: flex-end; padding-top: 16px; }
 .tab { background: none; border: none; padding: 8px 0 13px; font-size: 16px; color: var(--mute2); border-bottom: 2px solid transparent; }
 .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab-cta { margin-left: auto; color: var(--accent); border: none; font-weight: 500; }
+.tab-cta:hover { color: var(--accent-dark); }
 
 /* ── Segmented (variant toggle) ── */
 .seg { display: flex; border: 1px solid var(--line2); }

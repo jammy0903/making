@@ -114,6 +114,7 @@
   <div class="tabs">
     <button class="tab {tab === 'new' ? 'active' : ''}" onclick={() => (tab = 'new')}>새로 올라온</button>
     <button class="tab {tab === 'steady' ? 'active' : ''}" onclick={() => (tab = 'steady')}>스테디</button>
+    <a class="tab tab-cta" href="/submit">＋ 밈 신청</a>
   </div>
 </div>
 
