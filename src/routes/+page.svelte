@@ -2,8 +2,9 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, searchCards, statusLabel, tagText, metaNew, metaSteady, coverImage } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
+  import type { MemeCard } from '$lib/server/db';
 
   let { data } = $props();
 
@@ -13,6 +14,16 @@
 
   const query = $derived(q.trim());
   const results = $derived(query ? searchCards(data.cards, query) : []);
+
+  // 해시태그 필터 — URL ?tag= 로 상태 유지(상세 페이지에서도 링크로 진입)
+  const activeTag = $derived(page.url.searchParams.get('tag') || '');
+  const tagResults = $derived(activeTag ? data.cards.filter((c) => (c.tags || []).includes(activeTag)) : []);
+  function pickTag(e: MouseEvent, tag: string) {
+    e.preventDefault();
+    e.stopPropagation(); // 행 전체가 상세 링크라 클릭 전파를 막고 필터로만
+    q = '';
+    goto(`/?tag=${encodeURIComponent(tag)}`);
+  }
   const news = $derived(newCards(data.cards));
   const steadies = $derived(steadyCards(data.cards));
   const deads = $derived(deadCards(data.cards));
@@ -33,12 +44,15 @@
   let newLimit = $state(PAGE);
   let steadyLimit = $state(PAGE);
   let resultsLimit = $state(PAGE);
+  let tagLimit = $state(PAGE);
   $effect(() => { void query; resultsLimit = PAGE; });
+  $effect(() => { void activeTag; tagLimit = PAGE; });
   $effect(() => { void newSort; void tab; newLimit = PAGE; });
   $effect(() => { void steadyCat; void tab; steadyLimit = PAGE; });
   const newsShown = $derived(newsSorted.slice(0, newLimit));
   const steadyShown = $derived(steadyList.slice(0, steadyLimit));
   const resultsShown = $derived(results.slice(0, resultsLimit));
+  const tagShown = $derived(tagResults.slice(0, tagLimit));
 
   onMount(() => {
     // 구 SPA 공유 링크(#m=id) 호환 — 경로형 상세로 승격
@@ -58,6 +72,12 @@
   <meta property="og:image" content="{page.url.origin}/og-default.png" />
   <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
+
+{#snippet tagChips(m: MemeCard)}
+  {#if (m.tags || []).length}
+    <span class="m-tags">{#each m.tags as t (t)}<button type="button" class="tagchip {activeTag === t ? 'on' : ''}" onclick={(e) => pickTag(e, t)}>#{t}</button>{/each}</span>
+  {/if}
+{/snippet}
 
 <div class="wrap masthead">
   <div class="eyebrow">Meme Dictionary</div>
@@ -92,7 +112,7 @@
               <div class="rowline">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
                 <span class="res-status {m.status}">{statusLabel(m)}</span>
-                <span class="m-tags">{tagText(m)}</span>
+                {@render tagChips(m)}
               </div>
               {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
             </div>
@@ -109,6 +129,42 @@
       </div>
       {#if results.length > resultsLimit}
         <div class="morewrap"><button class="more" onclick={() => (resultsLimit += PAGE)}>더 보기 ({results.length - resultsLimit}개)</button></div>
+      {/if}
+    {/if}
+  </div>
+{:else if activeTag}
+  <div class="wrap page">
+    <div class="list-head">
+      <div class="count">#{activeTag} · {tagResults.length}개</div>
+      <a class="clear-tag" href="/">✕ 태그 해제</a>
+    </div>
+    {#if !tagResults.length}
+      <div class="empty">‘#{activeTag}’ 태그의 밈이 없습니다.</div>
+    {:else}
+      <div class="rows">
+        {#each tagShown as m (m.id)}
+          <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
+            <div class="col">
+              <div class="rowline">
+                {#if m.name}<span class="m-name">{m.name}</span>{/if}
+                <span class="res-status {m.status}">{statusLabel(m)}</span>
+                {@render tagChips(m)}
+              </div>
+              {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
+            </div>
+            {#if coverImage(m)}
+              <div class="photo-slot thumb">
+                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
+              </div>
+            {:else if m.videoUrl}
+              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+            {/if}
+          </a>
+        {/each}
+      </div>
+      {#if tagResults.length > tagLimit}
+        <div class="morewrap"><button class="more" onclick={() => (tagLimit += PAGE)}>더 보기 ({tagResults.length - tagLimit}개)</button></div>
       {/if}
     {/if}
   </div>
@@ -142,7 +198,7 @@
             <div class="col">
               <div class="rowline">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
-                <span class="m-tags">{tagText(m)}</span>
+                {@render tagChips(m)}
               </div>
               {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
               <div class="m-meta">{metaNew(m)}</div>
@@ -183,7 +239,7 @@
             <div class="col">
               <div class="dict-head">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
-                <span class="m-tags">{tagText(m)}</span>
+                {@render tagChips(m)}
               </div>
               {#if m.desc}<p class="m-desc" style="font-size:14px;margin:5px 0 0;">{m.desc}</p>{/if}
               <div class="m-meta">{metaSteady(m)}</div>
