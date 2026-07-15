@@ -43,14 +43,18 @@
     const startX = e.clientX;
     let moved = 0;
     dragging = true;
+    const cleanup = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      dragging = false;
+    };
     const move = (ev: PointerEvent) => {
       dragX = ev.clientX - startX;
       moved = Math.max(moved, Math.abs(dragX));
     };
     const up = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      dragging = false;
+      cleanup();
       const dx = ev.clientX - startX;
       if (Math.abs(dx) > 110) {
         flyDir = dx > 0 ? 1 : -1;
@@ -66,8 +70,14 @@
         dragX = 0;
       }
     };
+    // 세로 스크롤로 브라우저가 제스처를 가져가면 pointercancel — 드래그 상태만 정리
+    const cancel = () => {
+      cleanup();
+      dragX = 0;
+    };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
   }
 
   function cardStyle(off: number) {
