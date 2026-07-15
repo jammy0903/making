@@ -92,7 +92,14 @@
         {#each [2, 1, 0] as off (off)}
           {#if idx + off < list.length}
             {@const m = list[idx + off]}
-            <div class="deck-card" style={cardStyle(off)} onpointerdown={off === 0 ? down : undefined}>
+            <div
+              class="deck-card"
+              style={cardStyle(off)}
+              role="group"
+              aria-roledescription="넘겨보기 카드"
+              aria-label={m.name}
+              onpointerdown={off === 0 ? down : undefined}
+            >
               {#if m.photoUrl}
                 <div class="photo-slot"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
               {/if}

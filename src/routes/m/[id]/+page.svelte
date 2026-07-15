@@ -163,7 +163,14 @@
         <span class="vote-total">{total}표 참여</span>
         {#if voteHint}<span class="vote-hint">{voteHint}</span>{/if}
       </div>
-      <div class="vote-bar"><div style="width:{yesPct}%"></div></div>
+      <div
+        class="vote-bar"
+        role="progressbar"
+        aria-label="생존 비율"
+        aria-valuenow={yesPct}
+        aria-valuemin="0"
+        aria-valuemax="100"
+      ><div style="width:{yesPct}%"></div></div>
       <div class="vote-legend"><span>생존 {yesPct}% · {m.voteYes}표</span><span>사망 {noPct}% · {m.voteNo}표</span></div>
       <div class="vote-foot">
         <span class="vote-note">최근 90일 판정 게이지 · 브라우저 기준 익명 · 월 1회 재판정</span>
