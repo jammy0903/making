@@ -2,9 +2,6 @@
 // 서버(server.js)와 단발 실행(scripts/crawl-once.js, GitHub Actions)이 이 함수들을 공유한다.
 
 import * as dcinside from './crawlers/dcinside.js';
-import * as fmkorea from './crawlers/fmkorea.js';
-import * as instiz from './crawlers/instiz.js';
-import * as yeosig from './crawlers/yeosig.js';
 import * as youtube from './crawlers/youtube.js';
 import { prepareMemes, matchToRows } from './matcher.js';
 import * as supa from './supabase.js';
@@ -13,7 +10,10 @@ import * as naverTrend from './naver/trend.js';
 import * as naverPosts from './naver/posts.js';
 import * as naverScout from './naver/scout.js';
 
-export const crawlers = { dcinside, fmkorea, instiz, yeosig, youtube };
+// 활성 크롤 소스. fmkorea(430 봇차단)·instiz(Cloudflare 403)·yeosig(도메인 사망)는
+// 일반 fetch도 헤드리스 브라우저도 못 뚫어(데이터센터 IP는 물론 가정용 IP에서도 차단 확인) 제외.
+// 크롤러 파일(src/crawlers/{fmkorea,instiz,yeosig}.js)은 재시도 여지 위해 남겨둠.
+export const crawlers = { dcinside, youtube };
 
 // 밈 사전 로드(정제 완료). 실패해도 []를 반환해 호출측이 계속 뜨게 한다.
 export async function loadMemeDict() {
