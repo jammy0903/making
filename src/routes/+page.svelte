@@ -75,7 +75,7 @@
 
 {#snippet tagChips(m: MemeCard)}
   {#if (m.tags || []).length}
-    <span class="m-tags">{#each m.tags as t (t)}<button type="button" class="tagchip {activeTag === t ? 'on' : ''}" onclick={(e) => pickTag(e, t)}>#{t}</button>{/each}</span>
+    <span class="m-tags">{#each m.tags as t (t)}<button type="button" class="tagchip {activeTag === t ? 'on' : ''}" onclick={(e) => pickTag(e, t)}>{t}</button>{/each}</span>
   {/if}
 {/snippet}
 
@@ -135,11 +135,11 @@
 {:else if activeTag}
   <div class="wrap page">
     <div class="list-head">
-      <div class="count">#{activeTag} · {tagResults.length}개</div>
+      <div class="count">{activeTag} · {tagResults.length}개</div>
       <a class="clear-tag" href="/">✕ 태그 해제</a>
     </div>
     {#if !tagResults.length}
-      <div class="empty">‘#{activeTag}’ 태그의 밈이 없습니다.</div>
+      <div class="empty">‘{activeTag}’ 태그의 밈이 없습니다.</div>
     {:else}
       <div class="rows">
         {#each tagShown as m (m.id)}
