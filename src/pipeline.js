@@ -9,7 +9,6 @@ import * as supa from './supabase.js';
 import * as naverClient from './naver/client.js';
 import * as naverTrend from './naver/trend.js';
 import * as naverPosts from './naver/posts.js';
-import * as naverScout from './naver/scout.js';
 
 // 활성 크롤 소스. fmkorea(430 봇차단)·instiz(Cloudflare 403)·yeosig(도메인 사망)는
 // 일반 fetch도 헤드리스 브라우저도 못 뚫어(데이터센터 IP는 물론 가정용 IP에서도 차단 확인) 제외.
@@ -82,7 +81,7 @@ export async function runNaver({ backfill = false } = {}) {
   try { await naverTrend.run(memes, { backfill }); } catch (err) { console.error('[네이버] trend 실패:', err.message); }
   if (!backfill) {
     try { await naverPosts.run(memes); } catch (err) { console.error('[네이버] posts 실패:', err.message); }
-    try { await naverScout.run(memes); } catch (err) { console.error('[네이버] scout 실패:', err.message); }
+    // 정리글 스카우트는 per-crawl에서 분리 — 일 1회 discover-search 단계에서 term 추출·큐 직행(LLM 비용 절약)
   }
 
   const used = naverClient.callCount();

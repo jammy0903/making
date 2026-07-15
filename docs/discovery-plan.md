@@ -79,7 +79,14 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
       절대량을 evidence.monthly로 첨부. ⚠️ 신조어는 과소집계(알빠노=20) — 참고·랭킹용이지 하드 필터 아님
     - CI 통합 완료: GH 시크릿 3개 등록(`NAVER_AD_API_KEY`/`_SECRET`/`_CUSTOMER_ID`) + crawl.yml discover-search env 전달
   - [ ] 임계 튜닝 — 매일 큐 관찰하며 조정. 신선한 밈 발화를 처음 잡는 날이 진짜 검증
-- [ ] **[승격] 정리글 스카우트 강화** — `src/naver/scout.js`("밈 정리" 글 낚기) 고도화. **2순위**
+- [x] **[승격] 정리글 스카우트 강화** (2026-07-16) — **2순위 가동**
+  - `src/naver/scout.js` 재작성: 정리글 링크만 쌓던 것 → **제목+요약을 Haiku로 넣어 밈 term 추출**
+    (`collectRoundupTerms()`, 쿼리별 상한 PER_QUERY로 전 쿼리 고루 기여, 출처 정리글을 evidence.from에 보존)
+  - **onset 게이트 우회 설계**: scout term은 사람이 큐레이션한 것이라 발화 지난 밈이 많음 →
+    datalab(onset 감지기)에 통과시키면 다 죽음. gtrends는 게이트 유지, **scout는 큐 직행**(datalab·절대량은 보강만)
+  - per-crawl 파이프라인에서 분리(`pipeline.js`의 scout 훅 제거) → 일 1회 `discover-search`로 통합(LLM 비용 절약)
+  - CI: `CLAUDE_KEY` 시크릿 등록 + crawl.yml discover-search env에 `claude_key` 전달
+  - 검증: 실측 60기사→20term 추출·절대량 20/20 보강·드라이런 통과(영크크·도파민디톡스·조용한사직 등 실밈 다수, 노이즈는 사람 큐가 거름)
 - [ ] 사람 큐레이션 — 운영자 + `/submit`(이미 작동). 유지·확대. **3순위**
 - [ ] (보조) 버스트 감지 `burst.js` — 신조어 조기감지용. 게이트: 누적 14일+ (구 Phase 1)
 - [ ] Phase 2 — LLM 분류 + 후보 큐 연결 (검색/스카우트/버스트 통과분 공용 정제)
