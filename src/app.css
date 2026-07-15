@@ -171,6 +171,10 @@ button { font-family: var(--sans); cursor: pointer; }
 .clink { background: none; border: none; color: var(--mute2); font-size: 12px; padding: 0; }
 .clink:hover { color: var(--accent); text-decoration: underline; }
 .cedit { width: 100%; min-height: 60px; resize: vertical; border: 1px solid var(--line2); padding: 8px 10px; font-family: var(--sans); font-size: 14px; background: #FCFCFA; margin: 6px 0; }
+.clink.danger { color: #B4402E; }
+.clink.danger:hover { color: #8F3122; }
+.cconfirm { font-size: 12px; color: var(--mute2); }
+.cerr { font-size: 13px; color: #B4402E; margin-right: auto; }
 
 /* ── New: rows ── */
 .rows { border-top: 1px solid var(--line); }

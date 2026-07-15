@@ -40,6 +40,12 @@ export interface AuthUser {
   name: string;
 }
 
+// 운영자 계정 — 모든 댓글 수정·삭제 권한 (public/app.js ADMINS와 동일)
+const ADMINS = ['jamm2ic@gmail.com', 'l89192164@gmail.com'];
+export function isAdmin(u: AuthUser | null): boolean {
+  return !!u && ADMINS.includes(u.email);
+}
+
 export async function whoami(): Promise<AuthUser | null> {
   if (!token()) return null;
   const r = await fetch(`${SB.url}/auth/v1/user`, { headers: { apikey: SB.key, Authorization: `Bearer ${token()}` } });
