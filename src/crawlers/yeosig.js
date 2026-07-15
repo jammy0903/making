@@ -1,5 +1,7 @@
 // 여성시대 크롤러
 
+import { fetchText, reason } from './http.js';
+
 const SOURCE = 'yeosig';
 const URLS = [
   'https://www.yeosig.com/board/best?page=1',
@@ -7,25 +9,15 @@ const URLS = [
   'https://www.yeosig.com/board/best?page=3',
 ];
 
-const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
-  'Accept-Language': 'ko-KR,ko;q=0.9',
-};
-
 export async function crawl() {
   const posts = [];
 
   for (const url of URLS) {
     try {
-      const response = await fetch(url, { headers: HEADERS });
-      if (!response.ok) continue;
-
-      const html = await response.text();
-      const extracted = parseHtml(html);
-      posts.push(...extracted);
+      const html = await fetchText(url);
+      posts.push(...parseHtml(html));
     } catch (err) {
-      console.error(`[여시] 크롤링 실패 ${url}:`, err.message);
+      console.error(`[여시] 크롤링 실패 ${url}: ${reason(err)}`);
     }
   }
 
