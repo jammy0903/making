@@ -13,6 +13,10 @@ export async function sbGet<T = unknown>(fetch: Fetch, path: string): Promise<T>
 }
 
 // meme_cards 원행 → 화면용 카드 (public/app.js mapCard와 동일 모양 유지)
+export interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+}
 export interface MemeCard {
   id: number;
   name: string;
@@ -22,6 +26,7 @@ export interface MemeCard {
   src: string;
   photoUrl: string;
   videoUrl: string;
+  media: MediaItem[];
   status: 'new' | 'steady' | 'dead';
   days: number;
   months: number;
@@ -47,6 +52,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     src: r.source || '',
     photoUrl: r.photo_url || '',
     videoUrl: r.video_url || '',
+    media: Array.isArray(r.media) ? r.media.filter((x: any) => x && x.url) : [],
     status: r.status || 'new',
     days,
     months: Math.floor(days / 30),

@@ -13,6 +13,7 @@
     type RegisteredMeme,
   } from '$lib/client/api';
   import { timeAgo } from '$lib/cards';
+  import type { MediaItem } from '$lib/server/db';
 
   const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
   const MAX_IMG = 10 * 1024 * 1024; // 10MB
@@ -23,10 +24,8 @@
   let example = $state('');
   let sourceUrl = $state('');
   let tagsText = $state('');
-  let photoUrl = $state('');
-  let videoUrl = $state('');
-  let upPhoto = $state(false); // 업로드 중
-  let upVideo = $state(false);
+  let media = $state<MediaItem[]>([]); // 업로드된 사진/동영상 여러 개
+  let uploading = $state(0); // 진행 중 업로드 수
 
   let mine = $state<Submission[]>([]);
   let memesIdx = $state<RegisteredMeme[]>([]);
@@ -74,28 +73,33 @@
     if (user.current && !loaded) load();
   });
 
-  // 파일 선택 → 즉시 업로드 → URL 보관
-  async function pickMedia(e: Event, kind: 'photo' | 'video') {
+  // 여러 파일 선택 → 각각 업로드 → media 배열에 추가 (사진·동영상 혼합 가능)
+  async function pickMedia(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !user.current) return;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (!files.length || !user.current) return;
     err = '';
-    const max = kind === 'photo' ? MAX_IMG : MAX_VID;
-    if (file.size > max) {
-      err = `${kind === 'photo' ? '사진' : '동영상'} 용량이 너무 커요 (최대 ${Math.round(max / 1024 / 1024)}MB).`;
-      input.value = '';
-      return;
+    for (const file of files) {
+      const isVideo = file.type.startsWith('video');
+      const max = isVideo ? MAX_VID : MAX_IMG;
+      if (file.size > max) {
+        err = `${file.name}: 용량이 너무 커요 (최대 ${Math.round(max / 1024 / 1024)}MB).`;
+        continue;
+      }
+      uploading++;
+      try {
+        const url = await uploadMedia(file, user.current);
+        media = [...media, { type: isVideo ? 'video' : 'image', url }];
+      } catch (e2) {
+        err = '업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
+        console.error('업로드 오류:', e2);
+      }
+      uploading--;
     }
-    if (kind === 'photo') upPhoto = true; else upVideo = true;
-    try {
-      const url = await uploadMedia(file, user.current);
-      if (kind === 'photo') photoUrl = url; else videoUrl = url;
-    } catch (e2) {
-      err = '업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
-      console.error('업로드 오류:', e2);
-      input.value = '';
-    }
-    if (kind === 'photo') upPhoto = false; else upVideo = false;
+  }
+  function removeMedia(i: number) {
+    media = media.filter((_, idx) => idx !== i);
   }
 
   async function submit() {
@@ -110,7 +114,7 @@
       err = dup?.kind === 'pending' ? '이미 신청해 검토 중인 밈이에요.' : '이미 등록된 밈이에요. 목록에서 확인해 주세요.';
       return;
     }
-    if (upPhoto || upVideo) {
+    if (uploading > 0) {
       err = '미디어 업로드가 끝날 때까지 기다려 주세요.';
       return;
     }
@@ -124,8 +128,7 @@
           example: example.trim(),
           source_url: sourceUrl.trim(),
           tags: tagsText.split(/[,\n]/).map((t) => t.trim()).filter(Boolean),
-          photo_url: photoUrl,
-          video_url: videoUrl,
+          media,
         },
         user.current
       );
@@ -135,8 +138,7 @@
       example = '';
       sourceUrl = '';
       tagsText = '';
-      photoUrl = '';
-      videoUrl = '';
+      media = [];
       ok = '신청이 접수됐어요. 관리자 검토 후 등록됩니다.';
     } catch (e) {
       err = '신청에 실패했어요. 잠시 후 다시 시도해 주세요.';
@@ -217,30 +219,24 @@
 
       <div class="subrow">
         <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label>사진 (선택 · 최대 10MB)</label>
-        {#if photoUrl}
-          <div class="media-prev">
-            <img src={photoUrl} alt="첨부 사진" />
-            <button type="button" class="media-x" onclick={() => (photoUrl = '')}>사진 제거</button>
+        <label>사진·동영상 (선택 · 여러 개 · 사진 10MB·영상 50MB)</label>
+        {#if media.length}
+          <div class="media-grid">
+            {#each media as item, i (item.url)}
+              <div class="media-cell">
+                {#if item.type === 'video'}
+                  <!-- svelte-ignore a11y_media_has_caption -->
+                  <video src={item.url} muted playsinline preload="metadata"></video>
+                {:else}
+                  <img src={item.url} alt={`첨부 ${i + 1}`} />
+                {/if}
+                <button type="button" class="media-cell-x" onclick={() => removeMedia(i)} aria-label="제거">✕</button>
+              </div>
+            {/each}
           </div>
-        {:else}
-          <input type="file" accept="image/*" disabled={upPhoto} onchange={(e) => pickMedia(e, 'photo')} />
-          {#if upPhoto}<div class="media-up">업로드 중…</div>{/if}
         {/if}
-      </div>
-      <div class="subrow">
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label>동영상 (선택 · 최대 50MB)</label>
-        {#if videoUrl}
-          <div class="media-prev">
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video src={videoUrl} controls muted playsinline></video>
-            <button type="button" class="media-x" onclick={() => (videoUrl = '')}>동영상 제거</button>
-          </div>
-        {:else}
-          <input type="file" accept="video/*" disabled={upVideo} onchange={(e) => pickMedia(e, 'video')} />
-          {#if upVideo}<div class="media-up">업로드 중…</div>{/if}
-        {/if}
+        <input type="file" accept="image/*,video/*" multiple onchange={pickMedia} />
+        {#if uploading > 0}<div class="media-up">업로드 중… ({uploading})</div>{/if}
       </div>
 
       <div class="subfoot">
