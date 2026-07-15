@@ -87,6 +87,12 @@ Zhang 2016(JCMC, 인용 261): 인터넷 슬랭은 니치 커뮤니티→대중 �
   - per-crawl 파이프라인에서 분리(`pipeline.js`의 scout 훅 제거) → 일 1회 `discover-search`로 통합(LLM 비용 절약)
   - CI: `CLAUDE_KEY` 시크릿 등록 + crawl.yml discover-search env에 `claude_key` 전달
   - 검증: 실측 60기사→20term 추출·절대량 20/20 보강·드라이런 통과(영크크·도파민디톡스·조용한사직 등 실밈 다수, 노이즈는 사람 큐가 거름)
+- [x] **유튜브 발원지 채널 ④** (2026-07-16) — 밈은 영상에서 태어난다 → 제목에서 발굴
+  - `src/discovery/yt-discover.js`: ④-a 급상승(`chart=mostPopular` KR, 1 unit) + ④-b 스트리머(지정 채널 최근 업로드, `src/discovery/streamers.js`에 @핸들 추가) 제목을 Haiku로 밈 term 추출
+  - 원시 신호라 gtrends처럼 **onset 게이트 태워** 큐 정제(LLM 추출 + 검색수요 이중 필터). `discover-search` collectCandidates에 합류
+  - LLM 호출 공용화(`src/discovery/llm.js` — scout와 공유). CI: crawl.yml discover-search에 `youtube_data_api_key` 전달
+  - 검증: 급상승 50제목→11term(본캐·핵과금러·참교육 등 게임/스트리머 슬랭), 통합 드라이런 통과
+  - ⏳ **스트리머 목록 비어있음** — 모니터링할 채널 @핸들을 `streamers.js`에 채우면 ④-b 가동
 - [ ] 사람 큐레이션 — 운영자 + `/submit`(이미 작동). 유지·확대. **3순위**
 - [ ] (보조) 버스트 감지 `burst.js` — 신조어 조기감지용. 게이트: 누적 14일+ (구 Phase 1)
 - [ ] Phase 2 — LLM 분류 + 후보 큐 연결 (검색/스카우트/버스트 통과분 공용 정제)
