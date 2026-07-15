@@ -72,3 +72,45 @@ export async function editComment(id: number, body: string) {
 export async function deleteComment(id: number) {
   await sbWrite('DELETE', `meme_comments?id=eq.${id}`);
 }
+
+// ── 회원 밈 신청 (로그인 필요) ──
+export interface Submission {
+  id: number;
+  name: string;
+  description: string | null;
+  status: 'pending' | 'withdrawn' | 'accepted' | 'rejected';
+  created_at: string;
+  withdrawn_at: string | null;
+}
+export interface SubmissionInput {
+  name: string;
+  description?: string;
+  example?: string;
+  source_url?: string;
+  tags?: string[];
+}
+export async function submitMeme(input: SubmissionInput, user: { id: string; email: string; name: string }) {
+  const rows = await sbPost('meme_submissions', {
+    user_id: user.id,
+    email: user.email,
+    nick: user.name,
+    name: input.name,
+    description: input.description || null,
+    example: input.example || null,
+    source_url: input.source_url || null,
+    tags: input.tags || [],
+  });
+  return (Array.isArray(rows) ? rows[0] : rows) as Submission;
+}
+// RLS가 본인 신청만 반환(관리자는 전체 — 여긴 본인용 조회)
+export async function fetchMySubmissions(): Promise<Submission[]> {
+  const r = await fetch(
+    `${SB.url}/rest/v1/meme_submissions?select=id,name,description,status,created_at,withdrawn_at&order=created_at.desc`,
+    { headers: headers() }
+  );
+  if (!r.ok) throw new Error(`GET submissions ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+export async function withdrawSubmission(id: number) {
+  await sbWrite('PATCH', `meme_submissions?id=eq.${id}`, { status: 'withdrawn' });
+}
