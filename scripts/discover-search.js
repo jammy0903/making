@@ -13,6 +13,7 @@ import { fetchTrendingKR } from '../src/discovery/gtrends.js';
 import * as datalab from '../src/naver/datalab.js';
 import { hasTteutSuggestion } from '../src/naver/autocomplete.js';
 import * as adkw from '../src/naver/adkeywords.js';
+import * as scout from '../src/naver/scout.js';
 import { normalizeForMatch } from '../src/matcher.js';
 import * as supa from '../src/supabase.js';
 import { sleep } from '../src/naver/client.js';
@@ -105,21 +106,38 @@ async function main() {
     await sleep(250);
   }
 
-  console.log(`\n[결과] 통과 ${passed.length} / 검증 ${fresh.length}`);
+  console.log(`\n[결과] gtrends 통과 ${passed.length} / 검증 ${fresh.length}`);
 
-  // ── 절대 검색량 보강(검색광고 채널 B) — 통과분에만, 실패해도 진행 ──
+  // ── 정리글 스카우트(채널 2순위): 사람이 큐레이션한 term은 onset 게이트 우회해 큐 직행 ──
+  const scoutFresh = [];
+  try {
+    const scoutTerms = await scout.collectRoundupTerms();
+    for (const st of scoutTerms) {
+      const key = normalizeForMatch(st.term);
+      if (seen.has(key) || isKnown(st.term, excl)) continue; // 등록밈·기각어·gtrends중복 제외
+      seen.add(key);
+      scoutFresh.push(st);
+    }
+    console.log(`[scout] 신규 term ${scoutFresh.length}개 (등록밈·기각어·중복 제외)`);
+  } catch (err) {
+    console.warn(`[scout] 실패(무시): ${err.message}`);
+  }
+
+  // ── 절대 검색량 보강(검색광고 채널 B) — gtrends 통과분 + scout term 모두, 실패해도 진행 ──
+  const enrichTerms = [...passed.map((p) => p.term), ...scoutFresh.map((s) => s.term)];
   let volumes = new Map();
-  if (passed.length && adkw.isConfigured) {
+  if (enrichTerms.length && adkw.isConfigured) {
     try {
-      volumes = await adkw.fetchVolumes(passed.map((p) => p.term));
-      console.log(`[절대량] 검색광고에서 ${volumes.size}/${passed.length}건 회수`);
+      volumes = await adkw.fetchVolumes(enrichTerms);
+      console.log(`[절대량] 검색광고에서 ${volumes.size}/${enrichTerms.length}건 회수`);
     } catch (err) {
       console.warn(`[절대량] 보강 실패(무시): ${err.message}`);
     }
   }
 
-  if (passed.length && APPLY) {
-    const rows = passed.map((p) => ({
+  // 큐 행 구성: gtrends(onset 판정 근거 포함) + scout(사람 보증, 출처 정리글 포함)
+  const rows = [
+    ...passed.map((p) => ({
       title: p.term,
       url: `term:${p.term}`, // url UNIQUE 재사용(dedup)
       source_type: 'search-demand',
@@ -134,11 +152,27 @@ async function main() {
         tteut: { recent: p.verdict.recentT, base: p.verdict.baseT, transition: p.verdict.transition },
         x: { recent: p.verdict.recentX, base: p.verdict.baseX },
       },
-    }));
+    })),
+    ...scoutFresh.map((s) => ({
+      title: s.term,
+      url: `term:${s.term}`,
+      source_type: 'scout-roundup',
+      kind: 'term',
+      term: s.term,
+      score: null, // onset 판정 안 함(사람 보증) — 랭킹은 절대량·운영자 판단
+      evidence: {
+        src: 'scout',
+        monthly: volumes.get(s.term) ?? null,
+        from: s.evidence, // 출처 정리글 {title, url}
+      },
+    })),
+  ];
+
+  if (rows.length && APPLY) {
     const fresh2 = await supa.insertCandidates(rows);
-    console.log(`[저장] 관리자 큐에 신규 ${fresh2.length}건 (중복 제외)`);
-  } else if (passed.length) {
-    console.log('(드라이런 — 저장 안 함. 저장하려면 --apply)');
+    console.log(`[저장] 관리자 큐에 신규 ${fresh2.length}건 (gtrends ${passed.length}+scout ${scoutFresh.length}, 중복 제외)`);
+  } else if (rows.length) {
+    console.log(`(드라이런 — 저장 안 함. gtrends ${passed.length}+scout ${scoutFresh.length}건. 저장하려면 --apply)`);
   }
 }
 
