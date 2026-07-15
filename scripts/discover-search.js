@@ -14,6 +14,7 @@ import * as datalab from '../src/naver/datalab.js';
 import { hasTteutSuggestion } from '../src/naver/autocomplete.js';
 import * as adkw from '../src/naver/adkeywords.js';
 import * as scout from '../src/naver/scout.js';
+import { collectYoutubeTerms } from '../src/discovery/yt-discover.js';
 import { normalizeForMatch } from '../src/matcher.js';
 import * as supa from '../src/supabase.js';
 import { sleep } from '../src/naver/client.js';
@@ -31,8 +32,12 @@ async function collectCandidates() {
   const manual = (arg('terms') || '').split(',').map((s) => s.trim()).filter(Boolean);
   for (const t of manual) out.push({ term: t, src: 'manual' });
   const trending = await fetchTrendingKR();
-  console.log(`[공급] 구글트렌드 ${trending.length}개 · 수동 ${manual.length}개`);
   for (const { term, traffic } of trending) out.push({ term, src: 'gtrends', traffic });
+  // 유튜브 제목(급상승+스트리머)에서 LLM 추출한 term — 원시 신호라 gtrends처럼 onset 게이트로 검증
+  let yt = [];
+  try { yt = await collectYoutubeTerms(); } catch (err) { console.warn('[yt] 실패(무시):', err.message); }
+  for (const y of yt) out.push({ term: y.term, src: y.src, ytEvidence: y.evidence });
+  console.log(`[공급] 구글트렌드 ${trending.length} · 유튜브 ${yt.length} · 수동 ${manual.length}개`);
   return out;
 }
 
@@ -147,6 +152,7 @@ async function main() {
       evidence: {
         src: p.src,
         traffic: p.traffic ?? null,
+        yt: p.ytEvidence ?? null, // 유튜브 출처 {title,url,channel} (yt-* 채널일 때)
         monthly: volumes.get(p.term) ?? null, // 절대 월간검색량(검색광고). 신조어는 과소집계 — 참고용
         autocomplete: p.autocomplete,
         tteut: { recent: p.verdict.recentT, base: p.verdict.baseT, transition: p.verdict.transition },

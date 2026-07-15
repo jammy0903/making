@@ -8,11 +8,10 @@
 
 import { naverGet, sleep, callCount, isConfigured } from './client.js';
 import { SCOUT_QUERIES } from './scout-queries.js';
+import { askHaikuJson, hasLLMKey } from '../discovery/llm.js';
 
 const DISPLAY = 30;
 const CALL_DELAY_MS = 150;
-const MODEL = 'claude-haiku-4-5-20251001';
-const LLM_KEY = process.env.claude_key;
 const PER_QUERY = 5; // 쿼리·소스별 상한(전 쿼리가 고루 기여하도록 — 첫 쿼리 독식 방지)
 const MAX_ARTICLES = 60; // LLM에 넘길 정리글 전체 상한(비용·노이즈 제어)
 const BATCH = 10; // LLM 호출당 기사 수
@@ -58,23 +57,9 @@ async function collectArticles() {
   return arts;
 }
 
-async function askHaiku(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': LLM_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!res.ok) { console.warn(`[scout] Haiku ${res.status}: ${(await res.text()).slice(0, 160)}`); return []; }
-  const data = await res.json();
-  const text = (data.content || []).map((b) => b.text || '').join('').trim();
-  const json = text.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-  try { const a = JSON.parse(json); return Array.isArray(a) ? a : []; } catch { return []; }
-}
-
 // 정리글 제목+요약에서 밈/신조어 이름만 추출(항목번호로 출처 기사 역참조).
 async function extractTerms(articles) {
-  if (!LLM_KEY || !articles.length) return [];
+  if (!hasLLMKey || !articles.length) return [];
   const out = [];
   for (let i = 0; i < articles.length; i += BATCH) {
     const batch = articles.slice(i, i + BATCH);
@@ -85,7 +70,7 @@ async function extractTerms(articles) {
 JSON 배열로만(설명 금지): [{"term":"밈이름","from":항목번호}]
 
 ${listing}`;
-    const arr = await askHaiku(prompt);
+    const arr = await askHaikuJson(prompt);
     for (const r of arr) {
       const a = batch[(Number(r.from) || 0) - 1];
       if (r && r.term) out.push({ term: String(r.term).trim(), url: a?.url, title: a?.title });
@@ -98,7 +83,7 @@ ${listing}`;
 // 반환: [{ term, src:'scout', evidence:{title, url} }] — dedup(등록밈·기각어)은 호출측(discover-search) 담당.
 export async function collectRoundupTerms() {
   if (!isConfigured) return [];     // 네이버 키 없으면 스킵
-  if (!LLM_KEY) { console.warn('[scout] claude_key 없음 — LLM 추출 스킵'); return []; }
+  if (!hasLLMKey) { console.warn('[scout] claude_key 없음 — LLM 추출 스킵'); return []; }
   const arts = await collectArticles();
   const raw = await extractTerms(arts);
   // 문자셋·길이 새니티 + term 단위 dedup(공백·대소문자 무시)
