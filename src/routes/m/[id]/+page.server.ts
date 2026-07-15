@@ -10,7 +10,13 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
   const rows = await sbGet<Record<string, any>[]>(fetch, `meme_cards?id=eq.${id}&select=*`);
   if (!rows.length) throw error(404, '없는 밈입니다');
 
-  const comments = await loadComments(fetch, id).catch(() => []);
+  // 이전/다음 밈 — id 순서(게시판식). created_at은 대량삽입 동시각이 많아 부적합.
+  type Nb = { id: number; name: string };
+  const [prevRows, nextRows, comments] = await Promise.all([
+    sbGet<Nb[]>(fetch, `meme_cards?id=lt.${id}&select=id,name&order=id.desc&limit=1`).catch(() => [] as Nb[]),
+    sbGet<Nb[]>(fetch, `meme_cards?id=gt.${id}&select=id,name&order=id.asc&limit=1`).catch(() => [] as Nb[]),
+    loadComments(fetch, id).catch(() => []),
+  ]);
   setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=120' });
-  return { meme: mapCard(rows[0]), comments };
+  return { meme: mapCard(rows[0]), comments, prev: prevRows[0] ?? null, next: nextRows[0] ?? null };
 };
