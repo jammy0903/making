@@ -162,6 +162,10 @@ button { font-family: var(--sans); cursor: pointer; }
   font-family: var(--sans); font-size: 15px; background: var(--surface2); color: var(--ink);
 }
 .subrow textarea { min-height: 72px; resize: vertical; line-height: 1.6; }
+.dup { font-size: 13px; margin-top: 6px; }
+.dup a { font-weight: 500; }
+.dup-warn { color: #B4402E; }
+.dup-info { color: var(--accent-dark); }
 .subfoot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 6px; }
 .cok { font-size: 13px; color: var(--accent); margin-right: auto; }
 .sub-item { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 15px 6px; border-bottom: 1px solid var(--line); }

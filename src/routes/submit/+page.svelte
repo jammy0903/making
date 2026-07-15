@@ -3,8 +3,17 @@
   import { page } from '$app/state';
   import { login } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
-  import { submitMeme, fetchMySubmissions, withdrawSubmission, type Submission } from '$lib/client/api';
+  import {
+    submitMeme,
+    fetchMySubmissions,
+    withdrawSubmission,
+    fetchRegisteredMemes,
+    type Submission,
+    type RegisteredMeme,
+  } from '$lib/client/api';
   import { timeAgo } from '$lib/cards';
+
+  const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
 
   let name = $state('');
   let description = $state('');
@@ -13,12 +22,36 @@
   let tagsText = $state('');
 
   let mine = $state<Submission[]>([]);
+  let memesIdx = $state<RegisteredMeme[]>([]);
   let loaded = $state(false);
   let busy = $state(false);
   let err = $state('');
   let ok = $state('');
 
+  // 중복 판정: 정확 일치(등록 밈 이름/키워드) > 본인 검토중 신청 > 유사(부분 포함)
+  const nn = $derived(norm(name));
+  const dup = $derived.by(() => {
+    if (nn.length < 2) return null;
+    const exact = memesIdx.find((m) => norm(m.name) === nn || (m.keywords || []).some((k) => norm(k) === nn));
+    if (exact) return { kind: 'registered' as const, id: exact.id, name: exact.name };
+    const pend = mine.find((s) => s.status === 'pending' && norm(s.name) === nn);
+    if (pend) return { kind: 'pending' as const, id: pend.id, name: pend.name };
+    const sim = memesIdx.find((m) => {
+      const mnk = norm(m.name);
+      return mnk.length >= 2 && (mnk.includes(nn) || nn.includes(mnk));
+    });
+    if (sim) return { kind: 'similar' as const, id: sim.id, name: sim.name };
+    return null;
+  });
+  const blockDup = $derived(!!dup && (dup.kind === 'registered' || dup.kind === 'pending'));
+
   async function load() {
+    // 등록 밈 목록은 로그인 없이도 대조 가능(공개 읽기)
+    try {
+      memesIdx = await fetchRegisteredMemes();
+    } catch (e) {
+      console.error('등록 밈 조회 오류:', e);
+    }
     if (!user.current) return;
     try {
       mine = await fetchMySubmissions();
@@ -40,6 +73,10 @@
     ok = '';
     if (!nm) {
       err = '밈 이름은 필수예요.';
+      return;
+    }
+    if (blockDup) {
+      err = dup?.kind === 'pending' ? '이미 신청해 검토 중인 밈이에요.' : '이미 등록된 밈이에요. 목록에서 확인해 주세요.';
       return;
     }
     if (!user.current) return;
@@ -112,6 +149,15 @@
       <div class="subrow">
         <label for="s-name">밈 이름 <span class="req">*</span></label>
         <input id="s-name" bind:value={name} maxlength="60" placeholder="예: 중꺾마" />
+        {#if dup}
+          {#if dup.kind === 'registered'}
+            <div class="dup dup-warn">이미 등록된 밈이에요 — <a href="/m/{dup.id}">‘{dup.name}’ 보러가기 →</a></div>
+          {:else if dup.kind === 'pending'}
+            <div class="dup dup-warn">이미 신청해서 검토 중인 밈이에요.</div>
+          {:else}
+            <div class="dup dup-info">비슷한 밈이 있어요 — <a href="/m/{dup.id}">‘{dup.name}’ 확인 →</a></div>
+          {/if}
+        {/if}
       </div>
       <div class="subrow">
         <label for="s-desc">뜻 · 설명</label>
@@ -132,7 +178,7 @@
       <div class="subfoot">
         {#if err}<span class="cerr" role="alert">{err}</span>{/if}
         {#if ok}<span class="cok" role="status">{ok}</span>{/if}
-        <button class="btn-solid" onclick={submit} disabled={busy}>{busy ? '접수 중…' : '신청하기'}</button>
+        <button class="btn-solid" onclick={submit} disabled={busy || blockDup}>{busy ? '접수 중…' : '신청하기'}</button>
       </div>
     </div>
 

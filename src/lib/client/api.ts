@@ -114,3 +114,14 @@ export async function fetchMySubmissions(): Promise<Submission[]> {
 export async function withdrawSubmission(id: number) {
   await sbWrite('PATCH', `meme_submissions?id=eq.${id}`, { status: 'withdrawn' });
 }
+// 중복 체크용 등록 밈 목록(공개 읽기). 이름/키워드 대조.
+export interface RegisteredMeme {
+  id: number;
+  name: string;
+  keywords: string[];
+}
+export async function fetchRegisteredMemes(): Promise<RegisteredMeme[]> {
+  const r = await fetch(`${SB.url}/rest/v1/memes?select=id,name,keywords&order=id`, { headers: headers() });
+  if (!r.ok) throw new Error(`GET memes ${r.status}: ${await r.text()}`);
+  return r.json();
+}
