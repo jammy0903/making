@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { tagText, timeAgo, gallery } from '$lib/cards';
-  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, type VoteChoice } from '$lib/client/api';
+  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, type VoteChoice } from '$lib/client/api';
 
   const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
   import { voteCard } from '$lib/client/share';
@@ -23,6 +24,75 @@
   function onCarScroll(e: Event) {
     const el = e.currentTarget as HTMLElement;
     carIdx = Math.round(el.scrollLeft / el.clientWidth);
+  }
+
+  // ── 관리자 인라인 편집 ──
+  const admin = $derived(isAdmin(user.current));
+  let editMode = $state(false);
+  let saving = $state(false);
+  let editErr = $state('');
+  let ef = $state<any>(null);
+  const splitList = (s: string) => s.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+
+  async function editPost() {
+    editErr = '';
+    try {
+      const raw = await fetchMemeRaw(m.id);
+      if (!raw) { editErr = '불러오지 못했어요.'; return; }
+      const imgs = (raw.media || []).filter((x: any) => x?.type === 'image').map((x: any) => x.url);
+      const vids = (raw.media || []).filter((x: any) => x?.type === 'video').map((x: any) => x.url);
+      const cover = raw.photo_url || imgs[0] || '';
+      ef = {
+        name: raw.name || '', keywords: (raw.keywords || []).join(', '), description: raw.description || '',
+        tags: (raw.tags || []).join(', '), category: raw.category || '', status: raw.status || 'new',
+        cover, extra: imgs.filter((u: string) => u !== cover).join('\n'), video: raw.video_url || vids[0] || '',
+        source: raw.source || '', died_at: raw.died_at || null,
+      };
+      editMode = true;
+    } catch (e) {
+      editErr = '불러오기 실패';
+      console.error('편집 로드 오류:', e);
+    }
+  }
+
+  async function savePost() {
+    if (!ef) return;
+    saving = true;
+    editErr = '';
+    const cover = ef.cover.trim();
+    const video = ef.video.trim();
+    const media: { type: 'image' | 'video'; url: string }[] = [];
+    if (cover) media.push({ type: 'image', url: cover });
+    for (const u of splitList(ef.extra)) media.push({ type: 'image', url: u });
+    if (video) media.push({ type: 'video', url: video });
+    const data = {
+      name: ef.name.trim(), keywords: splitList(ef.keywords), description: ef.description.trim(),
+      tags: splitList(ef.tags), category: ef.category.trim() || null, status: ef.status,
+      source: ef.source.trim() || null, photo_url: cover || null, video_url: video || null, media,
+      died_at: ef.status === 'dead' ? (ef.died_at || new Date().toISOString()) : null,
+    };
+    try {
+      await updateMeme(m.id, data);
+      m.name = data.name; m.desc = data.description; m.tags = data.tags; m.status = data.status;
+      m.photoUrl = data.photo_url || ''; m.videoUrl = data.video_url || ''; m.media = media; m.src = data.source || '';
+      editMode = false;
+    } catch (e) {
+      editErr = '저장 실패: ' + (e as Error).message;
+      console.error('편집 저장 오류:', e);
+    }
+    saving = false;
+  }
+
+  async function removeMeme() {
+    if (!confirm('이 밈을 삭제할까요? 측정·댓글·투표도 함께 삭제되고 되돌릴 수 없어요.')) return;
+    editErr = '';
+    try {
+      await deleteMemeById(m.id);
+      goto('/');
+    } catch (e) {
+      editErr = '삭제 실패: ' + (e as Error).message;
+      console.error('삭제 오류:', e);
+    }
   }
 
   let draftNick = $state('');
@@ -153,35 +223,68 @@
 </svelte:head>
 
 <div class="wrap-narrow page">
-  <a class="back" href="/" style="border:none">← 목록으로</a>
-  <div class="detail">
-    {#if shots.length}
-      <div class="carousel">
-        <div class="car-track" onscroll={onCarScroll}>
-          {#each shots as s, i (s.url)}
-            <div class="car-item">
-              {#if s.type === 'video'}
-                <!-- svelte-ignore a11y_media_has_caption -->
-                <video src={s.url} controls playsinline preload="metadata"></video>
-              {:else}
-                <img src={s.url} alt={`${m.name} ${i + 1}`} referrerpolicy="no-referrer" />
-              {/if}
-            </div>
-          {/each}
-        </div>
-        {#if shots.length > 1}
-          <div class="car-dots">
-            {#each shots as _, i (i)}<span class="car-dot {carIdx === i ? 'on' : ''}"></span>{/each}
-          </div>
-        {/if}
-      </div>
+  <div class="detail-top">
+    <a class="back" href="/" style="border:none">← 목록으로</a>
+    {#if admin && !editMode}
+      <button class="edit-open" onclick={editPost}>✎ 편집</button>
     {/if}
-    {#if m.name}<div class="headword">{m.name}</div>{/if}
-    <div class="tag-head">{tagText(m)}</div>
-    <div class="reg">
-      {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
-    </div>
-    {#if m.desc}<p class="detail-desc">{m.desc}</p>{/if}
+  </div>
+  {#if editErr && !editMode}<div class="cerr" role="alert" style="display:block;margin-bottom:10px">{editErr}</div>{/if}
+  <div class="detail">
+    {#if editMode}
+      <div class="subform edit-form">
+        <div class="subrow"><label for="e-name">이름</label><input id="e-name" bind:value={ef.name} /></div>
+        <div class="subrow"><label for="e-kw">매칭 키워드 (쉼표·줄바꿈)</label><textarea id="e-kw" bind:value={ef.keywords}></textarea></div>
+        <div class="subrow"><label for="e-desc">뜻 · 설명</label><textarea id="e-desc" bind:value={ef.description}></textarea></div>
+        <div class="subrow"><label for="e-tags">표시 태그 (쉼표)</label><input id="e-tags" bind:value={ef.tags} /></div>
+        <div class="subrow"><label for="e-cat">분류</label><input id="e-cat" bind:value={ef.category} /></div>
+        <div class="subrow"><label for="e-status">상태</label>
+          <select id="e-status" bind:value={ef.status}>
+            <option value="new">new (새로 올라온)</option>
+            <option value="steady">steady (스테디)</option>
+            <option value="dead">dead (부고)</option>
+          </select>
+        </div>
+        <div class="subrow"><label for="e-cover">대표 사진 URL (커버)</label><input id="e-cover" bind:value={ef.cover} /></div>
+        <div class="subrow"><label for="e-extra">추가 사진 URL (여러 장 · 한 줄에 하나)</label><textarea id="e-extra" bind:value={ef.extra}></textarea></div>
+        <div class="subrow"><label for="e-video">동영상 URL</label><input id="e-video" bind:value={ef.video} /></div>
+        <div class="subrow"><label for="e-src">출처</label><input id="e-src" bind:value={ef.source} /></div>
+        <div class="edit-actions">
+          {#if editErr}<span class="cerr" role="alert">{editErr}</span>{/if}
+          <button class="btn" onclick={() => (editMode = false)}>취소</button>
+          <button class="btn btn-danger" onclick={removeMeme}>삭제</button>
+          <button class="btn-solid" onclick={savePost} disabled={saving}>{saving ? '저장 중…' : '저장'}</button>
+        </div>
+      </div>
+    {:else}
+      {#if shots.length}
+        <div class="carousel">
+          <div class="car-track" onscroll={onCarScroll}>
+            {#each shots as s, i (s.url)}
+              <div class="car-item">
+                {#if s.type === 'video'}
+                  <!-- svelte-ignore a11y_media_has_caption -->
+                  <video src={s.url} controls playsinline preload="metadata"></video>
+                {:else}
+                  <img src={s.url} alt={`${m.name} ${i + 1}`} referrerpolicy="no-referrer" />
+                {/if}
+              </div>
+            {/each}
+          </div>
+          {#if shots.length > 1}
+            <div class="car-dots">
+              {#each shots as _, i (i)}<span class="car-dot {carIdx === i ? 'on' : ''}"></span>{/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+      {#if m.name}<div class="headword">{m.name}</div>{/if}
+      <div class="tag-head">{tagText(m)}</div>
+      <div class="reg">
+        {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
+      </div>
+      {#if m.desc}<p class="detail-desc">{m.desc}</p>{/if}
+    {/if}
 
     <div class="vote">
       <div class="vote-row">

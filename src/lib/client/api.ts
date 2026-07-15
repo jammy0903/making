@@ -137,6 +137,24 @@ export async function fetchMySubmissions(): Promise<Submission[]> {
 export async function withdrawSubmission(id: number) {
   await sbWrite('PATCH', `meme_submissions?id=eq.${id}`, { status: 'withdrawn' });
 }
+// ── 관리자 인라인 편집 (memes RLS: admin write = is_admin) ──
+// 편집용 원본 행(meme_cards 뷰엔 없는 keywords 등 포함). 읽기는 공개.
+export async function fetchMemeRaw(id: number) {
+  const r = await fetch(
+    `${SB.url}/rest/v1/memes?id=eq.${id}&select=id,name,keywords,description,tags,category,status,source,photo_url,video_url,media,died_at`,
+    { headers: headers() }
+  );
+  if (!r.ok) throw new Error(`GET meme ${r.status}: ${await r.text()}`);
+  const rows = await r.json();
+  return rows[0] || null;
+}
+export async function updateMeme(id: number, data: Record<string, unknown>) {
+  await sbWrite('PATCH', `memes?id=eq.${id}`, data);
+}
+export async function deleteMemeById(id: number) {
+  await sbWrite('DELETE', `memes?id=eq.${id}`);
+}
+
 // 중복 체크용 등록 밈 목록(공개 읽기). 이름/키워드 대조.
 export interface RegisteredMeme {
   id: number;
