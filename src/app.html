@@ -10,6 +10,13 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#1E7A4E" />
     <meta name="apple-mobile-web-app-title" content="memedics" />
+    <script>
+      // 다크모드 FOUC 방지 — 페인트 전에 저장된 선호를 <html>에 반영(없으면 시스템 설정 따름)
+      try {
+        var t = localStorage.getItem('mmd-theme');
+        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

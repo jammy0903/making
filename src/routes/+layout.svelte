@@ -6,7 +6,19 @@
 
   let { children } = $props();
 
+  let theme = $state<'light' | 'dark'>('light');
+
   onMount(async () => {
+    // 테마: 저장된 선호 우선, 없으면 시스템 설정
+    const stored = localStorage.getItem('mmd-theme');
+    theme =
+      stored === 'dark' || stored === 'light'
+        ? stored
+        : matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+    document.documentElement.dataset.theme = theme;
+
     initAuth(); // OAuth 콜백(#access_token) 처리
     try {
       const u: AuthUser | null = await whoami();
@@ -15,12 +27,25 @@
       /* 로그인 실패 = 익명 진행 */
     }
   });
+
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('mmd-theme', theme);
+    document.documentElement.dataset.theme = theme;
+  }
 </script>
 
 <div class="topbar">
   <div class="wrap tb-inner">
     <a class="tb-brand" href="/" style="border:none;color:inherit">memedics</a>
     <span class="tb-auth">
+      <button
+        class="tb-theme"
+        onclick={toggleTheme}
+        aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+        title={theme === 'dark' ? '라이트 모드' : '다크 모드'}
+      >{theme === 'dark' ? '☀' : '☾'}</button>
+      ·
       {#if user.current}
         <span class="tb-user">{user.current.name}</span> ·
         <button class="tb-link" onclick={logout}>로그아웃</button> ·

@@ -19,6 +19,27 @@
   const cats = $derived(['전체', ...new Set(steadies.map((c) => c.cat).filter(Boolean))]);
   const steadyList = $derived(steadyCat === '전체' ? steadies : steadies.filter((m) => m.cat === steadyCat));
 
+  // 새 밈 정렬
+  let newSort = $state<'recent' | 'name' | 'comments'>('recent');
+  const newsSorted = $derived.by(() => {
+    const arr = [...news];
+    if (newSort === 'name') return arr.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    if (newSort === 'comments') return arr.sort((a, b) => b.commentCount - a.commentCount);
+    return arr; // 최신순 — 서버 created_at desc 순서 유지
+  });
+
+  // 더 보기 (긴 목록 점진 표시)
+  const PAGE = 24;
+  let newLimit = $state(PAGE);
+  let steadyLimit = $state(PAGE);
+  let resultsLimit = $state(PAGE);
+  $effect(() => { void query; resultsLimit = PAGE; });
+  $effect(() => { void newSort; void tab; newLimit = PAGE; });
+  $effect(() => { void steadyCat; void tab; steadyLimit = PAGE; });
+  const newsShown = $derived(newsSorted.slice(0, newLimit));
+  const steadyShown = $derived(steadyList.slice(0, steadyLimit));
+  const resultsShown = $derived(results.slice(0, resultsLimit));
+
   onMount(() => {
     // 구 SPA 공유 링크(#m=id) 호환 — 경로형 상세로 승격
     const dm = location.hash.match(/^#m=(\d+)$/);
@@ -65,7 +86,7 @@
       <div class="empty">‘{query}’에 맞는 밈이 없습니다.</div>
     {:else}
       <div class="rows">
-        {#each results as m (m.id)}
+        {#each resultsShown as m (m.id)}
           <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
             <div class="col">
               <div class="rowline">
@@ -81,6 +102,9 @@
           </a>
         {/each}
       </div>
+      {#if results.length > resultsLimit}
+        <div class="morewrap"><button class="more" onclick={() => (resultsLimit += PAGE)}>더 보기 ({results.length - resultsLimit}개)</button></div>
+      {/if}
     {/if}
   </div>
 {:else}
@@ -95,12 +119,19 @@
 
 {#if tab === 'new'}
   <div class="wrap page">
-    <div class="list-head"><div class="count">최근 등록순 · {news.length}개 항목</div></div>
+    <div class="list-head">
+      <div class="count">{news.length}개 항목</div>
+      <div class="seg" role="group" aria-label="정렬">
+        <button class={newSort === 'recent' ? 'on' : ''} onclick={() => (newSort = 'recent')}>최신순</button>
+        <button class={newSort === 'name' ? 'on' : ''} onclick={() => (newSort = 'name')}>이름순</button>
+        <button class={newSort === 'comments' ? 'on' : ''} onclick={() => (newSort = 'comments')}>댓글순</button>
+      </div>
+    </div>
     {#if !news.length}
       <div class="empty">아직 새로 올라온 밈이 없습니다.</div>
     {:else}
       <div class="rows">
-        {#each news as m (m.id)}
+        {#each newsShown as m (m.id)}
           <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
             <div class="col">
               <div class="rowline">
@@ -116,6 +147,9 @@
           </a>
         {/each}
       </div>
+      {#if news.length > newLimit}
+        <div class="morewrap"><button class="more" onclick={() => (newLimit += PAGE)}>더 보기 ({news.length - newLimit}개)</button></div>
+      {/if}
     {/if}
   </div>
 {:else}
@@ -132,7 +166,7 @@
       <div class="empty">이 분류엔 아직 스테디 밈이 없습니다.</div>
     {:else}
       <div class="rows">
-        {#each steadyList as m, i (m.id)}
+        {#each steadyShown as m, i (m.id)}
           <a class="dict-row" href="/m/{m.id}" style="color:inherit">
             <div class="dict-idx">{String(i + 1).padStart(2, '0')}</div>
             <div class="col">
@@ -146,6 +180,9 @@
           </a>
         {/each}
       </div>
+      {#if steadyList.length > steadyLimit}
+        <div class="morewrap"><button class="more" onclick={() => (steadyLimit += PAGE)}>더 보기 ({steadyList.length - steadyLimit}개)</button></div>
+      {/if}
     {/if}
     {#if deads.length}
       <div class="obits">
