@@ -244,6 +244,14 @@
               {#if m.desc}<p class="m-desc" style="font-size:14px;margin:5px 0 0;">{m.desc}</p>{/if}
               <div class="m-meta">{metaSteady(m)}</div>
             </div>
+            {#if coverImage(m)}
+              <div class="photo-slot thumb">
+                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
+              </div>
+            {:else if m.videoUrl}
+              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+            {/if}
           </a>
         {/each}
       </div>

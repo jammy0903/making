@@ -319,8 +319,9 @@ button { font-family: var(--sans); cursor: pointer; }
 .cat.on { border-color: var(--accent); background: var(--accent); color: #fff; }
 
 /* Steady: dictionary rows */
-.dict-row { display: flex; gap: 22px; padding: 13px 6px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
+.dict-row { display: flex; gap: 22px; align-items: flex-start; padding: 13px 6px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
 .dict-row:hover { background: var(--hover); }
+.dict-row .col { flex: 1; min-width: 0; }
 .dict-idx { font-family: var(--serif); font-size: 15px; color: var(--mute4); width: 26px; flex: none; padding-top: 8px; }
 .dict-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 
