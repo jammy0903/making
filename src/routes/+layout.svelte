@@ -69,6 +69,7 @@
       <span class="ft-tag">한국 밈 트렌드 사전 · 측정은 기계가, 판정은 사람이</span>
     </div>
     <nav class="ft-nav">
+      <a href="/all">전체 밈</a>
       <a href="/submit">밈 신청</a>
       <a href="/about">소개</a>
       <a href="/privacy">개인정보처리방침</a>

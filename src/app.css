@@ -163,6 +163,12 @@ button { font-family: var(--sans); cursor: pointer; }
 .legal a { font-weight: 500; }
 .back { display: inline-block; font-size: 13px; color: var(--mute); margin-bottom: 18px; }
 
+/* ── 전체 밈 목록(/all) ── */
+.index-list { list-style: none; padding: 0; margin: 0; columns: 200px; column-gap: 34px; }
+.index-list li { break-inside: avoid; margin: 0 0 9px; }
+.index-list a { font-size: 15px; color: var(--accent); border: none; }
+.index-list a:hover { text-decoration: underline; }
+
 /* ── 밈 신청 (/submit) ── */
 .subgate { border: 1px solid var(--line); background: var(--surface); padding: 28px; text-align: center; margin-top: 20px; }
 .subgate p { color: var(--mute); margin: 0 0 16px; }
