@@ -1,7 +1,7 @@
 /* 밈 사전 — Claude Design 프로토타입 이식 (바닐라)
    토큰: 크림 배경 / 먹색 잉크 / 틸 액센트 / Noto Serif·Sans KR */
 :root {
-  --bg: #E6F2ED;
+  --bg: #DAF3E5;
   --ink: #1B1B18;
   --ink2: #2A2A26;
   --accent: #1E7A4E;
@@ -121,6 +121,13 @@ button { font-family: var(--sans); cursor: pointer; }
 /* card text bits (shared) */
 .m-name { font-family: var(--serif); font-weight: 600; font-size: 16px; color: var(--mute); margin: 0 0 7px; }
 .m-tags { font-size: 14px; color: var(--accent); font-weight: 500; word-spacing: 4px; line-height: 1.5; }
+/* 클릭 가능한 해시태그 칩 — 눌러서 같은 태그만 모아 보기 */
+.tagchip { display: inline; background: none; border: none; padding: 0; margin: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: none; }
+.tagchip + .tagchip { margin-left: 8px; }
+.tagchip:hover { text-decoration: underline; }
+.tagchip.on { font-weight: 700; text-decoration: underline; }
+.clear-tag { font-size: 13px; color: var(--mute2); text-decoration: none; }
+.clear-tag:hover { color: var(--accent); }
 .m-desc { font-size: 15px; color: var(--ink2); margin: 12px 0 0; line-height: 1.65; }
 .m-meta { font-size: 13px; color: var(--mute3); }
 .spacer { flex: 1; min-height: 10px; }
