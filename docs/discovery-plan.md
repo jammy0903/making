@@ -5,7 +5,7 @@
 
 ## 현재 상태
 
-- [ ] Phase 0 — 누적 시작 (시작일: ____________ ← 배포된 날 기입, 이 날짜 + 14일이 Phase 1 게이트)
+- [x] Phase 0 — 누적 시작 (시작일: **2026-07-15** → **Phase 1 게이트: 2026-07-29** (14일), 권장 2026-08-12 (28일))
 - [ ] Phase 1 — 버스트 감지 + 데이터랩 검증 (게이트: Phase 0 + 최소 14일)
 - [ ] Phase 2 — LLM 분류 + 후보 큐 연결
 - [ ] Phase 3 — soynlp 업그레이드 + 기각 환류 자동화 (게이트: Phase 0 + 2~3개월)
@@ -24,20 +24,21 @@
 **목표**: 버스트 감지의 배경률(λ) 계산에 필요한 시계열 데이터를 오늘부터 쌓는다.
 **왜 급한가**: 배경률에 최소 14일(권장 28일) 누적 필요 — 이게 돌아야 시계가 흐른다.
 
-- [ ] DB 마이그레이션 `db/discovery_schema.sql`
-  - `raw_texts(id, text, source, topic, day, created_at)` — 크롤 원문. 90일 보존(이후 삭제).
-  - `ngram_daily(ngram, day, source, count)` — PK(ngram, day, source). upsert 누적.
+- [x] DB 마이그레이션 `db/discovery_schema.sql` — Supabase에 적용됨(migration `discovery_phase0_accumulation`)
+  - `raw_texts(post_id UNIQUE, text, source, topic, url, day)` — 크롤 원문. 90일 보존.
+  - `ngram_daily(ngram, day, source, count, doc_count)` — PK(ngram, day, source). RPC `bump_ngram_daily`로 가산 upsert(덮어쓰기 방지). 180일 보존.
   - `rejected_terms(term, rejected_at, note)` — 사람이 반려한 후보(환류용).
-- [ ] `src/discovery/accumulate.js` — 크롤 원문에서:
-  - 문자 n-gram(2~6자, 한글만) + 어절 토큰 추출
-  - 등록 밈 키워드 매칭분 제외(기존 matcher 재사용) · rejected_terms 제외 · 숫자/단일문자 제외
-  - `ngram_daily`에 upsert, `raw_texts`에 원문 저장
-- [ ] `src/pipeline.js`의 `runCommentCrawl`에 훅 연결 (매칭 직후 `allPosts` 재사용, 추가 크롤 0)
-- [ ] 실패 격리: 누적 실패가 기존 mention_counts 크롤을 깨지 않게 try/catch
-- [ ] GH Actions 크론(기존 crawl.yml)에서 자동으로 같이 돌게 확인
-- [ ] **배포 후 이 문서 상단에 시작일 기입**
+- [x] `src/discovery/accumulate.js`
+  - 한글 문자 n-gram(2~6자) 추출 (`[가-힣]{2,}` 연속 시퀀스 내에서만 — ㅋㅋ·영문·숫자 자동 제외)
+  - 등록 밈 키워드 제외(양방향 부분문자열) · rejected_terms 제외 · 크롤당 2회 미만 제외(행 폭발 방지)
+  - post_id 전역 dedup — 재크롤된 옛 댓글이 통계 오염 안 함 · 네트워크 재시도(withRetry)
+- [x] `src/pipeline.js` 훅 — 매칭 0건이어도 누적되도록 early-return보다 앞에, try/catch 격리
+- [x] 실패 격리 확인 (누적 실패해도 측정 크롤 계속 — 실제 실패 케이스로 검증됨)
+- [x] GH Actions: crawl.yml의 crawl-once → pipeline 경로에 자동 포함, 추가 시크릿 불필요 (Supabase만 사용)
+- [x] 시작일 기입 (2026-07-15)
 
-**검증**: 크롤 1회 실행 후 Supabase에서 `select count(*) from ngram_daily` > 0 확인.
+**검증 완료 (2026-07-15)**: 로컬 크롤 3회 실행 → raw_texts 2,100+건 · ngram_daily 5,700+행 확인.
+상위 n-gram이 일상 어미(니다/는데/진짜)로 채워짐 = 기준선 정상. dedup 동작 확인(재실행 시 신규만 집계).
 
 ## Phase 1 — 버스트 감지 + 네이버 데이터랩 교차검증 (게이트: 누적 14일+)
 
