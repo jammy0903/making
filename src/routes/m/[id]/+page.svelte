@@ -280,7 +280,7 @@
       {/if}
       {#if m.name}<div class="headword">{m.name}</div>{/if}
       {#if (m.tags || []).length}
-        <div class="tag-head">{#each m.tags as t (t)}<a class="tagchip" href="/?tag={encodeURIComponent(t)}">#{t}</a>{/each}</div>
+        <div class="tag-head">{#each m.tags as t (t)}<a class="tagchip" href="/?tag={encodeURIComponent(t)}">{t}</a>{/each}</div>
       {/if}
       <div class="reg">
         {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
