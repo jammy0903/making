@@ -83,7 +83,7 @@
   <div class="wrap page">
     <div class="list-head"><div class="count">‘{query}’ 검색 · {results.length}개</div></div>
     {#if !results.length}
-      <div class="empty">‘{query}’에 맞는 밈이 없습니다.</div>
+      <div class="empty">‘{query}’에 맞는 밈이 없습니다. <a href="/submit">이 밈 신청하기 →</a></div>
     {:else}
       <div class="rows">
         {#each resultsShown as m (m.id)}

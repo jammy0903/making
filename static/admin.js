@@ -18,7 +18,7 @@ async function api(path, opts = {}) {
 }
 
 // ─── 상태 ───
-const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], memes: [], members: [], editing: null };
+const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], memes: [], members: [], submissions: [], editing: null };
 function set(p) { Object.assign(state, p); render(); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
@@ -54,6 +54,7 @@ async function go(tab) {
   state.tab = tab; state.editing = null;
   try {
     if (tab === 'candidates') await loadCandidates();
+    else if (tab === 'submissions') await loadSubmissions();
     else if (tab === 'deaths') await loadDeaths();
     else if (tab === 'members') await loadMembers();
     else await loadMemes();
@@ -78,6 +79,21 @@ async function dismissDeath(id) {
 }
 async function loadMembers() {
   state.members = await api('profiles?select=email,full_name,created_at&order=created_at.desc');
+}
+// 회원 밈 신청(사람 제안) — 기계 후보와 별개. 등록/반려는 관리자.
+async function loadSubmissions() {
+  state.submissions = await api('meme_submissions?status=eq.pending&select=id,name,description,example,source_url,tags,nick,email,created_at&order=created_at.desc&limit=100');
+}
+async function patchSubmission(id, data) {
+  await api(`meme_submissions?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(data) });
+}
+async function rejectSub(id) {
+  try { await patchSubmission(id, { status: 'rejected' }); state.submissions = state.submissions.filter((s) => s.id !== id); render(); }
+  catch (e) { alert('반려 실패: ' + e.message); }
+}
+function startRegisterSub(id) {
+  const s = state.submissions.find((x) => x.id === id);
+  set({ editing: { sub: s, meme: { name: s.name, description: s.description || '', tags: s.tags || [], source: s.source_url || '', status: 'new' } } });
 }
 function startRegister(id) {
   const c = state.candidates.find((x) => x.id === id);
@@ -117,6 +133,10 @@ async function saveEdit() {
       await saveMeme(data, null); // 새 밈 생성
       await api(`discovery_candidates?id=eq.${state.editing.cand.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'registered' }) });
       state.candidates = state.candidates.filter((c) => c.id !== state.editing.cand.id);
+    } else if (state.editing.sub) {
+      await saveMeme(data, null); // 신청 → 새 밈 생성
+      await patchSubmission(state.editing.sub.id, { status: 'accepted' }); // 트리거가 'accept' 로그 남김
+      state.submissions = state.submissions.filter((s) => s.id !== state.editing.sub.id);
     } else {
       await saveMeme(data, state.editing.meme.id);
     }
@@ -131,6 +151,7 @@ function shell(inner) {
   const tabs = isAdmin && !state.editing ? `
     <div class="admin-tabs">
       <button class="${state.tab === 'candidates' ? 'on' : ''}" onclick="go('candidates')">후보 검토</button>
+      <button class="${state.tab === 'submissions' ? 'on' : ''}" onclick="go('submissions')">신청</button>
       <button class="${state.tab === 'deaths' ? 'on' : ''}" onclick="go('deaths')">사망 검토</button>
       <button class="${state.tab === 'memes' ? 'on' : ''}" onclick="go('memes')">밈 관리</button>
       <button class="${state.tab === 'members' ? 'on' : ''}" onclick="go('members')">회원</button>
@@ -164,6 +185,21 @@ function deathsView() {
       </div>
     </div>`).join('');
 }
+function submissionsView() {
+  if (!state.submissions.length) return `<div class="empty">대기 중인 신청이 없습니다.</div>`;
+  return `<div style="margin-bottom:12px;font-size:13px;color:var(--mute3)">회원이 제안한 밈입니다. 등록은 관리자가 결정합니다.</div>` +
+    state.submissions.map((s) => `
+    <div class="adm-row">
+      <div class="t">${esc(s.name)}</div>
+      <div class="m">${esc(s.nick || s.email || '익명')} · ${esc((s.created_at || '').slice(0, 10))}${s.source_url ? ` · <a href="${esc(s.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}</div>
+      ${s.description ? `<div class="m" style="margin-top:6px;color:var(--ink2)">${esc(s.description)}</div>` : ''}
+      ${s.example ? `<div class="m" style="margin-top:4px">예: ${esc(s.example)}</div>` : ''}
+      <div class="adm-actions">
+        <button class="btn-accent" onclick="startRegisterSub(${s.id})">등록</button>
+        <button class="btn" onclick="rejectSub(${s.id})">반려</button>
+      </div>
+    </div>`).join('');
+}
 function memesView() {
   const rows = state.memes.map((m) => {
     const done = m.description && m.description.length > 0;
@@ -188,8 +224,13 @@ function membersView() {
 function editForm() {
   const m = state.editing.meme || {};
   const cand = state.editing.cand;
-  const head = cand ? '후보 등록 (아래 채워서 저장 → 밈으로 등록)' : (m.id ? `밈 편집 #${m.id}` : '새 밈');
-  const ref = cand ? `<div class="hint" style="margin-bottom:12px">참고 후보: <a href="${esc(cand.url)}" target="_blank" rel="noopener">${esc(cand.title)}</a></div>` : '';
+  const sub = state.editing.sub;
+  const head = cand ? '후보 등록 (아래 채워서 저장 → 밈으로 등록)'
+    : sub ? '신청 등록 (아래 채워서 저장 → 밈으로 등록)'
+    : (m.id ? `밈 편집 #${m.id}` : '새 밈');
+  const ref = cand ? `<div class="hint" style="margin-bottom:12px">참고 후보: <a href="${esc(cand.url)}" target="_blank" rel="noopener">${esc(cand.title)}</a></div>`
+    : sub ? `<div class="hint" style="margin-bottom:12px">신청자: ${esc(sub.nick || sub.email || '익명')}${sub.example ? ` · 예: ${esc(sub.example)}` : ''}${sub.source_url ? ` · <a href="${esc(sub.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}</div>`
+    : '';
   return `
     <button class="btn" onclick="cancelEdit()">← 뒤로</button>
     <h2 style="font-family:var(--serif);font-size:20px;margin:14px 0 4px;">${head}</h2>${ref}
@@ -217,6 +258,7 @@ function render() {
   if (!ADMINS.includes(state.user.email)) { root.innerHTML = shell(`<div class="center">권한 없음: ${esc(state.user.email)}<br><br><button class="btn" onclick="logout()">로그아웃</button></div>`); return; }
   const view = state.editing ? editForm()
     : state.tab === 'candidates' ? candidatesView()
+    : state.tab === 'submissions' ? submissionsView()
     : state.tab === 'deaths' ? deathsView()
     : state.tab === 'members' ? membersView()
     : memesView();

@@ -150,6 +150,29 @@ button { font-family: var(--sans); cursor: pointer; }
 .legal a { font-weight: 500; }
 .back { display: inline-block; font-size: 13px; color: var(--mute); margin-bottom: 18px; }
 
+/* ── 밈 신청 (/submit) ── */
+.subgate { border: 1px solid var(--line); background: var(--surface); padding: 28px; text-align: center; margin-top: 20px; }
+.subgate p { color: var(--mute); margin: 0 0 16px; }
+.subform { border: 1px solid var(--line); background: var(--surface); padding: 22px; margin-top: 20px; }
+.subrow { margin-bottom: 15px; }
+.subrow label { display: block; font-size: 13px; color: var(--mute); margin-bottom: 5px; }
+.subrow .req { color: #B4402E; }
+.subrow input, .subrow textarea {
+  width: 100%; border: 1px solid var(--line2); padding: 10px 12px;
+  font-family: var(--sans); font-size: 15px; background: var(--surface2); color: var(--ink);
+}
+.subrow textarea { min-height: 72px; resize: vertical; line-height: 1.6; }
+.subfoot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 6px; }
+.cok { font-size: 13px; color: var(--accent); margin-right: auto; }
+.sub-item { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 15px 6px; border-bottom: 1px solid var(--line); }
+.sub-item .col { flex: 1; min-width: 0; }
+.sub-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sub-name { font-family: var(--serif); font-weight: 600; font-size: 16px; color: var(--ink); }
+.sub-status { font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--mute2); }
+.sub-status.pending  { color: var(--accent); background: var(--accent-bg); border-color: var(--accent-border); }
+.sub-status.accepted { color: #fff; background: var(--accent); border-color: var(--accent); }
+.sub-status.rejected { color: #B4402E; border-color: #E3C3BC; }
+
 /* ── Search ── */
 .searchwrap { margin-top: 26px; }
 .searchbar {
