@@ -1,7 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { tagText, timeAgo } from '$lib/cards';
-  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment } from '$lib/client/api';
+  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, type VoteChoice } from '$lib/client/api';
+
+  const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
   import { voteCard } from '$lib/client/share';
   import { login, isAdmin } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
@@ -28,7 +30,7 @@
   const canEdit = (c: { user_id: string | null }) =>
     !!user.current && (String(c.user_id) === String(user.current.id) || isAdmin(user.current));
 
-  const total = $derived(m.voteYes + m.voteNo);
+  const total = $derived(m.voteYes + m.voteNo); // 생존 게이지는 밈이다 vs 죽은밈
   const yesPct = $derived(total ? Math.round((m.voteYes / total) * 100) : 0);
   const noPct = $derived(total ? 100 - yesPct : 0);
   const votedEntry = $derived.by(() => {
@@ -41,7 +43,7 @@
     votedNow
       ? '이번 달 판정 완료 · 다음 달 다시'
       : votedEntry
-        ? `지난 판정: ${votedEntry.c === 'yes' ? '살았다' : '죽었다'} · 다시 판정 가능`
+        ? `지난 판정: ${CHOICE_LABEL[votedEntry.c as VoteChoice] ?? '판정'} · 다시 판정 가능`
         : ''
   );
 
@@ -49,13 +51,15 @@
   const pageUrl = $derived(`${page.url.origin}/m/${m.id}`);
   const ogImage = $derived(m.photoUrl || `${page.url.origin}/og-default.png`);
 
-  async function vote(dir: 'yes' | 'no') {
+  async function vote(choice: VoteChoice) {
     if (votedNow) return;
-    markVoted(m.id, dir);
-    if (dir === 'yes') m.voteYes++; else m.voteNo++;
+    markVoted(m.id, choice);
+    if (choice === 'yes') m.voteYes++;
+    else if (choice === 'no') m.voteNo++;
+    else m.voteNotmeme++;
     voteVersion++;
     try {
-      await castVote(m.id, dir);
+      await castVote(m.id, choice);
     } catch {
       /* 같은 달 중복(409) 등은 표시만 유지 */
     }
@@ -157,10 +161,11 @@
     <div class="vote">
       <div class="vote-row">
         <div class="vote-btns {votedNow ? 'voted' : ''}">
-          <button class="vote-btn" onclick={() => vote('yes')}>살았다</button>
-          <button class="vote-btn" onclick={() => vote('no')}>죽었다</button>
+          <button class="vote-btn" onclick={() => vote('yes')}>밈이다</button>
+          <button class="vote-btn" onclick={() => vote('notmeme')}>밈이 아니다</button>
+          <button class="vote-btn" onclick={() => vote('no')}>죽은 밈이다</button>
         </div>
-        <span class="vote-total">{total}표 참여</span>
+        <span class="vote-total">{total + m.voteNotmeme}표 참여</span>
         {#if voteHint}<span class="vote-hint">{voteHint}</span>{/if}
       </div>
       <div
@@ -171,7 +176,10 @@
         aria-valuemin="0"
         aria-valuemax="100"
       ><div style="width:{yesPct}%"></div></div>
-      <div class="vote-legend"><span>생존 {yesPct}% · {m.voteYes}표</span><span>사망 {noPct}% · {m.voteNo}표</span></div>
+      <div class="vote-legend"><span>밈이다 {yesPct}% · {m.voteYes}표</span><span>죽은 밈 {noPct}% · {m.voteNo}표</span></div>
+      {#if m.voteNotmeme > 0}
+        <div class="vote-notmeme">밈이 아니라는 판정 {m.voteNotmeme}표</div>
+      {/if}
       <div class="vote-foot">
         <span class="vote-note">최근 90일 판정 게이지 · 브라우저 기준 익명 · 월 1회 재판정</span>
         <button class="vote-share" onclick={share}>{shareLabel}</button>

@@ -32,7 +32,8 @@ export function voterId() {
   }
   return v;
 }
-type VotedEntry = { c: 'yes' | 'no'; t: number };
+export type VoteChoice = 'yes' | 'no' | 'notmeme'; // 밈이다 / 죽은 밈이다 / 밈이 아니다
+type VotedEntry = { c: VoteChoice; t: number };
 export function votedMap(): Record<string, VotedEntry> {
   try {
     return JSON.parse(localStorage.getItem('meme-voted') || '{}');
@@ -44,12 +45,12 @@ export function sameMonth(t: number) {
   const d = new Date(t), n = new Date();
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth();
 }
-export function markVoted(id: number | string, choice: 'yes' | 'no') {
+export function markVoted(id: number | string, choice: VoteChoice) {
   const m = votedMap();
   m[String(id)] = { c: choice, t: Date.now() };
   localStorage.setItem('meme-voted', JSON.stringify(m));
 }
-export async function castVote(memeId: number, choice: 'yes' | 'no') {
+export async function castVote(memeId: number, choice: VoteChoice) {
   await sbPost('meme_votes', { meme_id: memeId, voter_id: voterId(), choice }, 'return=minimal');
 }
 

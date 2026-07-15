@@ -2,30 +2,28 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { newCards, tagText, metaNew, metaSteady } from '$lib/cards';
+  import { castVote, markVoted, type VoteChoice } from '$lib/client/api';
   import type { MemeCard } from '$lib/server/db';
-
-  type DeckCard = MemeCard & { retrial?: boolean };
 
   let { cards }: { cards: MemeCard[] } = $props();
 
-  // 재심: 90일 표 10개 미만 스테디 무작위 3개 — SSR/하이드레이션 불일치 방지를 위해 mount 후 선정
-  let retrials = $state<DeckCard[]>([]);
+  // 덱: 옛 밈(steady)·새 밈(new)을 섞어서 판정받는다. 셔플은 Math.random이라 mount 후 확정
+  // (SSR/하이드레이션 불일치 방지). 초기엔 새 밈만 보여주고 mount 때 혼합 셔플로 교체.
+  let deck = $state<MemeCard[]>(newCards(cards));
   onMount(() => {
-    retrials = cards
-      .filter((c) => c.status === 'steady' && c.voteYes + c.voteNo < 10)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map((c) => ({ ...c, retrial: true }));
+    const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
+    const news = newCards(cards);
+    const steadies = cards.filter((c) => c.status === 'steady');
+    deck = shuffle([...shuffle(news).slice(0, 15), ...shuffle(steadies).slice(0, 15)]);
   });
 
-  const list = $derived<DeckCard[]>([...newCards(cards), ...retrials]);
+  const list = $derived(deck);
   let idx = $state(0);
   let done = $state(false);
 
-  // 드래그 상태 (legacy attachDeck 이식)
   let dragX = $state(0);
   let dragging = $state(false);
-  let flyDir = $state(0); // 0=없음, ±1=날아가는 중
+  let flyDir = $state(0);
 
   function next() {
     if (idx + 1 >= list.length) done = true;
@@ -36,6 +34,15 @@
       done = false;
       idx = Math.max(0, list.length - 1);
     } else if (idx > 0) idx -= 1;
+  }
+
+  // 3지선다 판정 — 투표 후 다음 카드. 스와이프/건너뛰기는 투표 없이 넘김.
+  function judge(choice: VoteChoice) {
+    const m = list[idx];
+    if (!m) return;
+    markVoted(m.id, choice);
+    castVote(m.id, choice).catch(() => {}); // 같은 달 중복(409) 등은 무시
+    next();
   }
 
   function down(e: PointerEvent) {
@@ -70,7 +77,6 @@
         dragX = 0;
       }
     };
-    // 세로 스크롤로 브라우저가 제스처를 가져가면 pointercancel — 드래그 상태만 정리
     const cancel = () => {
       cleanup();
       dragX = 0;
@@ -95,7 +101,7 @@
 </script>
 
 <div class="wrap deck-section">
-  <div class="deck-title">넘겨보기 · 새로 뜬 밈 & 재심</div>
+  <div class="deck-title">밈 판정 · 이 밈, 아직 살아있나?</div>
   <div class="deck-holder">
     <div class="deck-stage">
       {#if !done && list.length > 0}
@@ -106,7 +112,7 @@
               class="deck-card"
               style={cardStyle(off)}
               role="group"
-              aria-roledescription="넘겨보기 카드"
+              aria-roledescription="밈 판정 카드"
               aria-label={m.name}
               onpointerdown={off === 0 ? down : undefined}
             >
@@ -114,31 +120,39 @@
                 <div class="photo-slot"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
               {/if}
               <div class="card-body">
-                {#if m.retrial}<div class="deck-retrial">재심 · 살았나 죽었나</div>{/if}
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
                 <div class="m-tags">{tagText(m)}</div>
                 {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
                 <div class="spacer"></div>
-                <div class="m-meta">{m.retrial ? metaSteady(m) : metaNew(m)}</div>
+                <div class="m-meta">{m.status === 'steady' ? metaSteady(m) : metaNew(m)}</div>
               </div>
             </div>
           {/if}
         {/each}
       {:else if list.length === 0}
-        <div class="deck-done"><span>아직 새로 뜬 밈이 없어요</span></div>
+        <div class="deck-done"><span>판정할 밈이 없어요</span></div>
       {:else}
         <div class="deck-done">
-          <span>새로 뜬 밈을 다 넘겨봤어요</span>
+          <span>다 판정했어요</span>
           <button class="btn-accent" onclick={() => { done = false; idx = 0; }}>처음부터 다시</button>
         </div>
       {/if}
     </div>
+
+    {#if !done && list.length > 0}
+      <div class="deck-vote">
+        <button class="dv dv-yes" onclick={() => judge('yes')}>밈이다</button>
+        <button class="dv dv-not" onclick={() => judge('notmeme')}>밈이 아니다</button>
+        <button class="dv dv-dead" onclick={() => judge('no')}>죽은 밈이다</button>
+      </div>
+    {/if}
+
     <div class="deck-nav">
       <button class="btn" onclick={prev}>← 이전</button>
       <span class="deck-counter">{counter}</span>
-      <button class="btn-accent" onclick={next}>넘기기 →</button>
+      <button class="btn" onclick={next}>건너뛰기 →</button>
     </div>
-    <div class="deck-hint">카드를 좌우로 드래그하거나 버튼으로 넘겨보세요 · 탭하면 자세히</div>
+    <div class="deck-hint">판정하면 다음 카드로 · 좌우로 넘기거나 건너뛰기 · 탭하면 자세히</div>
   </div>
   <div class="rule" style="margin-top:30px;"></div>
 </div>

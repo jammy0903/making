@@ -28,6 +28,7 @@ export interface MemeCard {
   commentCount: number;
   voteYes: number;
   voteNo: number;
+  voteNotmeme: number;
   died: string | null;
   rank: number | null;
   rankSources: number;
@@ -51,6 +52,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     commentCount: r.comment_count || 0,
     voteYes: r.vote_yes || 0,
     voteNo: r.vote_no || 0,
+    voteNotmeme: r.vote_notmeme || 0,
     died: r.died_at || null,
     rank: null,
     rankSources: 0,
