@@ -178,6 +178,20 @@ button { font-family: var(--sans); cursor: pointer; }
 .subrow select { width: 100%; border: 1px solid var(--line2); padding: 10px 12px; font-family: var(--sans); font-size: 15px; background: var(--surface2); color: var(--ink); }
 
 /* 관리자 인라인 편집 */
+/* 이전/다음 밈 이동 화살표 — 콘텐츠 컬럼(880px) 바깥에 띄움. 모바일은 스와이프로 대체(아래 미디어쿼리에서 숨김) */
+.pager {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; line-height: 1; color: var(--mute); text-decoration: none;
+  background: var(--surface); border: 1px solid var(--line2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 40; transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.pager:hover { color: var(--accent); border-color: var(--accent); }
+.pager-prev { left: max(12px, calc((100vw - 880px) / 2 - 56px)); }
+.pager-next { right: max(12px, calc((100vw - 880px) / 2 - 56px)); }
+
 .detail-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .edit-open { background: none; border: 1px solid var(--line2); color: var(--mute); font-size: 13px; padding: 5px 12px; white-space: nowrap; }
 .edit-open:hover { border-color: var(--accent); color: var(--accent); }
@@ -413,6 +427,7 @@ button { font-family: var(--sans); cursor: pointer; }
 
 /* ── Responsive ── */
 @media (max-width: 720px) {
+  .pager { display: none; } /* 모바일은 스와이프로 이전/다음 이동 */
   .masthead { padding-top: 40px; }
   .masthead h1 { font-size: 34px; }
   .wrap, .wrap-narrow { padding: 0 18px; }

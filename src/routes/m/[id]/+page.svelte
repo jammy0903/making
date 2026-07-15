@@ -19,6 +19,25 @@
     comments = [...data.comments];
   });
 
+  // ── 이전/다음 밈 이동 (PC 양옆 화살표 · 모바일 스와이프) ──
+  function goPrev() { if (data.prev) goto(`/m/${data.prev.id}`); }
+  function goNext() { if (data.next) goto(`/m/${data.next.id}`); }
+  let touchX = 0, touchY = 0, swipeSkip = false;
+  function onTouchStart(e: TouchEvent) {
+    const t = e.target as HTMLElement;
+    // 캐러셀·입력칸 위에서 시작한 스와이프는 각자 기능(이미지 넘기기·텍스트 선택)에 양보
+    swipeSkip = !!t.closest('.carousel, textarea, input, select');
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+  }
+  function onTouchEnd(e: TouchEvent) {
+    if (swipeSkip) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    const dy = e.changedTouches[0].clientY - touchY;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // 뚜렷한 가로 스와이프만
+    if (dx < 0) goNext(); else goPrev(); // 왼쪽으로 밀면 다음, 오른쪽으로 밀면 이전
+  }
+
   const shots = $derived(gallery(m));
   let carIdx = $state(0);
   function onCarScroll(e: Event) {
@@ -235,7 +254,15 @@
   {@html `<script type="application/ld+json">${memeLd}</script>`}
 </svelte:head>
 
-<div class="wrap-narrow page">
+{#if data.prev}
+  <a class="pager pager-prev" href="/m/{data.prev.id}" aria-label={`이전 밈: ${data.prev.name}`} title={`이전 밈 · ${data.prev.name}`}>‹</a>
+{/if}
+{#if data.next}
+  <a class="pager pager-next" href="/m/{data.next.id}" aria-label={`다음 밈: ${data.next.name}`} title={`다음 밈 · ${data.next.name}`}>›</a>
+{/if}
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="wrap-narrow page" ontouchstart={onTouchStart} ontouchend={onTouchEnd}>
   <div class="detail-top">
     <a class="back" href="/" style="border:none">← 목록으로</a>
     {#if admin && !editMode}
