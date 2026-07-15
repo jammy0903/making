@@ -25,6 +25,12 @@
   let dragging = $state(false);
   let flyDir = $state(0);
 
+  // 렌더할 상위 3장 — 반드시 카드 id로 keying(each 아래). 위치(off)로 keying하면
+  // 스와이프로 날아간 카드 DOM이 재활용돼 다음 카드가 바깥에서 회전하며 되돌아온다.
+  const visible = $derived(
+    [2, 1, 0].filter((off) => idx + off < list.length).map((off) => ({ off, m: list[idx + off] }))
+  );
+
   function next() {
     if (idx + 1 >= list.length) done = true;
     else idx += 1;
@@ -105,16 +111,15 @@
   <div class="deck-holder">
     <div class="deck-stage">
       {#if !done && list.length > 0}
-        {#each [2, 1, 0] as off (off)}
-          {#if idx + off < list.length}
-            {@const m = list[idx + off]}
+        {#each visible as v (v.m.id)}
+          {@const m = v.m}
             <div
               class="deck-card"
-              style={cardStyle(off)}
+              style={cardStyle(v.off)}
               role="group"
               aria-roledescription="밈 판정 카드"
               aria-label={m.name}
-              onpointerdown={off === 0 ? down : undefined}
+              onpointerdown={v.off === 0 ? down : undefined}
             >
               {#if coverImage(m)}
                 <div class="photo-slot">
@@ -132,7 +137,6 @@
                 <div class="m-meta">{m.status === 'steady' ? metaSteady(m) : metaNew(m)}</div>
               </div>
             </div>
-          {/if}
         {/each}
       {:else if list.length === 0}
         <div class="deck-done"><span>판정할 밈이 없어요</span></div>
