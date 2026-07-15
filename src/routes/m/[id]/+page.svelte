@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { tagText, timeAgo, gallery } from '$lib/cards';
+  import { timeAgo, gallery } from '$lib/cards';
   import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, type VoteChoice } from '$lib/client/api';
 
   const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
@@ -279,7 +279,9 @@
         </div>
       {/if}
       {#if m.name}<div class="headword">{m.name}</div>{/if}
-      <div class="tag-head">{tagText(m)}</div>
+      {#if (m.tags || []).length}
+        <div class="tag-head">{#each m.tags as t (t)}<a class="tagchip" href="/?tag={encodeURIComponent(t)}">#{t}</a>{/each}</div>
+      {/if}
       <div class="reg">
         {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
       </div>
