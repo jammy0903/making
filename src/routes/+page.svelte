@@ -2,14 +2,17 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, tagText, metaNew, metaSteady } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, tagText, metaNew, metaSteady } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
 
   let { data } = $props();
 
   let tab = $state<'new' | 'steady'>('new');
   let steadyCat = $state('전체');
+  let q = $state('');
 
+  const query = $derived(q.trim());
+  const results = $derived(query ? searchCards(data.cards, query) : []);
   const news = $derived(newCards(data.cards));
   const steadies = $derived(steadyCards(data.cards));
   const deads = $derived(deadCards(data.cards));
@@ -36,6 +39,45 @@
   <div class="rule"></div>
 </div>
 
+<div class="wrap searchwrap">
+  <label class="searchbar">
+    <svg class="search-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+    <input type="search" bind:value={q} placeholder="밈 이름·뜻으로 검색" aria-label="밈 검색" autocomplete="off" />
+    {#if query}
+      <button type="button" class="search-clear" onclick={() => (q = '')} aria-label="검색 지우기">✕</button>
+    {/if}
+  </label>
+</div>
+
+{#if query}
+  <div class="wrap page">
+    <div class="list-head"><div class="count">‘{query}’ 검색 · {results.length}개</div></div>
+    {#if !results.length}
+      <div class="empty">‘{query}’에 맞는 밈이 없습니다.</div>
+    {:else}
+      <div class="rows">
+        {#each results as m (m.id)}
+          <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
+            <div class="col">
+              <div class="rowline">
+                {#if m.name}<span class="m-name">{m.name}</span>{/if}
+                <span class="res-status {m.status}">{statusLabel(m)}</span>
+                <span class="m-tags">{tagText(m)}</span>
+              </div>
+              {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
+            </div>
+            {#if m.photoUrl}
+              <div class="photo-slot thumb"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+            {/if}
+          </a>
+        {/each}
+      </div>
+    {/if}
+  </div>
+{:else}
 <Deck cards={data.cards} />
 
 <div class="wrap">
@@ -111,4 +153,5 @@
       </div>
     {/if}
   </div>
+{/if}
 {/if}

@@ -33,3 +33,19 @@
 </div>
 
 {@render children()}
+
+<footer class="site-footer">
+  <div class="wrap ft-inner">
+    <div class="ft-brand">
+      <span class="ft-word">memedics</span>
+      <span class="ft-tag">한국 밈 트렌드 사전 · 측정은 기계가, 판정은 사람이</span>
+    </div>
+    <nav class="ft-nav">
+      <a href="/about">소개</a>
+      <a href="/privacy">개인정보처리방침</a>
+      <a href="/terms">이용약관</a>
+      <a href="mailto:contact@memedics.space">문의</a>
+    </nav>
+    <div class="ft-copy">© 2026 memedics</div>
+  </div>
+</footer>
