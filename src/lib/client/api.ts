@@ -74,6 +74,19 @@ export async function deleteComment(id: number) {
   await sbWrite('DELETE', `meme_comments?id=eq.${id}`);
 }
 
+// 파일 업로드 → Supabase Storage('media' 버킷, 본인 uid 폴더). 반환: 공개 URL.
+export async function uploadMedia(file: File, user: { id: string }): Promise<string> {
+  const safe = (file.name || 'file').replace(/[^\w.\-]/g, '_').slice(-60);
+  const path = `${user.id}/${Date.now()}-${safe}`;
+  const r = await fetch(`${SB.url}/storage/v1/object/media/${path}`, {
+    method: 'POST',
+    headers: headers({ 'Content-Type': file.type || 'application/octet-stream' }),
+    body: file,
+  });
+  if (!r.ok) throw new Error(`업로드 ${r.status}: ${await r.text()}`);
+  return `${SB.url}/storage/v1/object/public/media/${path}`;
+}
+
 // ── 회원 밈 신청 (로그인 필요) ──
 export interface Submission {
   id: number;
@@ -82,6 +95,8 @@ export interface Submission {
   status: 'pending' | 'withdrawn' | 'accepted' | 'rejected';
   created_at: string;
   withdrawn_at: string | null;
+  photo_url: string | null;
+  video_url: string | null;
 }
 export interface SubmissionInput {
   name: string;
@@ -89,6 +104,8 @@ export interface SubmissionInput {
   example?: string;
   source_url?: string;
   tags?: string[];
+  photo_url?: string;
+  video_url?: string;
 }
 export async function submitMeme(input: SubmissionInput, user: { id: string; email: string; name: string }) {
   const rows = await sbPost('meme_submissions', {
@@ -100,13 +117,15 @@ export async function submitMeme(input: SubmissionInput, user: { id: string; ema
     example: input.example || null,
     source_url: input.source_url || null,
     tags: input.tags || [],
+    photo_url: input.photo_url || null,
+    video_url: input.video_url || null,
   });
   return (Array.isArray(rows) ? rows[0] : rows) as Submission;
 }
 // RLS가 본인 신청만 반환(관리자는 전체 — 여긴 본인용 조회)
 export async function fetchMySubmissions(): Promise<Submission[]> {
   const r = await fetch(
-    `${SB.url}/rest/v1/meme_submissions?select=id,name,description,status,created_at,withdrawn_at&order=created_at.desc`,
+    `${SB.url}/rest/v1/meme_submissions?select=id,name,description,status,created_at,withdrawn_at,photo_url,video_url&order=created_at.desc`,
     { headers: headers() }
   );
   if (!r.ok) throw new Error(`GET submissions ${r.status}: ${await r.text()}`);

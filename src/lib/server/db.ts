@@ -21,6 +21,7 @@ export interface MemeCard {
   cat: string;
   src: string;
   photoUrl: string;
+  videoUrl: string;
   status: 'new' | 'steady' | 'dead';
   days: number;
   months: number;
@@ -45,6 +46,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     cat: r.category || '',
     src: r.source || '',
     photoUrl: r.photo_url || '',
+    videoUrl: r.video_url || '',
     status: r.status || 'new',
     days,
     months: Math.floor(days / 30),

@@ -151,6 +151,10 @@
     {#if m.photoUrl}
       <div class="photo-slot detail-media"><img src={m.photoUrl} alt={m.name} referrerpolicy="no-referrer" /></div>
     {/if}
+    {#if m.videoUrl}
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <div class="detail-video"><video src={m.videoUrl} controls playsinline preload="metadata"></video></div>
+    {/if}
     {#if m.name}<div class="headword">{m.name}</div>{/if}
     <div class="tag-head">{tagText(m)}</div>
     <div class="reg">

@@ -98,6 +98,8 @@
             </div>
             {#if m.photoUrl}
               <div class="photo-slot thumb"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+            {:else if m.videoUrl}
+              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
             {/if}
           </a>
         {/each}
@@ -144,6 +146,8 @@
             </div>
             {#if m.photoUrl}
               <div class="photo-slot thumb"><img src={m.photoUrl} alt={m.name} loading="lazy" referrerpolicy="no-referrer" /></div>
+            {:else if m.videoUrl}
+              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
             {/if}
           </a>
         {/each}

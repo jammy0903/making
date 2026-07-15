@@ -38,7 +38,7 @@ async function loadDeaths() {
 async function patchMeme(id, data) {
   await api(`memes?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(data) });
 }
-const MEME_COLS = 'id,name,keywords,description,tags,category,status,source,photo_url,died_at';
+const MEME_COLS = 'id,name,keywords,description,tags,category,status,source,photo_url,video_url,died_at';
 async function loadMemes(q) {
   const filter = q ? `&name=ilike.*${encodeURIComponent(q)}*` : '';
   state.memes = await api(`memes?select=${MEME_COLS}&order=id.desc&limit=300${filter}`);
@@ -101,7 +101,7 @@ async function dismissNotmeme(id) {
 }
 // 회원 밈 신청(사람 제안) — 기계 후보와 별개. 등록/반려는 관리자.
 async function loadSubmissions() {
-  state.submissions = await api('meme_submissions?status=eq.pending&select=id,name,description,example,source_url,tags,nick,email,created_at&order=created_at.desc&limit=100');
+  state.submissions = await api('meme_submissions?status=eq.pending&select=id,name,description,example,source_url,tags,nick,email,created_at,photo_url,video_url&order=created_at.desc&limit=100');
 }
 async function patchSubmission(id, data) {
   await api(`meme_submissions?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(data) });
@@ -112,7 +112,7 @@ async function rejectSub(id) {
 }
 function startRegisterSub(id) {
   const s = state.submissions.find((x) => x.id === id);
-  set({ editing: { sub: s, meme: { name: s.name, description: s.description || '', tags: s.tags || [], source: s.source_url || '', status: 'new' } } });
+  set({ editing: { sub: s, meme: { name: s.name, description: s.description || '', tags: s.tags || [], source: s.source_url || '', photo_url: s.photo_url || '', video_url: s.video_url || '', status: 'new' } } });
 }
 function startRegister(id) {
   const c = state.candidates.find((x) => x.id === id);
@@ -142,7 +142,7 @@ async function saveEdit() {
   const data = {
     name: val('f-name'), keywords: arr(val('f-keywords')), description: val('f-desc'),
     tags: arr(val('f-tags')), category: val('f-cat') || null, status,
-    source: val('f-src') || null, photo_url: val('f-photo') || null,
+    source: val('f-src') || null, photo_url: val('f-photo') || null, video_url: val('f-video') || null,
     // 사망이면 선고 시각 유지(없으면 지금), 아니면 해제(=부활)
     died_at: status === 'dead' ? (prev.died_at || new Date().toISOString()) : null,
   };
@@ -211,7 +211,7 @@ function submissionsView() {
     state.submissions.map((s) => `
     <div class="adm-row">
       <div class="t">${esc(s.name)}</div>
-      <div class="m">${esc(s.nick || s.email || '익명')} · ${esc((s.created_at || '').slice(0, 10))}${s.source_url ? ` · <a href="${esc(s.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}</div>
+      <div class="m">${esc(s.nick || s.email || '익명')} · ${esc((s.created_at || '').slice(0, 10))}${s.source_url ? ` · <a href="${esc(s.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}${s.photo_url ? ` · <a href="${esc(s.photo_url)}" target="_blank" rel="noopener">📷 사진</a>` : ''}${s.video_url ? ` · <a href="${esc(s.video_url)}" target="_blank" rel="noopener">🎬 동영상</a>` : ''}</div>
       ${s.description ? `<div class="m" style="margin-top:6px;color:var(--ink2)">${esc(s.description)}</div>` : ''}
       ${s.example ? `<div class="m" style="margin-top:4px">예: ${esc(s.example)}</div>` : ''}
       <div class="adm-actions">
@@ -279,6 +279,7 @@ function editForm() {
       <div class="field"><label>출처 (source)</label><input id="f-src" value="${esc(m.source || '')}"></div>
       <div class="field"><label>사진 URL (photo_url)</label><input id="f-photo" value="${esc(m.photo_url || '')}"></div>
     </div>
+    <div class="field"><label>동영상 URL (video_url)</label><input id="f-video" value="${esc(m.video_url || '')}"><div class="hint">신청 등록 시 첨부 미디어가 자동 채워집니다</div></div>
     <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
       <button class="btn-solid" onclick="saveEdit()">저장</button>
       ${m.id ? `<button class="btn" style="border-color:#c0392b;color:#c0392b" onclick="deleteMeme(${m.id})">삭제</button>` : ''}
