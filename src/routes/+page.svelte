@@ -30,6 +30,12 @@
   <title>memedics — 한국 밈 트렌드 사전</title>
   <meta name="description" content="새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 밈 사전, memedics." />
   <link rel="canonical" href="{page.url.origin}/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="memedics — 한국 밈 트렌드 사전" />
+  <meta property="og:description" content="새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 밈 사전." />
+  <meta property="og:url" content="{page.url.origin}/" />
+  <meta property="og:image" content="{page.url.origin}/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <div class="wrap masthead">

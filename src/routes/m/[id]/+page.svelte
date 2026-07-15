@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { tagText, timeAgo } from '$lib/cards';
-  import { votedMap, sameMonth, markVoted, castVote, postComment } from '$lib/client/api';
+  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment } from '$lib/client/api';
   import { voteCard } from '$lib/client/share';
-  import { login } from '$lib/client/auth';
+  import { login, isAdmin } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
 
   let { data } = $props();
@@ -18,8 +18,15 @@
 
   let draftNick = $state('');
   let draftText = $state('');
+  let cErr = $state(''); // 댓글 등록/수정/삭제 인라인 에러
+  let editingId = $state<number | null>(null);
+  let editText = $state('');
+  let confirmDelId = $state<number | null>(null);
   let shareLabel = $state('결과 카드 공유');
   let voteVersion = $state(0); // 투표 직후 쿨다운 재계산 트리거
+
+  const canEdit = (c: { user_id: string | null }) =>
+    !!user.current && (String(c.user_id) === String(user.current.id) || isAdmin(user.current));
 
   const total = $derived(m.voteYes + m.voteNo);
   const yesPct = $derived(total ? Math.round((m.voteYes / total) * 100) : 0);
@@ -40,6 +47,7 @@
 
   const desc = $derived(m.desc || `${m.name} — 밈 뜻과 활성도를 memedics에서 확인하세요.`);
   const pageUrl = $derived(`${page.url.origin}/m/${m.id}`);
+  const ogImage = $derived(m.photoUrl || `${page.url.origin}/og-default.png`);
 
   async function vote(dir: 'yes' | 'no') {
     if (votedNow) return;
@@ -57,13 +65,50 @@
     const text = draftText.trim();
     if (!text) return;
     const nick = user.current ? user.current.name : draftNick.trim() || '익명';
+    cErr = '';
     try {
       const row = await postComment(m.id, nick, text, user.current);
       comments = [row, ...comments];
       m.commentCount++;
       draftText = '';
     } catch (e) {
-      alert('댓글 등록 실패: ' + (e as Error).message);
+      cErr = '댓글 등록에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      console.error('댓글 등록 오류:', e);
+    }
+  }
+
+  function startEdit(c: { id: number; body: string }) {
+    editingId = c.id;
+    editText = c.body;
+    confirmDelId = null;
+    cErr = '';
+  }
+
+  async function saveEdit() {
+    const text = editText.trim();
+    if (!text || editingId == null) return;
+    const id = editingId;
+    cErr = '';
+    try {
+      await editComment(id, text);
+      comments = comments.map((c) => (c.id === id ? { ...c, body: text } : c));
+      editingId = null;
+    } catch (e) {
+      cErr = '수정에 실패했어요.';
+      console.error('댓글 수정 오류:', e);
+    }
+  }
+
+  async function removeComment(id: number) {
+    cErr = '';
+    try {
+      await deleteComment(id);
+      comments = comments.filter((c) => c.id !== id);
+      m.commentCount = Math.max(0, m.commentCount - 1);
+      confirmDelId = null;
+    } catch (e) {
+      cErr = '삭제에 실패했어요.';
+      console.error('댓글 삭제 오류:', e);
     }
   }
 
@@ -92,8 +137,8 @@
   <meta property="og:title" content={`${m.name} — 살았나 죽었나 | memedics`} />
   <meta property="og:description" content={desc} />
   <meta property="og:url" content={pageUrl} />
-  {#if m.photoUrl}<meta property="og:image" content={m.photoUrl} />{/if}
-  <meta name="twitter:card" content={m.photoUrl ? 'summary_large_image' : 'summary'} />
+  <meta property="og:image" content={ogImage} />
+  <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <div class="wrap-narrow page">
@@ -137,7 +182,10 @@
           </div>
         {/if}
         <textarea bind:value={draftText} placeholder="이 밈에 대해 한마디 남겨 보세요"></textarea>
-        <div class="submit-row"><button class="btn-solid" onclick={submitComment}>등록</button></div>
+        <div class="submit-row">
+          {#if cErr}<span class="cerr" role="alert">{cErr}</span>{/if}
+          <button class="btn-solid" onclick={submitComment}>등록</button>
+        </div>
       </div>
       <div class="clist">
         {#if !comments.length}
@@ -156,7 +204,29 @@
                   {#if c.is_user}<span class="badge user">로그인</span>{:else}<span class="badge anon">익명</span>{/if}
                   <span class="cwhen">{timeAgo(c.created_at)}</span>
                 </div>
-                <p class="ctext">{c.body}</p>
+                {#if editingId === c.id}
+                  <textarea class="cedit" bind:value={editText}></textarea>
+                  <div class="cactions">
+                    <button class="clink" onclick={saveEdit}>저장</button>
+                    <button class="clink" onclick={() => (editingId = null)}>취소</button>
+                  </div>
+                {:else}
+                  <p class="ctext">{c.body}</p>
+                  {#if canEdit(c)}
+                    {#if confirmDelId === c.id}
+                      <div class="cactions">
+                        <span class="cconfirm">삭제할까요?</span>
+                        <button class="clink danger" onclick={() => removeComment(c.id)}>삭제</button>
+                        <button class="clink" onclick={() => (confirmDelId = null)}>취소</button>
+                      </div>
+                    {:else}
+                      <div class="cactions">
+                        <button class="clink" onclick={() => startEdit(c)}>수정</button>
+                        <button class="clink" onclick={() => { confirmDelId = c.id; editingId = null; }}>삭제</button>
+                      </div>
+                    {/if}
+                  {/if}
+                {/if}
               </div>
             </div>
           {/each}

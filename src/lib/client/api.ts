@@ -14,6 +14,15 @@ async function sbPost(path: string, body: unknown, prefer = 'return=representati
   return prefer.includes('representation') ? r.json() : null;
 }
 
+async function sbWrite(method: 'PATCH' | 'DELETE', path: string, body?: unknown) {
+  const r = await fetch(`${SB.url}/rest/v1/${path}`, {
+    method,
+    headers: headers(body ? { 'Content-Type': 'application/json', Prefer: 'return=minimal' } : { Prefer: 'return=minimal' }),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error(`${method} ${path} ${r.status}: ${await r.text()}`);
+}
+
 // ── 투표 (월 1회 재판정 — localStorage {c,t} + DB month_bucket PK와 동일 기준) ──
 export function voterId() {
   let v = localStorage.getItem('meme-voter');
@@ -54,4 +63,12 @@ export async function postComment(memeId: number, nick: string, body: string, us
     user_id: user ? user.id : null,
   });
   return Array.isArray(inserted) ? inserted[0] : inserted;
+}
+
+// 본인/관리자 댓글 수정·삭제 (RLS가 user_id=auth.uid() 또는 운영자 정책으로 허용)
+export async function editComment(id: number, body: string) {
+  await sbWrite('PATCH', `meme_comments?id=eq.${id}`, { body });
+}
+export async function deleteComment(id: number) {
+  await sbWrite('DELETE', `meme_comments?id=eq.${id}`);
 }
