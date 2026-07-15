@@ -17,12 +17,13 @@ const SOURCE = 'youtube';
 const API = 'https://www.googleapis.com/youtube/v3';
 
 const REGION = 'KR';
-const COMMENTS_PER_VIDEO = 50;  // 주제별 영상 1개에서 수집할 댓글 수
+const VIDEOS_PER_TOPIC = 5;     // 주제별로 댓글을 수집할 화제 영상 수. 검색 1회(100u)로 이미 받으므로 늘려도 할당량 거의 안 늘어남
+const COMMENTS_PER_VIDEO = 50;  // 영상 1개에서 수집할 댓글 수
 const MAX_COMMENT_LEN = 200;    // 긴 댓글은 잘라서 밈 표현에 집중
 const RECENT_DAYS = 7;          // 최근 며칠 내 영상만 화제 후보로
 const CONCURRENCY = 4;          // 주제 동시 요청 수 — 과다 동시연결(연결실패) 방지
 
-// 주제별 검색어 — 각 주제에서 최근 조회수 1위 영상을 골라 댓글 수집.
+// 주제별 검색어 — 각 주제에서 최근 화제 영상 여러 개를 골라 댓글 수집.
 // 항목을 추가/수정하면 주제가 늘거나 바뀐다 (할당량 주의).
 const TOPICS = [
   { key: 'idol', label: '아이돌', q: '아이돌' },
@@ -44,28 +45,8 @@ function isKorean(text) {
   return letters > 0 && kr / letters >= 0.3;
 }
 
-// 한 주제에서 최근 화제 영상 1개를 찾아 댓글을 수집
-async function crawlTopic(topic, apiKey, publishedAfter) {
-  // 1) 주제별 최근 조회수 1위 영상 검색
-  const searchUrl =
-    `${API}/search?part=id&type=video&order=viewCount` +
-    `&q=${encodeURIComponent(topic.q)}&regionCode=${REGION}&relevanceLanguage=ko` +
-    `&publishedAfter=${publishedAfter}&maxResults=1&key=${apiKey}`;
-
-  let sData;
-  try {
-    sData = await fetchJson(searchUrl);
-  } catch (err) {
-    console.error(`[YouTube] ${topic.label} 검색 실패: ${reason(err)}`);
-    return [];
-  }
-  const videoId = sData.items?.[0]?.id?.videoId;
-  if (!videoId) {
-    console.error(`[YouTube] ${topic.label} 화제 영상 없음`);
-    return [];
-  }
-
-  // 2) 그 영상의 상위 댓글 50개
+// 한 영상의 상위 댓글을 수집 (실패 시 [] — 댓글 비활성 영상은 403이라 조용히 스킵)
+async function fetchVideoComments(videoId, topic, apiKey) {
   const cUrl =
     `${API}/commentThreads?part=snippet&videoId=${videoId}&order=relevance` +
     `&maxResults=${COMMENTS_PER_VIDEO}&textFormat=plainText&key=${apiKey}`;
@@ -74,7 +55,6 @@ async function crawlTopic(topic, apiKey, publishedAfter) {
   try {
     cData = await fetchJson(cUrl);
   } catch (err) {
-    // 댓글 비활성화된 영상은 403 — 조용히 건너뜀
     console.error(`[YouTube] ${topic.label} 댓글 조회 실패: ${reason(err)} (${videoId})`);
     return [];
   }
@@ -95,7 +75,36 @@ async function crawlTopic(topic, apiKey, publishedAfter) {
       });
     }
   }
-  console.log(`[YouTube] ${topic.label}: ${videoId} 댓글 ${posts.length}개`);
+  return posts;
+}
+
+// 한 주제에서 최근 화제 영상 여러 개를 찾아 각 영상의 댓글을 수집
+async function crawlTopic(topic, apiKey, publishedAfter) {
+  // 1) 검색 1회(100u)로 화제 영상 여러 개를 한꺼번에 받음
+  const searchUrl =
+    `${API}/search?part=id&type=video&order=viewCount` +
+    `&q=${encodeURIComponent(topic.q)}&regionCode=${REGION}&relevanceLanguage=ko` +
+    `&publishedAfter=${publishedAfter}&maxResults=${VIDEOS_PER_TOPIC}&key=${apiKey}`;
+
+  let sData;
+  try {
+    sData = await fetchJson(searchUrl);
+  } catch (err) {
+    console.error(`[YouTube] ${topic.label} 검색 실패: ${reason(err)}`);
+    return [];
+  }
+  const videoIds = (sData.items || []).map((it) => it.id?.videoId).filter(Boolean);
+  if (videoIds.length === 0) {
+    console.error(`[YouTube] ${topic.label} 화제 영상 없음`);
+    return [];
+  }
+
+  // 2) 영상별 댓글 수집 (연속 호출 — commentThreads는 1u라 저렴)
+  const posts = [];
+  for (const videoId of videoIds) {
+    posts.push(...(await fetchVideoComments(videoId, topic, apiKey)));
+  }
+  console.log(`[YouTube] ${topic.label}: 영상 ${videoIds.length}개 · 댓글 ${posts.length}개`);
   return posts;
 }
 
