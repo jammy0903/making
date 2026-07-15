@@ -69,7 +69,8 @@ button { font-family: var(--sans); cursor: pointer; }
 /* ── Topbar (로그인) ── */
 .topbar { border-bottom: 1px solid var(--line); background: var(--surface); }
 .tb-inner { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; padding-bottom: 10px; }
-.tb-brand { font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); letter-spacing: 0.02em; }
+.tb-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); letter-spacing: 0.02em; }
+.tb-logo { width: 24px; height: 24px; border-radius: 6px; display: block; flex: none; }
 .tb-auth { font-size: 13px; color: var(--mute); }
 .tb-user { color: var(--ink2); }
 .tb-link { background: none; border: none; color: var(--accent); font-size: 13px; padding: 0; }
