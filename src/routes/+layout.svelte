@@ -4,10 +4,16 @@
   import { initAuth, login, logout, whoami, type AuthUser } from '$lib/client/auth';
   import { setUser, user } from '$lib/client/session.svelte';
   import WalkingDog from '$lib/components/WalkingDog.svelte';
+  import { page } from '$app/state';
   import { m } from '$lib/paraglide/messages';
-  import { getLocale, setLocale, localizeHref } from '$lib/paraglide/runtime';
+  import { getLocale, setLocale, localizeHref, deLocalizeHref } from '$lib/paraglide/runtime';
 
   let { children } = $props();
+
+  // hreflang: 현재 경로의 ko(무접두)·en(/en/) 대체 URL을 상호 연결(SEO)
+  const koPath = $derived(deLocalizeHref(page.url.pathname));
+  const enPath = $derived(localizeHref(koPath, { locale: 'en' }));
+  const origin = $derived(page.url.origin);
 
   let theme = $state<'light' | 'dark'>('light');
 
@@ -37,6 +43,12 @@
     document.documentElement.dataset.theme = theme;
   }
 </script>
+
+<svelte:head>
+  <link rel="alternate" hreflang="ko" href="{origin}{koPath}" />
+  <link rel="alternate" hreflang="en" href="{origin}{enPath}" />
+  <link rel="alternate" hreflang="x-default" href="{origin}{koPath}" />
+</svelte:head>
 
 <div class="topbar">
   <div class="wrap tb-inner">

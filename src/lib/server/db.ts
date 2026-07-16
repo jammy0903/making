@@ -1,8 +1,14 @@
 // Supabase REST(PostgREST) 서버측 조회 — 공개 읽기(anon 키, RLS 방어)라 서버에서도 anon 사용.
 // service role은 크롤러(server.js/src/supabase.js)만 쥔다(architecture.md 원칙).
 import { SB_URL, SB_KEY } from '$lib/sb';
+import { getLocale } from '$lib/paraglide/runtime';
 
 type Fetch = typeof globalThis.fetch;
+
+// 요청 locale이 en인지(요청 컨텍스트 밖이면 false로 안전 처리)
+export function isEnLocale(): boolean {
+  try { return getLocale() === 'en'; } catch { return false; }
+}
 
 export async function sbGet<T = unknown>(fetch: Fetch, path: string): Promise<T> {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -43,11 +49,12 @@ export interface MemeCard {
 export function mapCard(r: Record<string, any>): MemeCard {
   const created = r.created_at ? new Date(r.created_at) : new Date();
   const days = Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000));
+  const en = isEnLocale(); // en이면 번역 필드 우선(없으면 한국어 폴백)
   return {
     id: r.id,
-    name: r.name || '',
-    tags: r.tags || [],
-    desc: r.description || '',
+    name: (en && r.name_en) || r.name || '',
+    tags: (en && r.tags_en && r.tags_en.length ? r.tags_en : r.tags) || [],
+    desc: (en && r.description_en) || r.description || '',
     cat: r.category || '',
     src: r.source || '',
     photoUrl: r.photo_url || '',
