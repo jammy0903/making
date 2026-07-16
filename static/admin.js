@@ -344,8 +344,15 @@ async function pickPhotos(input) {
   const up = document.getElementById('photo-up');
   for (const f of files) {
     if (f.size > MAX_IMG) { alert(`${f.name}: 사진은 10MB 이하만 가능해요`); continue; }
-    if (up) up.textContent = `업로드 중… ${f.name}`;
-    try { const url = await uploadFile(f); state.editing.photos.push(url); refreshPhotos(); }
+    // 4:3 고정비율 크롭(프레임 안에서 이동·확대)
+    let file = f;
+    if (window.cropImageToRatio) {
+      const blob = await window.cropImageToRatio(f, 4 / 3);
+      if (!blob) continue; // 취소
+      file = new File([blob], f.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+    }
+    if (up) up.textContent = `업로드 중… ${file.name}`;
+    try { const url = await uploadFile(file); state.editing.photos.push(url); refreshPhotos(); }
     catch (e) { if (up) up.textContent = ''; alert('업로드 실패: ' + e.message); }
   }
 }
