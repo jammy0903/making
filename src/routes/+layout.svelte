@@ -4,6 +4,8 @@
   import { initAuth, login, logout, whoami, type AuthUser } from '$lib/client/auth';
   import { setUser, user } from '$lib/client/session.svelte';
   import WalkingDog from '$lib/components/WalkingDog.svelte';
+  import { m } from '$lib/paraglide/messages';
+  import { getLocale, setLocale, localizeHref } from '$lib/paraglide/runtime';
 
   let { children } = $props();
 
@@ -50,6 +52,12 @@
         title={theme === 'dark' ? '라이트 모드' : '다크 모드'}
       >{theme === 'dark' ? '☀' : '☾'}</button>
       ·
+      <button
+        class="tb-link"
+        onclick={() => setLocale(getLocale() === 'en' ? 'ko' : 'en')}
+        aria-label={getLocale() === 'en' ? '한국어로 전환' : 'Switch to English'}
+      >{getLocale() === 'en' ? 'KO' : 'EN'}</button>
+      ·
       {#if user.current}
         <span class="tb-user">{user.current.name}</span> ·
         <button class="tb-link" onclick={logout}>로그아웃</button> ·
@@ -67,14 +75,14 @@
   <div class="wrap ft-inner">
     <div class="ft-brand">
       <span class="ft-word">memedics</span>
-      <span class="ft-tag">한국 밈 트렌드 사전 · 측정은 기계가, 판정은 사람이</span>
+      <span class="ft-tag">{m.brand_tagline()}</span>
     </div>
     <nav class="ft-nav">
-      <a href="/all">전체 밈</a>
-      <a href="/submit">밈 신청</a>
-      <a href="/about">소개</a>
-      <a href="/privacy">개인정보처리방침</a>
-      <a href="/terms">이용약관</a>
+      <a href={localizeHref('/all')}>{m.nav_all()}</a>
+      <a href={localizeHref('/submit')}>{m.nav_submit()}</a>
+      <a href={localizeHref('/about')}>{m.nav_about()}</a>
+      <a href={localizeHref('/privacy')}>개인정보처리방침</a>
+      <a href={localizeHref('/terms')}>이용약관</a>
       <a href="mailto:jamm2ic@gmail.com">문의</a>
     </nav>
     <div class="ft-copy">© 2026 memedics</div>
