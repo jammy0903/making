@@ -7,6 +7,7 @@
   import type { MemeCard } from '$lib/server/db';
   import { m } from '$lib/paraglide/messages';
   import { getLocale, localizeHref } from '$lib/paraglide/runtime';
+  import { catLabel } from '$lib/categories';
 
   let { data } = $props();
 
@@ -248,7 +249,7 @@
     </div>
     <div class="cats">
       {#each cats as c (c)}
-        <button class="cat {steadyCat === c ? 'on' : ''}" onclick={() => (steadyCat = c)}>{c === '전체' ? m.home_cat_all() : c}</button>
+        <button class="cat {steadyCat === c ? 'on' : ''}" onclick={() => (steadyCat = c)}>{c === '전체' ? m.home_cat_all() : catLabel(c, getLocale() === 'en')}</button>
       {/each}
     </div>
     {#if !steadyList.length}
