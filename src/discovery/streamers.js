@@ -8,11 +8,8 @@
 export const STREAMERS = [
   'UCUj6rrhMTR9pipbAWBAMvUQ', // 침착맨 (토크/실황, 3.19M)
   'UCBkyj16n2snkRg1BAzpovXQ', // 우왁굳 (게임/버튜버, 1.55M)
-  'UCyHvSKT_bLDYpkv1JjjsLAg', // 풍월량 (게임 실황, 526K)
   'UCQJuZxeDv2P05YHcC-tIEVQ', // 악어 (게임, 1.25M)
-  'UCk6bX-MZXdte_7kG8TbMkqg', // 허팝 (실험/도전, 4.24M)
-  'UCg7rkxrTnIhiHEpXY1ec9NA', // 잠뜰 TV (마인크래프트, 2.39M)
-  'UChQ-VMvdGrYZxviQVMTJOHg', // 도티 TV (마인크래프트, 2.38M)
+  'UCg7rkxrTnIhiHEpXY1ec9NA', // 잠뜰 TV (마인크래프트, 잼민이 대표, 2.39M)
   'UCbFzvzDu17eDZ3RIeaLRswQ', // 감스트 (게임/축구, 3.02M)
   'UCD2YO_A_PVMgMDN9jpRrpVA', // 랄로 (롤 스트리머, 1.32M)
   // ── 먹방 ──
@@ -27,6 +24,12 @@ export const STREAMERS = [
   'UCDNvRZRgvkBTUkQzFoT_8rA', // 뜬뜬 (핑계고, 3.28M)
   'UCGX5sP4ehBkihHwt5bs5wvg', // 피식대학 (2.83M)
   'UCUyfkq9e9ZfPzxOW5WQ9rzQ', // 문명특급 MMTG (2.02M)
+  // ── 밈 제목 밀도 최상(대사체·공감밈 제목이 곧 밈) ──
+  'UCXEKwWflysXu312NmIP_dlw', // 너덜트 (스케치 코미디, 2.21M) — "코르티스가 뭔데요?" 등 밈 대사 제목
+  'UCRuSxVu4iqTK5kCh90ntAgA', // 총몇명 (공감 애니, 4.02M) — "첫 출근 特", "퇴사 마려운 TOP5"
+  'UCdtRAcd3L_UpV4tMXCw63NQ', // 피지컬갤러리 (김계란, 2.98M) — 가짜사나이·티키타카 밈 발원
+  'UCqsPmfRMm0AGTF3mw1VtCnw', // 빵송국 (매드몬스터/스케치, 577K) — "재벌이 사이코패스일때" 대사밈
+  'UClgQvJio7ylGa9kV9b7VzLQ', // 스낵타운 (공감 스케치, 821K) — "평양냉면 이슈" 공감밈
 ];
 
 const UPLOADS_PER_CHANNEL = 10; // 채널당 훑을 최근 업로드 수
