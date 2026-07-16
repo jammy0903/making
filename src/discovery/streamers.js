@@ -15,6 +15,18 @@ export const STREAMERS = [
   'UChQ-VMvdGrYZxviQVMTJOHg', // 도티 TV (마인크래프트, 2.38M)
   'UCbFzvzDu17eDZ3RIeaLRswQ', // 감스트 (게임/축구, 3.02M)
   'UCD2YO_A_PVMgMDN9jpRrpVA', // 랄로 (롤 스트리머, 1.32M)
+  // ── 먹방 ──
+  'UCfpaSruWW3S4dibonKXENjA', // 쯔양 (13.4M)
+  'UCoLQZ4ZClFqVPCvvjuiUSRA', // 문복희 (11M)
+  'UCBIoXzDldCnpbM_7uyG0_Tg', // 홍사운드 (1.83M)
+  'UCA6KBBX8cLwYZNepxlE_7SA', // 히밥 (1.71M)
+  'UC-Bsa2ivAGWq7bsSPrPGFVA', // 입짧은햇님 (1.65M)
+  // ── 예능 ──
+  'UCwx6n_4OcLgzAGdty0RWCoA', // 워크맨 (4.27M)
+  'UCQ2O-iftmnlfrBuNsUUTofQ', // 채널십오야 (나영석, 7.56M)
+  'UCDNvRZRgvkBTUkQzFoT_8rA', // 뜬뜬 (핑계고, 3.28M)
+  'UCGX5sP4ehBkihHwt5bs5wvg', // 피식대학 (2.83M)
+  'UCUyfkq9e9ZfPzxOW5WQ9rzQ', // 문명특급 MMTG (2.02M)
 ];
 
 const UPLOADS_PER_CHANNEL = 10; // 채널당 훑을 최근 업로드 수
