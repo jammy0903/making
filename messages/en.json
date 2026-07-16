@@ -3,5 +3,18 @@
   "brand_tagline": "Korean meme trend dictionary · Machines measure, humans decide",
   "nav_all": "All memes",
   "nav_submit": "Submit a meme",
-  "nav_about": "About"
+  "nav_about": "About",
+  "about_head_title": "About — memedics",
+  "about_head_desc": "memedics is a meme dictionary that measures memes from Korean communities across multiple sources and shows them as-is, without judging.",
+  "about_back": "← Home",
+  "about_title": "About memedics",
+  "about_subtitle": "Korean meme trend dictionary",
+  "about_lead": "memedics is a meme dictionary that <strong>measures</strong> the memes circulating in Korean communities right now, gathered from many places. We don't decide what counts as a meme — we show the measured activity as-is. The interpretation is up to you.",
+  "about_h_measure": "How we measure",
+  "about_p_measure": "We count mentions of registered memes across communities of different character — DCInside, YouTube, and more — and build rankings alongside external signals like Naver search trends. So that a spike in one source can't sway the whole ranking, we compute the <strong>average of per-source ranks</strong> (abuse-resistant). If one source goes down, the rest keep running.",
+  "about_h_decide": "Birth and death: machines suggest, humans decide",
+  "about_p_decide": "Machines only <strong>suggest</strong> — \"this seems to be rising,\" \"this seems no longer used.\" Whether to register a meme or declare it dead is up to people. Visitors take part by voting whether each meme is \"still alive / dead.\" When both signals — fading mentions and public verdict — overlap, it moves to the obituary section.",
+  "about_h_vote": "Voting and comments",
+  "about_p_vote": "Voting is anonymous per browser with no login, and serves as a reference gauge; you can re-judge once a month. Comments can be left anonymously or with Google login, and logging in lets you edit or delete your own comments.",
+  "about_contact": "Contact: "
 }

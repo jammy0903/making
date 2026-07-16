@@ -1,45 +1,32 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { m } from '$lib/paraglide/messages';
+  import { localizeHref } from '$lib/paraglide/runtime';
 </script>
 
 <svelte:head>
-  <title>소개 — memedics</title>
-  <meta name="description" content="memedics는 한국 커뮤니티의 밈을 여러 소스에서 측정해 보여주는 밈 사전입니다. 판정하지 않고, 있는 그대로." />
-  <link rel="canonical" href="{page.url.origin}/about" />
+  <title>{m.about_head_title()}</title>
+  <meta name="description" content={m.about_head_desc()} />
+  <link rel="canonical" href="{page.url.origin}{localizeHref('/about')}" />
 </svelte:head>
 
 <div class="wrap-narrow legal">
-  <a class="back" href="/" style="border:none">← 홈으로</a>
-  <h1>memedics 소개</h1>
-  <p class="updated">한국 밈 트렌드 사전</p>
+  <a class="back" href={localizeHref('/')} style="border:none">{m.about_back()}</a>
+  <h1>{m.about_title()}</h1>
+  <p class="updated">{m.about_subtitle()}</p>
 
-  <p class="lead">
-    memedics는 지금 한국 커뮤니티에서 도는 밈을 여러 곳에서 <strong>측정</strong>해 모아 두는 밈 사전입니다.
-    무엇이 밈인지 판정하지 않고, 측정된 활성도를 있는 그대로 보여드립니다. 해석은 읽는 사람의 몫입니다.
-  </p>
+  <p class="lead">{@html m.about_lead()}</p>
 
-  <h2>어떻게 측정하나요</h2>
-  <p>
-    디시인사이드·유튜브 등 성격이 다른 여러 커뮤니티에서 등록된 밈의 언급을 세고,
-    네이버 검색 트렌드 같은 외부 지표와 함께 순위를 만듭니다. 한 소스의 수치가 튀어도
-    전체 순위를 흔들지 못하도록 <strong>소스별 순위의 평균</strong>으로 계산합니다(어뷰징 내성).
-    한 소스가 막혀도 나머지로 계속 돌아갑니다.
-  </p>
+  <h2>{m.about_h_measure()}</h2>
+  <p>{@html m.about_p_measure()}</p>
 
-  <h2>탄생도 죽음도, 기계는 제안·사람이 결정</h2>
-  <p>
-    기계는 “이건 뜨는 것 같다”, “이건 더 이상 안 쓰이는 것 같다”를 <strong>제안</strong>만 합니다.
-    밈으로 등록할지, 사망 선고를 내릴지는 사람이 결정합니다. 방문자는 각 밈이 “아직 살았나 / 죽었나”를
-    투표해 이 결정에 참여합니다. 두 신호(언급 소멸·판정 여론)가 겹치면 부고 구역으로 갑니다.
-  </p>
+  <h2>{m.about_h_decide()}</h2>
+  <p>{@html m.about_p_decide()}</p>
 
-  <h2>투표와 댓글</h2>
-  <p>
-    투표는 로그인 없이 브라우저 기준 익명으로 참여하며, 참고용 게이지입니다. 월 1회 다시 판정할 수 있습니다.
-    댓글은 익명 또는 Google 로그인으로 남길 수 있고, 로그인하면 본인 댓글을 수정·삭제할 수 있습니다.
-  </p>
+  <h2>{m.about_h_vote()}</h2>
+  <p>{@html m.about_p_vote()}</p>
 
   <p style="margin-top:30px">
-    문의: <a href="mailto:jamm2ic@gmail.com">jamm2ic@gmail.com</a>
+    {m.about_contact()}<a href="mailto:jamm2ic@gmail.com">jamm2ic@gmail.com</a>
   </p>
 </div>
