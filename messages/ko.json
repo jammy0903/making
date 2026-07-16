@@ -244,5 +244,6 @@
   "about_contact": "문의: ",
   "home_tab_kr": "🇰🇷 한국",
   "home_tab_us": "🇺🇸 미국",
-  "home_country_empty": "이 나라의 밈이 아직 없습니다."
+  "home_country_empty": "이 나라의 밈이 아직 없습니다.",
+  "home_country_aria": "나라 필터"
 }

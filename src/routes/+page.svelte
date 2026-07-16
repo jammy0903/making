@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, originCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
   import type { MemeCard } from '$lib/server/db';
   import { m } from '$lib/paraglide/messages';
@@ -11,8 +11,9 @@
 
   let { data } = $props();
 
-  let tab = $state<'new' | 'steady' | 'kr' | 'us'>('new');
+  let tab = $state<'new' | 'steady'>('new');
   let steadyCat = $state('전체');
+  let countryFilter = $state<'all' | 'kr' | 'us'>('all'); // 탭 밑 나라 필터 — 새밈·스테디 둘 다에 적용
   let q = $state(page.url.searchParams.get('q') ?? ''); // /?q=밈 검색 유입 지원(SearchAction)
 
   const query = $derived(q.trim());
@@ -45,13 +46,13 @@
     q = '';
     goto(`/?tag=${encodeURIComponent(tag)}`);
   }
-  const news = $derived(newCards(data.cards));
-  const steadies = $derived(steadyCards(data.cards));
-  const deads = $derived(deadCards(data.cards));
+  // 나라 필터 적용(전체면 그대로) → 새밈·스테디·부고 모두 이 집합에서 파생
+  const filtered = $derived(countryFilter === 'all' ? data.cards : data.cards.filter((c) => c.origin === countryFilter));
+  const news = $derived(newCards(filtered));
+  const steadies = $derived(steadyCards(filtered));
+  const deads = $derived(deadCards(filtered));
   const cats = $derived(['전체', ...new Set(steadies.map((c) => c.cat).filter(Boolean))]);
   const steadyList = $derived(steadyCat === '전체' ? steadies : steadies.filter((m) => m.cat === steadyCat));
-  // 근본 나라 탭 (한국/미국) — 그 나라 밈만
-  const countryList = $derived(tab === 'kr' || tab === 'us' ? originCards(data.cards, tab) : []);
 
   // 새 밈 정렬
   let newSort = $state<'recent' | 'name' | 'comments'>('recent');
@@ -68,8 +69,7 @@
   let steadyLimit = $state(PAGE);
   let resultsLimit = $state(PAGE);
   let tagLimit = $state(PAGE);
-  let countryLimit = $state(PAGE);
-  $effect(() => { void tab; countryLimit = PAGE; });
+  $effect(() => { void countryFilter; newLimit = PAGE; steadyLimit = PAGE; }); // 나라 필터 바뀌면 목록 처음부터
   $effect(() => { void query; resultsLimit = PAGE; });
   $effect(() => { void activeTag; tagLimit = PAGE; });
   $effect(() => { void newSort; void tab; newLimit = PAGE; });
@@ -78,7 +78,6 @@
   const steadyShown = $derived(steadyList.slice(0, steadyLimit));
   const resultsShown = $derived(results.slice(0, resultsLimit));
   const tagShown = $derived(tagResults.slice(0, tagLimit));
-  const countryShown = $derived(countryList.slice(0, countryLimit));
 
   onMount(() => {
     // 구 SPA 공유 링크(#m=id) 호환 — 경로형 상세로 승격
@@ -203,9 +202,12 @@
   <div class="tabs">
     <button class="tab {tab === 'new' ? 'active' : ''}" onclick={() => (tab = 'new')}>{m.home_tab_new()}</button>
     <button class="tab {tab === 'steady' ? 'active' : ''}" onclick={() => (tab = 'steady')}>{m.home_tab_steady()}</button>
-    <button class="tab {tab === 'kr' ? 'active' : ''}" onclick={() => (tab = 'kr')}>{m.home_tab_kr()}</button>
-    <button class="tab {tab === 'us' ? 'active' : ''}" onclick={() => (tab = 'us')}>{m.home_tab_us()}</button>
     <a class="tab tab-cta" href={localizeHref('/submit')}>{m.home_tab_submit()}</a>
+  </div>
+  <div class="country-filter" role="group" aria-label={m.home_country_aria()}>
+    <button class={countryFilter === 'all' ? 'on' : ''} onclick={() => (countryFilter = 'all')}>{m.home_cat_all()}</button>
+    <button class={countryFilter === 'kr' ? 'on' : ''} onclick={() => (countryFilter = 'kr')}>{m.home_tab_kr()}</button>
+    <button class={countryFilter === 'us' ? 'on' : ''} onclick={() => (countryFilter = 'us')}>{m.home_tab_us()}</button>
   </div>
 </div>
 
@@ -249,7 +251,7 @@
       {/if}
     {/if}
   </div>
-{:else if tab === 'steady'}
+{:else}
   <div class="wrap page">
     <div class="list-head">
       <div class="note">{m.home_steady_note()}</div>
@@ -299,38 +301,6 @@
           </a>
         {/each}
       </div>
-    {/if}
-  </div>
-{:else}
-  <div class="wrap page">
-    <div class="list-head"><div class="count">{m.home_count_items({ count: countryList.length })}</div></div>
-    {#if !countryList.length}
-      <div class="empty">{m.home_country_empty()}</div>
-    {:else}
-      <div class="rows">
-        {#each countryShown as m (m.id)}
-          <a class="row" href={localizeHref(`/m/${m.id}`)} style="border-bottom:1px solid var(--line3);color:inherit">
-            <div class="col">
-              <div class="rowline">
-                {#if m.name}<span class="m-name">{m.name}</span>{/if}
-                {@render tagChips(m)}
-              </div>
-              {#if m.desc}<p class="m-desc">{m.desc}</p>{/if}
-            </div>
-            {#if coverImage(m)}
-              <div class="photo-slot thumb">
-                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
-                {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
-              </div>
-            {:else if m.videoUrl}
-              <div class="photo-slot thumb vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
-            {/if}
-          </a>
-        {/each}
-      </div>
-      {#if countryList.length > countryLimit}
-        <div class="morewrap"><button class="more" onclick={() => (countryLimit += PAGE)}>{m.home_more({ count: countryList.length - countryLimit })}</button></div>
-      {/if}
     {/if}
   </div>
 {/if}

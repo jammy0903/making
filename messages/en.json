@@ -244,5 +244,6 @@
   "about_contact": "Contact: ",
   "home_tab_kr": "🇰🇷 Korea",
   "home_tab_us": "🇺🇸 USA",
-  "home_country_empty": "No memes from this country yet."
+  "home_country_empty": "No memes from this country yet.",
+  "home_country_aria": "Country filter"
 }
