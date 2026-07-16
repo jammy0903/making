@@ -21,7 +21,7 @@
 ## Phase (진행하며 체크)
 - [x] **P0 스키마** — memes에 `name_en/description_en/tags_en` 추가 (2026-07-16)
 - [x] **P1 Paraglide 기반** (2026-07-16) — @inlang/paraglide-js 2.22, `project.inlang`+messages/{ko,en}.json, vite 플러그인(strategy=url,cookie,baseLocale), `src/hooks.ts`(reroute) + `src/hooks.server.ts`(미들웨어), `app.html` `%lang%`, 레이아웃 KO/EN 토글. **검증: /en/about → html lang=en·푸터/메뉴 영어·링크 /en/ 접두** (Supabase는 샌드박스서 못 뚫어 정적페이지로 확인). 생성물 src/lib/paraglide는 gitignore(빌드 재생성)
-- [ ] **P2 UI 문구 추출** — 하드코딩 한국어 → 메시지 키로. 레이아웃·홈·상세·all·submit·footer 등
+- [x] **P2 UI 문구 추출** (2026-07-16) — 전 페이지 UI 한국어 → 메시지(230키 ko/en). 레이아웃·홈(+page)·상세(m/[id])·submit·all·error·about·terms·privacy + cards.ts 헬퍼(상태/메타/시간). 내부 링크 localizeHref, JSON-LD inLanguage=locale, 법률 영어에 courtesy 안내. 밈 콘텐츠(이름·설명·태그)는 P3로 분리. 검증: /en/{terms,submit,about} 영어 렌더 확인
 - [ ] **P3 밈 내용 번역** — `scripts/translate-memes.js`: memes 읽어 Haiku/Sonnet로 name_en·description_en·tags_en 생성(말놀이 해설 프롬프트) → DB. 370개 배치
 - [ ] **P4 페이지 locale 연동** — /en/에서 _en 서빙(폴백), 정렬 locale, JSON-LD·hreflang·sitemap /en/
 - [ ] **P5 신규 밈 자동 번역** — 관리자 등록 시 _en 자동 생성(등록 훅 or 크론 보정)
