@@ -9,6 +9,21 @@ export function gallery(m: MemeCard): MediaItem[] {
   if (m.videoUrl) out.push({ type: 'video', url: m.videoUrl });
   return out;
 }
+// 유튜브 링크 → 영상 ID / 썸네일 / 임베드 URL. 유튜브가 아니면 null/''.
+// (관리자가 동영상을 파일 업로드 대신 유튜브 링크로 넣을 수 있음 — 그땐 <video> 대신 썸네일·임베드로 렌더)
+export function ytId(url: string): string | null {
+  const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+export function ytThumb(url: string): string {
+  const id = ytId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+}
+export function ytEmbed(url: string): string {
+  const id = ytId(url);
+  return id ? `https://www.youtube.com/embed/${id}` : '';
+}
+
 // 카드 썸네일용 대표 이미지(없으면 빈 문자열)
 export function coverImage(m: MemeCard): string {
   if (m.photoUrl) return m.photoUrl;

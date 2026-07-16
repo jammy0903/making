@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { timeAgo, gallery } from '$lib/cards';
+  import { timeAgo, gallery, ytId, ytEmbed } from '$lib/cards';
   import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, type VoteChoice } from '$lib/client/api';
 
   const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
@@ -302,7 +302,9 @@
           <div class="car-track" onscroll={onCarScroll}>
             {#each shots as s, i (s.url)}
               <div class="car-item">
-                {#if s.type === 'video'}
+                {#if s.type === 'video' && ytId(s.url)}
+                  <iframe src={ytEmbed(s.url)} title={m.name} loading="lazy" style="width:100%;aspect-ratio:16/9;display:block;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                {:else if s.type === 'video'}
                   <!-- svelte-ignore a11y_media_has_caption -->
                   <video src={s.url} controls playsinline preload="metadata"></video>
                 {:else}
