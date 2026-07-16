@@ -11,16 +11,20 @@ export const handle: Handle = ({ event, resolve }) => {
   const ua = event.request.headers.get('user-agent') || '';
   const wantsHtml = (event.request.headers.get('accept') || '').includes('text/html');
   const chosen = event.cookies.get('PARAGLIDE_LOCALE'); // KO/EN 토글 시 설정됨 → 있으면 사용자 선택 존중
-  // 한국인 판별: Vercel 지오IP(x-vercel-ip-country)가 오면 그걸로, 없으면(엣지 아닌 Node 함수 등)
-  // 브라우저 언어(Accept-Language)로 폴백. 둘 다 "비한국" 신호 → /en/으로.
+  // 비한국 판별: Vercel 지오IP(x-vercel-ip-country)가 오면 그걸로, 없으면(엣지 아닌 Node 함수 등)
+  // 브라우저 언어(Accept-Language)로 폴백. **신호가 아예 없으면 기본=한국어**(리다이렉트 안 함) —
+  // 즉 "긍정적 비한국 신호"가 있을 때만 영어로 보낸다.
   const country = event.request.headers.get('x-vercel-ip-country');
   const acceptLang = event.request.headers.get('accept-language') || '';
-  const isKorean = country ? country === 'KR' : /(^|,|\s)ko(-|;|,|$)/i.test(acceptLang);
+  let nonKorean = false;
+  if (country) nonKorean = country !== 'KR';
+  else if (acceptLang) nonKorean = !/(^|,|\s)ko(-|;|,|$)/i.test(acceptLang);
+  // (country·acceptLang 둘 다 없으면 nonKorean=false → 한국어 기본)
 
-  // 최초 방문 + 비한국 + ko(무접두) HTML 페이지 → /en/으로 진짜 리다이렉트(307). 봇·쿠키·이미 en·에셋은 제외.
+  // 최초 방문 + 비한국 신호 + ko(무접두) HTML 페이지 → /en/으로 진짜 리다이렉트(307). 봇·쿠키·이미 en·에셋은 제외.
   if (
     event.request.method === 'GET' && wantsHtml && !isEn && !chosen &&
-    !isKorean && !BOT.test(ua)
+    nonKorean && !BOT.test(ua)
   ) {
     return new Response(null, { status: 307, headers: { location: `/en${path === '/' ? '/' : path}${event.url.search}` } });
   }
