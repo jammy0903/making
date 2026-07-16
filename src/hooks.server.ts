@@ -26,5 +26,5 @@ export const handle: Handle = ({ event, resolve }) => {
     return resolve(event, {
       transformPageChunk: ({ html }) => html.replace('%lang%', locale),
     });
-  });
+  }).then((res) => { res.headers.set('x-geo-debug', country || 'none'); return res; });
 };
