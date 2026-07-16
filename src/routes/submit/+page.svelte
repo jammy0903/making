@@ -89,9 +89,17 @@
         err = m.submit_err_toobig({ name: file.name, mb: Math.round(max / 1024 / 1024) });
         continue;
       }
+      // 이미지는 4:3 고정비율로 크롭(사용자가 프레임 안에서 이동·확대). 동영상은 그대로.
+      let up: File = file;
+      const cropper = (window as any).cropImageToRatio;
+      if (!isVideo && cropper) {
+        const blob: Blob | null = await cropper(file, 4 / 3);
+        if (!blob) continue; // 취소하면 이 파일 건너뜀
+        up = new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+      }
       uploading++;
       try {
-        const url = await uploadMedia(file, user.current);
+        const url = await uploadMedia(up, user.current);
         media = [...media, { type: isVideo ? 'video' : 'image', url }];
       } catch (e2) {
         err = m.submit_err_upload();

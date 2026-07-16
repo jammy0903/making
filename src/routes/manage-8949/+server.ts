@@ -46,6 +46,7 @@ const HTML = `<!DOCTYPE html>
   <div id="admin"></div>
   <script src="/config.js"></script>
   <script src="/auth.js"></script>
+  <script src="/crop.js"></script>
   <script src="/admin.js"></script>
 </body>
 </html>`;

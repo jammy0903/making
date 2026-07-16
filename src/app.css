@@ -102,7 +102,7 @@ button { font-family: var(--sans); cursor: pointer; }
   display: flex; flex-direction: column; overflow: hidden;
   touch-action: pan-y; user-select: none; -webkit-user-select: none;
 }
-.deck-card .photo-slot { height: 160px; flex: none; border-bottom: 1px solid var(--line); pointer-events: none; }
+.deck-card .photo-slot { height: 160px; aspect-ratio: auto; flex: none; border-bottom: 1px solid var(--line); pointer-events: none; }
 .deck-card .card-body { flex: 1; display: flex; flex-direction: column; padding: 22px 30px; }
 .deck-done {
   position: absolute; inset: 0; border: 1px dashed var(--line2); background: var(--surface2);
@@ -299,6 +299,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .photo-slot {
   display: flex; align-items: center; justify-content: center;
   background: var(--surface2); color: var(--mute4); font-size: 12px; overflow: hidden;
+  aspect-ratio: 4 / 3; /* 고정비율 프리뷰 — 업로드 시 4:3으로 크롭됨 */
 }
 .photo-slot img, .photo-slot video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photo-slot { position: relative; }
@@ -321,7 +322,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .car-dots { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
 .car-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mute4); transition: background .15s; }
 .car-dot.on { background: var(--accent); }
-.row .thumb { width: 88px; height: 88px; flex: none; border: 1px solid var(--line); }
+.row .thumb { width: 88px; flex: none; border: 1px solid var(--line); }
 
 /* ── New: cards ── */
 .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
@@ -454,7 +455,7 @@ button { font-family: var(--sans); cursor: pointer; }
 
   /* 목록 간격 축소 → 본문 폭 확보 */
   .row { gap: 14px; }
-  .row .thumb { width: 64px; height: 64px; }
+  .row .thumb { width: 64px; }
   .dict-row { gap: 14px; }
   .dict-idx { width: 22px; }
 
