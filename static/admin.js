@@ -24,6 +24,17 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').repla
 function val(id) { return document.getElementById(id).value.trim(); }
 function arr(s) { return (s || '').split(/[,\n]/).map((x) => x.trim()).filter(Boolean); }
 
+// 분류 드롭다운 선택지 (src/lib/categories.ts와 동일하게 유지). 기존 비표준 값은 편집 시 보존.
+const CATEGORIES = ['일반인', '크리에이터', '방송인', '배우', '가수', '래퍼', '프로그램', '게임', '캐릭터', '신조어', '외국', '기타'];
+function catOptions(cur) {
+  cur = (cur || '').trim();
+  const list = CATEGORIES.slice();
+  if (cur && !list.includes(cur)) list.push(cur); // DB의 기존 비표준 분류 보존
+  return ['<option value="">— 분류 선택 —</option>']
+    .concat(list.map((c) => `<option value="${esc(c)}" ${c === cur ? 'selected' : ''}>${esc(c)}</option>`))
+    .join('');
+}
+
 // ─── 데이터 ───
 async function loadCandidates() {
   state.candidates = await api('discovery_candidates?status=eq.pending&select=id,title,url,source_type,found_at,kind,term,evidence,score&order=found_at.desc&limit=100');
@@ -393,7 +404,7 @@ function editForm() {
     <div class="field"><label>뜻풀이 (description)</label><textarea id="f-desc">${esc(m.description || '')}</textarea></div>
     <div class="field"><label>표시 태그 (tags · 쉼표 구분)</label><input id="f-tags" value="${esc((m.tags || []).join(', '))}" placeholder="#반응, #유행어"></div>
     <div class="grid2">
-      <div class="field"><label>분류 (category)</label><input id="f-cat" value="${esc(m.category || '')}"></div>
+      <div class="field"><label>분류 (category)</label><select id="f-cat">${catOptions(m.category)}</select></div>
       <div class="field"><label>상태 (status)</label><select id="f-status"><option value="new" ${m.status === 'new' ? 'selected' : ''}>new (새로 올라온)</option><option value="steady" ${m.status === 'steady' ? 'selected' : ''}>steady (스테디)</option><option value="dead" ${m.status === 'dead' ? 'selected' : ''}>dead (사망 — 부고 구역)</option></select><div class="hint">dead→steady로 되돌리면 부활(died_at 자동 해제)</div></div>
     </div>
     <div class="field"><label>출처 (source)</label><input id="f-src" value="${esc(m.source || '')}"></div>

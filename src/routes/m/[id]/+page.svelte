@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { timeAgo, gallery, ytId, ytEmbed } from '$lib/cards';
+  import { timeAgo, gallery, ytId, ytEmbed, displayTag } from '$lib/cards';
+  import { CATEGORIES } from '$lib/categories';
   import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, type VoteChoice } from '$lib/client/api';
 
   const CHOICE_LABEL: Record<VoteChoice, string> = { yes: '밈이다', no: '죽은 밈이다', notmeme: '밈이 아니다' };
@@ -277,7 +278,13 @@
         <div class="subrow"><label for="e-kw">매칭 키워드 (쉼표·줄바꿈)</label><textarea id="e-kw" bind:value={ef.keywords}></textarea></div>
         <div class="subrow"><label for="e-desc">뜻 · 설명</label><textarea id="e-desc" bind:value={ef.description}></textarea></div>
         <div class="subrow"><label for="e-tags">표시 태그 (쉼표)</label><input id="e-tags" bind:value={ef.tags} /></div>
-        <div class="subrow"><label for="e-cat">분류</label><input id="e-cat" bind:value={ef.category} /></div>
+        <div class="subrow"><label for="e-cat">분류</label>
+          <select id="e-cat" bind:value={ef.category}>
+            <option value="">— 분류 선택 —</option>
+            {#each CATEGORIES as c}<option value={c}>{c}</option>{/each}
+            {#if ef.category && !CATEGORIES.includes(ef.category)}<option value={ef.category}>{ef.category}</option>{/if}
+          </select>
+        </div>
         <div class="subrow"><label for="e-status">상태</label>
           <select id="e-status" bind:value={ef.status}>
             <option value="new">new (새로 올라온)</option>
@@ -322,7 +329,7 @@
       {/if}
       {#if m.name}<div class="headword">{m.name}</div>{/if}
       {#if (m.tags || []).length}
-        <div class="tag-head">{#each m.tags as t (t)}<a class="tagchip" href="/?tag={encodeURIComponent(t)}">{t}</a>{/each}</div>
+        <div class="tag-head">{#each m.tags as t (t)}<a class="tagchip" href="/?tag={encodeURIComponent(t)}">{displayTag(t)}</a>{/each}</div>
       {/if}
       <div class="reg">
         {reg}{#if m.status === 'dead'} · <span class="obit-mark">† 사망 선고</span>{/if}{#if m.src} · 출처 <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}

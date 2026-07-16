@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
   import type { MemeCard } from '$lib/server/db';
 
@@ -95,7 +95,7 @@
 
 {#snippet tagChips(m: MemeCard)}
   {#if (m.tags || []).length}
-    <span class="m-tags">{#each m.tags as t (t)}<button type="button" class="tagchip {activeTag === t ? 'on' : ''}" onclick={(e) => pickTag(e, t)}>{t}</button>{/each}</span>
+    <span class="m-tags">{#each m.tags as t (t)}<button type="button" class="tagchip {activeTag === t ? 'on' : ''}" onclick={(e) => pickTag(e, t)}>{displayTag(t)}</button>{/each}</span>
   {/if}
 {/snippet}
 
