@@ -339,6 +339,10 @@ button { font-family: var(--sans); cursor: pointer; }
 .cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 22px; }
 .cat { border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 6px 15px; font-size: 13px; white-space: nowrap; transition: background .12s; }
 .cat.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+/* 탭 밑 나라 필터 (전체/한국/미국) */
+.country-filter { display: flex; gap: 8px; margin: 12px 0 4px; }
+.country-filter button { border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 6px 16px; font-size: 13px; border-radius: 999px; white-space: nowrap; transition: background .12s; }
+.country-filter button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
 
 /* Steady: dictionary rows */
 .dict-row { display: flex; gap: 22px; align-items: flex-start; padding: 13px 6px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
