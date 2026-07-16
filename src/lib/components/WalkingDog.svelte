@@ -19,10 +19,16 @@
 	let frame = $state(0); // 0~3
 	let resting = $state(false);
 	let x = $state(-DOG_W);
+	let hidden = $state(false); // 폰·태블릿(터치기기)에선 숨김
 
 	const src = $derived(resting ? base(breed, 'rest') : base(breed, `walk${frame + 1}`));
 
 	onMount(() => {
+		// 폰·태블릿에선 강아지 숨김 — 크롬 확장은 모바일/태블릿 브라우저서 설치 불가라 광고가 무의미.
+		// 기기감지: (hover:none)+(pointer:coarse)=터치 전용 기기(터치 노트북은 hover:hover라 제외) · UA · 모바일 크기.
+		const touchOnly = matchMedia('(hover: none) and (pointer: coarse)').matches;
+		const mobileUA = /Android|iPhone|iPod|iPad|Mobile|Tablet|Silk/i.test(navigator.userAgent);
+		if (touchOnly || mobileUA || window.innerWidth <= 820) { hidden = true; return; } // 애니메이션도 안 돌림
 		// requestAnimationFrame 대신 setInterval 사용: 탭이 숨겨져도(느리게나마) 계속 돈다.
 		// dt 는 실제 경과시간으로 계산해 프레임레이트와 무관하게 일정 속도로 걷는다.
 		let last = performance.now();
@@ -65,18 +71,20 @@
 	});
 </script>
 
-<div class="walk-lane" aria-hidden="true">
-	<a
-		class="walk-dog"
-		href={AD_URL}
-		target="_blank"
-		rel="noopener"
-		title={AD_LABEL}
-		style="transform: translateX({x}px)"
-	>
-		<img src={src} alt={AD_LABEL} />
-	</a>
-</div>
+{#if !hidden}
+	<div class="walk-lane" aria-hidden="true">
+		<a
+			class="walk-dog"
+			href={AD_URL}
+			target="_blank"
+			rel="noopener"
+			title={AD_LABEL}
+			style="transform: translateX({x}px)"
+		>
+			<img src={src} alt={AD_LABEL} />
+		</a>
+	</div>
+{/if}
 
 <style>
 	/* 화면 하단 전체를 덮되 클릭은 통과(강아지 자신만 클릭 가능) */
@@ -88,6 +96,10 @@
 		height: 0;
 		z-index: 6;
 		pointer-events: none;
+	}
+	/* 모바일 크기 + 터치 전용 기기(폰·태블릿)에선 숨김 (JS 기기감지와 이중). 데스크톱(터치 노트북 포함)만 표시 */
+	@media (max-width: 820px), (hover: none) and (pointer: coarse) {
+		.walk-lane { display: none; }
 	}
 	.walk-dog {
 		position: fixed;
