@@ -50,6 +50,12 @@ export function newCards(cards: MemeCard[]) {
 export function steadyCards(cards: MemeCard[]) {
   return cards.filter((c) => c.status === 'steady').sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
 }
+// 근본 나라별 밈 (사망 제외). 인기(rank) 우선, 그다음 최신순.
+export function originCards(cards: MemeCard[], origin: 'kr' | 'us') {
+  return cards
+    .filter((c) => c.origin === origin && c.status !== 'dead')
+    .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity) || a.days - b.days);
+}
 export function deadCards(cards: MemeCard[]) {
   return cards
     .filter((c) => c.status === 'dead')

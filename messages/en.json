@@ -241,5 +241,8 @@
   "about_p_decide": "Machines only <strong>suggest</strong> — \"this seems to be rising,\" \"this seems no longer used.\" Whether to register a meme or declare it dead is up to people. Visitors take part by voting whether each meme is \"still alive / dead.\" When both signals — fading mentions and public verdict — overlap, it moves to the obituary section.",
   "about_h_vote": "Voting and comments",
   "about_p_vote": "Voting is anonymous per browser with no login, and serves as a reference gauge; you can re-judge once a month. Comments can be left anonymously or with Google login, and logging in lets you edit or delete your own comments.",
-  "about_contact": "Contact: "
+  "about_contact": "Contact: ",
+  "home_tab_kr": "🇰🇷 Korea",
+  "home_tab_us": "🇺🇸 USA",
+  "home_country_empty": "No memes from this country yet."
 }
