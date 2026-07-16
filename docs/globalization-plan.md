@@ -22,10 +22,10 @@
 - [x] **P0 스키마** — memes에 `name_en/description_en/tags_en` 추가 (2026-07-16)
 - [x] **P1 Paraglide 기반** (2026-07-16) — @inlang/paraglide-js 2.22, `project.inlang`+messages/{ko,en}.json, vite 플러그인(strategy=url,cookie,baseLocale), `src/hooks.ts`(reroute) + `src/hooks.server.ts`(미들웨어), `app.html` `%lang%`, 레이아웃 KO/EN 토글. **검증: /en/about → html lang=en·푸터/메뉴 영어·링크 /en/ 접두** (Supabase는 샌드박스서 못 뚫어 정적페이지로 확인). 생성물 src/lib/paraglide는 gitignore(빌드 재생성)
 - [x] **P2 UI 문구 추출** (2026-07-16) — 전 페이지 UI 한국어 → 메시지(230키 ko/en). 레이아웃·홈(+page)·상세(m/[id])·submit·all·error·about·terms·privacy + cards.ts 헬퍼(상태/메타/시간). 내부 링크 localizeHref, JSON-LD inLanguage=locale, 법률 영어에 courtesy 안내. 밈 콘텐츠(이름·설명·태그)는 P3로 분리. 검증: /en/{terms,submit,about} 영어 렌더 확인
-- [ ] **P3 밈 내용 번역** — `scripts/translate-memes.js`: memes 읽어 Haiku/Sonnet로 name_en·description_en·tags_en 생성(말놀이 해설 프롬프트) → DB. 370개 배치
-- [ ] **P4 페이지 locale 연동** — /en/에서 _en 서빙(폴백), 정렬 locale, JSON-LD·hreflang·sitemap /en/
-- [ ] **P5 신규 밈 자동 번역** — 관리자 등록 시 _en 자동 생성(등록 훅 or 크론 보정)
-- [ ] **P6 언어 전환 UI** — 상단바 KO/EN 토글(현재 경로의 반대 locale로 이동)
+- [x] **P3 밈 내용 번역** (2026-07-16) — 세션 에이전트(Sonnet) 팬아웃으로 **867개**(KO 370 + US 497) name_en·description_en·tags_en 생성 → Supabase MCP UPDATE(달러쿼팅). 야민정음 말놀이 영어 해설, US는 영어 원뜻. null 0. ⚠️ 이건 1회성 세션 작업(claude_key API 아님)
+- [x] **P4 페이지 locale 연동** (2026-07-16) — `db.ts mapCard`가 en이면 _en 서빙(isEnLocale, 한국어 폴백), `meme_cards` 뷰에 _en 노출, 상세 이전/다음 name_en, 홈 분류 라벨 영어(catLabel/CATEGORY_EN), 레이아웃 hreflang ko↔en·x-default, sitemap ko+en+xhtml:link, JSON-LD inLanguage=locale. **라이브 검증: /en/m/374 → Nenemttin·영어 설명·title·hreflang** ✅
+- [ ] **P5 신규 밈 자동 번역** — 관리자 등록 시 _en 자동 생성. **세션 아님 — `claude_key`로 API 직접 호출**(server.js/GH Actions, scout 방식). 미완
+- [x] **P6 언어 전환 UI** (P1에서 완료) — 상단바 KO/EN 토글
 
 ## 검증
 - 각 Phase마다 `npm run build` 통과 + 배포 후 육안. `/en/` 페이지가 영어로 SSR되고 hreflang로 상호 연결되는지.
