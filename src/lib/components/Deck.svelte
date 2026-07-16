@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { newCards, tagText, metaNew, metaSteady, coverImage } from '$lib/cards';
+  import { newCards, tagText, metaNew, metaSteady, coverImage, ytId, ytThumb } from '$lib/cards';
   import { castVote, markVoted, type VoteChoice } from '$lib/client/api';
   import type { MemeCard } from '$lib/server/db';
 
@@ -127,7 +127,7 @@
                   {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
                 </div>
               {:else if m.videoUrl}
-                <div class="photo-slot vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+                <div class="photo-slot vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
               {/if}
               <div class="card-body">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}

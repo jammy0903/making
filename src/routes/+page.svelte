@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage } from '$lib/cards';
+  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
   import type { MemeCard } from '$lib/server/db';
 
@@ -142,7 +142,7 @@
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
-              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+              <div class="photo-slot thumb vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
             {/if}
           </a>
         {/each}
@@ -178,7 +178,7 @@
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
-              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+              <div class="photo-slot thumb vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
             {/if}
           </a>
         {/each}
@@ -229,7 +229,7 @@
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
-              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+              <div class="photo-slot thumb vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
             {/if}
           </a>
         {/each}
@@ -270,7 +270,7 @@
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
-              <div class="photo-slot thumb vid"><video src={m.videoUrl} muted playsinline preload="metadata"></video></div>
+              <div class="photo-slot thumb vid">{#if ytId(m.videoUrl)}<img src={ytThumb(m.videoUrl)} alt="" referrerpolicy="no-referrer" />{:else}<video src={m.videoUrl} muted playsinline preload="metadata"></video>{/if}</div>
             {/if}
           </a>
         {/each}

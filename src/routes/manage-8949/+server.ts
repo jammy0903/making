@@ -34,6 +34,12 @@ const HTML = `<!DOCTYPE html>
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .searchbar { margin-bottom:16px; }
     .badge-done { color:var(--accent); } .badge-todo { color:#c0392b; }
+    .media-up { font-size:12px; color:var(--accent); margin:6px 0; min-height:16px; }
+    .media-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .media-cell { position:relative; width:96px; height:96px; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+    .media-cell img, .media-cell video { width:100%; height:100%; object-fit:cover; display:block; }
+    .media-cell-x { position:absolute; top:2px; right:2px; width:20px; height:20px; border:none; border-radius:50%; background:rgba(0,0,0,.6); color:#fff; font-size:12px; line-height:20px; cursor:pointer; padding:0; }
+    .cover-badge { position:absolute; bottom:2px; left:2px; background:var(--accent,#c0392b); color:#fff; font-size:10px; padding:1px 5px; border-radius:3px; }
   </style>
 </head>
 <body>

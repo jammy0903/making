@@ -112,15 +112,14 @@ async function rejectSub(id) {
 }
 function startRegisterSub(id) {
   const s = state.submissions.find((x) => x.id === id);
-  const imgs = (s.media || []).filter((x) => x && x.type === 'image').map((x) => x.url);
-  const vids = (s.media || []).filter((x) => x && x.type === 'video').map((x) => x.url);
-  set({ editing: { sub: s, meme: { name: s.name, description: s.description || '', tags: s.tags || [], source: s.source_url || '', photo_url: imgs[0] || s.photo_url || '', video_url: vids[0] || s.video_url || '', media: s.media || [], status: 'new' } } });
+  const meme = { name: s.name, description: s.description || '', tags: s.tags || [], source: s.source_url || '', status: 'new' };
+  set({ editing: { sub: s, meme, ...initMedia({ media: s.media, photo_url: s.photo_url, video_url: s.video_url }) } });
 }
 function startRegister(id) {
   const c = state.candidates.find((x) => x.id === id);
   // term형(검색수요 발굴)이면 이름·키워드를 미리 채움
   const meme = c.kind === 'term' && c.term ? { name: c.term, keywords: [c.term] } : {};
-  set({ editing: { cand: c, meme } });
+  set({ editing: { cand: c, meme, photos: [], video: '' } });
 }
 async function doReject(id) {
   try {
@@ -134,8 +133,8 @@ async function doReject(id) {
   }
   catch (e) { alert('반려 실패: ' + e.message); }
 }
-function editMeme(id) { set({ editing: { meme: state.memes.find((m) => m.id === id) } }); }
-function newMeme() { set({ editing: { meme: {} } }); }
+function editMeme(id) { const m = state.memes.find((x) => x.id === id); set({ editing: { meme: m, ...initMedia(m) } }); }
+function newMeme() { set({ editing: { meme: {}, photos: [], video: '' } }); }
 function cancelEdit() { state.editing = null; go(state.tab); }
 async function deleteMeme(id) {
   if (!confirm('이 밈을 삭제합니다. 측정 데이터·댓글·투표도 함께 삭제됩니다. 계속할까요?')) return;
@@ -151,18 +150,21 @@ async function searchMemes() { try { await loadMemes(val('meme-q')); } catch (e)
 async function saveEdit() {
   const status = val('f-status');
   const prev = (state.editing.meme || {});
+  const photos = (state.editing.photos || []).filter(Boolean);
+  const video = (state.editing.video || '').trim();
   const data = {
     name: val('f-name'), keywords: arr(val('f-keywords')), description: val('f-desc'),
     tags: arr(val('f-tags')), category: val('f-cat') || null, status,
-    source: val('f-src') || null, photo_url: val('f-photo') || null, video_url: val('f-video') || null,
+    source: val('f-src') || null,
+    photo_url: photos[0] || null, // 커버 = 첫 사진
+    video_url: video || null,
     // 사망이면 선고 시각 유지(없으면 지금), 아니면 해제(=부활)
     died_at: status === 'dead' ? (prev.died_at || new Date().toISOString()) : null,
   };
-  // media 배열 구성: 커버(photo_url) + 추가 사진(줄바꿈) + 동영상
+  // media 배열: 사진들(첫 장=커버) + 동영상(업로드 파일 URL 또는 유튜브 링크)
   data.media = [];
-  if (data.photo_url) data.media.push({ type: 'image', url: data.photo_url });
-  for (const u of arr(val('f-photos-extra'))) if (u) data.media.push({ type: 'image', url: u });
-  if (data.video_url) data.media.push({ type: 'video', url: data.video_url });
+  for (const u of photos) data.media.push({ type: 'image', url: u });
+  if (video) data.media.push({ type: 'video', url: video });
   const msg = document.getElementById('save-msg'); msg.textContent = '저장 중…';
   try {
     if (state.editing.cand) {
@@ -281,15 +283,102 @@ function membersView() {
       <div class="m">${esc(m.email || '')} · 가입 ${esc((m.created_at || '').slice(0, 10))}</div>
     </div>`).join('');
 }
+// ─── 미디어 업로드 (Supabase Storage 'media' 버킷 · 본인 uid 폴더) ───
+const MAX_IMG = 10 * 1024 * 1024; // 10MB
+const MAX_VID = 50 * 1024 * 1024; // 50MB (버킷 제한과 동일)
+
+async function uploadFile(file) {
+  const safe = (file.name || 'file').replace(/[^\w.\-]/g, '_').slice(-60);
+  const path = `${state.user.id}/${Date.now()}-${safe}`;
+  const r = await fetch(`${SB.url}/storage/v1/object/media/${path}`, {
+    method: 'POST', headers: h({ 'Content-Type': file.type || 'application/octet-stream' }), body: file,
+  });
+  if (!r.ok) throw new Error(`업로드 ${r.status}: ${await r.text()}`);
+  return `${SB.url}/storage/v1/object/public/media/${path}`;
+}
+// 유튜브 링크 → 영상 ID (watch·youtu.be·shorts·embed·live). 아니면 null.
+function ytId(url) {
+  const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function isUploadedMedia(url) { return /\/storage\/v1\/object\/public\/media\//.test(String(url || '')); }
+
+// 편집 시작 시 photos(이미지 URL 배열, [0]=커버)·video(단일 URL) 초기화
+function initMedia(m) {
+  const imgs = ((m && m.media) || []).filter((x) => x && x.type === 'image').map((x) => x.url);
+  const cover = (m && m.photo_url) || imgs[0] || '';
+  const photos = cover ? [cover, ...imgs.filter((u) => u !== cover)] : imgs.slice();
+  const vid = ((m && m.media) || []).find((x) => x && x.type === 'video');
+  const video = (m && m.video_url) || (vid && vid.url) || '';
+  return { photos, video };
+}
+
+// 사진 영역 (파일 업로드 · #photo-area만 부분 갱신 → 다른 입력 안 잃음)
+function photoAreaHtml() {
+  const photos = state.editing.photos || [];
+  const cells = photos.map((u, i) => `
+    <div class="media-cell">
+      <img src="${esc(u)}" alt="">
+      ${i === 0 ? '<span class="cover-badge">커버</span>' : ''}
+      <button type="button" class="media-cell-x" onclick="removePhoto(${i})" aria-label="제거">✕</button>
+    </div>`).join('');
+  return `
+    <input type="file" accept="image/*" multiple onchange="pickPhotos(this)">
+    <div class="media-up" id="photo-up"></div>
+    <div class="media-grid">${cells}</div>
+    <div class="hint">첫 번째 사진이 커버로 쓰입니다. 여러 장 가능 (장당 10MB↓)</div>`;
+}
+async function pickPhotos(input) {
+  const files = Array.from(input.files || []); input.value = '';
+  const up = document.getElementById('photo-up');
+  for (const f of files) {
+    if (f.size > MAX_IMG) { alert(`${f.name}: 사진은 10MB 이하만 가능해요`); continue; }
+    if (up) up.textContent = `업로드 중… ${f.name}`;
+    try { const url = await uploadFile(f); state.editing.photos.push(url); refreshPhotos(); }
+    catch (e) { if (up) up.textContent = ''; alert('업로드 실패: ' + e.message); }
+  }
+}
+function removePhoto(i) { state.editing.photos.splice(i, 1); refreshPhotos(); }
+function refreshPhotos() { const el = document.getElementById('photo-area'); if (el) el.innerHTML = photoAreaHtml(); }
+
+// 동영상 영역 (파일 업로드 또는 유튜브 링크 · 유튜브면 썸네일 미리보기)
+function videoPreviewHtml() {
+  const v = state.editing.video;
+  if (!v) return '';
+  const id = ytId(v);
+  let inner;
+  if (id) inner = `<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg" alt="유튜브 썸네일" style="max-width:260px;border-radius:6px;display:block"><div class="hint">유튜브 영상 인식됨</div>`;
+  else if (isUploadedMedia(v)) inner = `<video src="${esc(v)}" controls muted playsinline preload="metadata" style="max-width:260px;border-radius:6px"></video>`;
+  else inner = `<div class="hint" style="color:#c0392b">유튜브 링크가 아니에요. 유튜브 URL을 넣거나 파일을 업로드하세요.</div>`;
+  return `<div style="margin-top:8px">${inner}<div style="margin-top:6px"><button type="button" class="btn" onclick="clearVideo()">동영상 제거</button></div></div>`;
+}
+function videoAreaHtml() {
+  const v = state.editing.video || '';
+  return `
+    <input type="file" accept="video/*" onchange="pickVideo(this)">
+    <div class="media-up" id="video-up"></div>
+    <div style="margin:8px 0 4px;font-size:12px;color:var(--mute)">또는 유튜브 링크 붙여넣기</div>
+    <input id="f-video-url" value="${esc(v)}" placeholder="https://www.youtube.com/watch?v=..." oninput="onVideoUrl(this.value)">
+    <div id="video-prev">${videoPreviewHtml()}</div>
+    <div class="hint">영상 파일 업로드(50MB↓) 또는 유튜브 링크. 링크는 유튜브만 지원.</div>`;
+}
+async function pickVideo(input) {
+  const f = (input.files || [])[0]; input.value = '';
+  if (!f) return;
+  if (f.size > MAX_VID) { alert('영상 파일은 50MB 이하만 가능해요 (더 크면 유튜브 링크를 쓰세요)'); return; }
+  const up = document.getElementById('video-up'); if (up) up.textContent = '업로드 중…';
+  try { const url = await uploadFile(f); state.editing.video = url; refreshVideo(); }
+  catch (e) { if (up) up.textContent = ''; alert('업로드 실패: ' + e.message); }
+}
+function onVideoUrl(v) { state.editing.video = (v || '').trim(); updateVideoPreview(); }
+function clearVideo() { state.editing.video = ''; refreshVideo(); }
+function refreshVideo() { const el = document.getElementById('video-area'); if (el) el.innerHTML = videoAreaHtml(); }
+function updateVideoPreview() { const el = document.getElementById('video-prev'); if (el) el.innerHTML = videoPreviewHtml(); }
+
 function editForm() {
   const m = state.editing.meme || {};
   const cand = state.editing.cand;
   const sub = state.editing.sub;
-  const _imgs = (m.media || []).filter((x) => x && x.type === 'image').map((x) => x.url);
-  const _vids = (m.media || []).filter((x) => x && x.type === 'video').map((x) => x.url);
-  const _cover = m.photo_url || _imgs[0] || '';
-  const _extra = _imgs.filter((u) => u !== _cover);
-  const _video = m.video_url || _vids[0] || '';
   const head = cand ? '후보 등록 (아래 채워서 저장 → 밈으로 등록)'
     : sub ? '신청 등록 (아래 채워서 저장 → 밈으로 등록)'
     : (m.id ? `밈 편집 #${m.id}` : '새 밈');
@@ -307,12 +396,9 @@ function editForm() {
       <div class="field"><label>분류 (category)</label><input id="f-cat" value="${esc(m.category || '')}"></div>
       <div class="field"><label>상태 (status)</label><select id="f-status"><option value="new" ${m.status === 'new' ? 'selected' : ''}>new (새로 올라온)</option><option value="steady" ${m.status === 'steady' ? 'selected' : ''}>steady (스테디)</option><option value="dead" ${m.status === 'dead' ? 'selected' : ''}>dead (사망 — 부고 구역)</option></select><div class="hint">dead→steady로 되돌리면 부활(died_at 자동 해제)</div></div>
     </div>
-    <div class="grid2">
-      <div class="field"><label>출처 (source)</label><input id="f-src" value="${esc(m.source || '')}"></div>
-      <div class="field"><label>대표 사진 URL (커버)</label><input id="f-photo" value="${esc(_cover)}"></div>
-    </div>
-    <div class="field"><label>추가 사진 URL (여러 장 · 한 줄에 하나)</label><textarea id="f-photos-extra">${esc(_extra.join('\n'))}</textarea><div class="hint">커버 + 추가 사진 + 동영상이 캐러셀로 표시됩니다</div></div>
-    <div class="field"><label>동영상 URL (video_url)</label><input id="f-video" value="${esc(_video)}"><div class="hint">신청 등록 시 첨부 미디어가 자동 채워집니다</div></div>
+    <div class="field"><label>출처 (source)</label><input id="f-src" value="${esc(m.source || '')}"></div>
+    <div class="field"><label>이미지 (파일 업로드)</label><div id="photo-area">${photoAreaHtml()}</div></div>
+    <div class="field"><label>동영상 (파일 업로드 또는 유튜브 링크)</label><div id="video-area">${videoAreaHtml()}</div></div>
     <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
       <button class="btn-solid" onclick="saveEdit()">저장</button>
       ${m.id ? `<button class="btn" style="border-color:#c0392b;color:#c0392b" onclick="deleteMeme(${m.id})">삭제</button>` : ''}
