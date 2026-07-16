@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { timeAgo, gallery, ytId, ytEmbed, displayTag } from '$lib/cards';
+  import { timeAgo, gallery, ytId, ytEmbed, ytThumb, displayTag } from '$lib/cards';
   import { CATEGORIES } from '$lib/categories';
-  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, type VoteChoice } from '$lib/client/api';
+  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, uploadMedia, type VoteChoice } from '$lib/client/api';
   import { m as t } from '$lib/paraglide/messages'; // 컴포넌트 상태 m(밈)과 충돌 피해 t로 alias
   import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
@@ -52,6 +52,7 @@
   const admin = $derived(isAdmin(user.current));
   let editMode = $state(false);
   let saving = $state(false);
+  let efUploading = $state(0);
   let editErr = $state('');
   let ef = $state<any>(null);
   const splitList = (s: string) => s.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
@@ -64,10 +65,11 @@
       const imgs = (raw.media || []).filter((x: any) => x?.type === 'image').map((x: any) => x.url);
       const vids = (raw.media || []).filter((x: any) => x?.type === 'video').map((x: any) => x.url);
       const cover = raw.photo_url || imgs[0] || '';
+      const photos = cover ? [cover, ...imgs.filter((u: string) => u !== cover)] : imgs;
       ef = {
         name: raw.name || '', keywords: (raw.keywords || []).join(', '), description: raw.description || '',
         tags: (raw.tags || []).join(', '), category: raw.category || '', status: raw.status || 'new',
-        cover, extra: imgs.filter((u: string) => u !== cover).join('\n'), video: raw.video_url || vids[0] || '',
+        photos, video: raw.video_url || vids[0] || '',
         source: raw.source || '', died_at: raw.died_at || null,
       };
       editMode = true;
@@ -77,20 +79,52 @@
     }
   }
 
+  // 이미지 파일 업로드(4:3 크롭) → ef.photos 추가. 첫 장이 커버.
+  async function pickEditPhotos(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (!user.current) return;
+    editErr = '';
+    const cropper = (window as any).cropImageToRatio;
+    for (const f of files) {
+      if (f.size > 10 * 1024 * 1024) { editErr = `${f.name}: 사진은 10MB 이하만 가능해요`; continue; }
+      let up: File = f;
+      if (cropper) { const blob: Blob | null = await cropper(f, 4 / 3); if (!blob) continue; up = new File([blob], f.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' }); }
+      efUploading++;
+      try { const url = await uploadMedia(up, user.current); ef.photos = [...ef.photos, url]; }
+      catch (e2) { editErr = '업로드에 실패했어요.'; console.error(e2); }
+      efUploading--;
+    }
+  }
+  function removeEditPhoto(i: number) { ef.photos = ef.photos.filter((_: string, idx: number) => idx !== i); }
+  // 동영상 파일 업로드(유튜브는 아래 URL칸)
+  async function pickEditVideo(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const f = (input.files || [])[0];
+    input.value = '';
+    if (!f || !user.current) return;
+    if (f.size > 50 * 1024 * 1024) { editErr = '영상은 50MB 이하 (더 크면 유튜브 링크)'; return; }
+    editErr = '';
+    efUploading++;
+    try { ef.video = await uploadMedia(f, user.current); }
+    catch (e2) { editErr = '업로드에 실패했어요.'; console.error(e2); }
+    efUploading--;
+  }
+
   async function savePost() {
     if (!ef) return;
     saving = true;
     editErr = '';
-    const cover = ef.cover.trim();
-    const video = ef.video.trim();
+    const photos: string[] = (ef.photos || []).filter(Boolean);
+    const video = (ef.video || '').trim();
     const media: { type: 'image' | 'video'; url: string }[] = [];
-    if (cover) media.push({ type: 'image', url: cover });
-    for (const u of splitList(ef.extra)) media.push({ type: 'image', url: u });
+    for (const u of photos) media.push({ type: 'image', url: u });
     if (video) media.push({ type: 'video', url: video });
     const data = {
       name: ef.name.trim(), keywords: splitList(ef.keywords), description: ef.description.trim(),
       tags: splitList(ef.tags), category: ef.category.trim() || null, status: ef.status,
-      source: ef.source.trim() || null, photo_url: cover || null, video_url: video || null, media,
+      source: ef.source.trim() || null, photo_url: photos[0] || null, video_url: video || null, media,
       died_at: ef.status === 'dead' ? (ef.died_at || new Date().toISOString()) : null,
     };
     try {
@@ -294,9 +328,34 @@
             <option value="dead">{t.edit_status_dead()}</option>
           </select>
         </div>
-        <div class="subrow"><label for="e-cover">{t.edit_cover()}</label><input id="e-cover" bind:value={ef.cover} /></div>
-        <div class="subrow"><label for="e-extra">{t.edit_extra()}</label><textarea id="e-extra" bind:value={ef.extra}></textarea></div>
-        <div class="subrow"><label for="e-video">{t.edit_video()}</label><input id="e-video" bind:value={ef.video} /></div>
+        <div class="subrow">
+          <label for="e-photos">이미지 (파일 업로드 · 여러 장 · 첫 장이 커버)</label>
+          <input id="e-photos" type="file" accept="image/*" multiple onchange={pickEditPhotos} />
+          {#if efUploading}<div class="media-up">업로드 중… ({efUploading})</div>{/if}
+          {#if ef.photos.length}
+            <div class="media-grid">
+              {#each ef.photos as u, i (u)}
+                <div class="media-cell">
+                  <img src={u} alt="" />
+                  {#if i === 0}<span class="cover-badge">커버</span>{/if}
+                  <button type="button" class="media-cell-x" onclick={() => removeEditPhoto(i)} aria-label="제거">✕</button>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+        <div class="subrow">
+          <label for="e-video">동영상 (파일 업로드 또는 유튜브 링크)</label>
+          <input id="e-video" type="file" accept="video/*" onchange={pickEditVideo} />
+          <input type="text" placeholder="또는 유튜브 링크 붙여넣기" bind:value={ef.video} style="margin-top:8px" />
+          {#if ef.video}
+            <div style="margin-top:8px">
+              {#if ytId(ef.video)}<img src={ytThumb(ef.video)} alt="유튜브 썸네일" style="max-width:220px;border-radius:6px;display:block" />
+              {:else}<!-- svelte-ignore a11y_media_has_caption --><video src={ef.video} controls muted playsinline preload="metadata" style="max-width:220px;border-radius:6px"></video>{/if}
+              <button type="button" class="btn" style="margin-top:6px" onclick={() => (ef.video = '')}>동영상 제거</button>
+            </div>
+          {/if}
+        </div>
         <div class="subrow"><label for="e-src">{t.edit_src()}</label><input id="e-src" bind:value={ef.source} /></div>
         <div class="edit-actions">
           {#if editErr}<span class="cerr" role="alert">{editErr}</span>{/if}

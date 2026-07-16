@@ -212,6 +212,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .media-cell { position: relative; width: 92px; height: 92px; border: 1px solid var(--line2); background: #000; overflow: hidden; }
 .media-cell img, .media-cell video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .media-cell-x { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border: none; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.cover-badge { position: absolute; bottom: 2px; left: 2px; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; }
 .dup { font-size: 13px; margin-top: 6px; }
 .dup a { font-weight: 500; }
 .dup-warn { color: #B4402E; }
