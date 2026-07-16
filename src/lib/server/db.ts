@@ -34,6 +34,7 @@ export interface MemeCard {
   videoUrl: string;
   media: MediaItem[];
   status: 'new' | 'steady' | 'dead';
+  origin: 'kr' | 'us'; // 근본 나라 (한국/미국)
   photoUpdatedAt: string | null;
   days: number;
   months: number;
@@ -62,6 +63,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     videoUrl: r.video_url || '',
     media: Array.isArray(r.media) ? r.media.filter((x: any) => x && x.url) : [],
     status: r.status || 'new',
+    origin: (r.tags || []).includes('#미국') ? 'us' : 'kr', // 근본 나라 — 원본 태그 기준(locale 무관)
     photoUpdatedAt: r.photo_updated_at || null,
     days,
     months: Math.floor(days / 30),
