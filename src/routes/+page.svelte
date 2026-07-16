@@ -5,6 +5,8 @@
   import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
   import type { MemeCard } from '$lib/server/db';
+  import { m } from '$lib/paraglide/messages';
+  import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
   let { data } = $props();
 
@@ -20,10 +22,10 @@
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'memedics',
-      alternateName: ['밈 사전', '한국 밈 트렌드 사전'],
+      alternateName: [m.home_ld_alt()],
       url: `${page.url.origin}/`,
-      description: '새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 한국 밈 트렌드 사전.',
-      inLanguage: 'ko',
+      description: m.home_ld_desc(),
+      inLanguage: getLocale(),
       potentialAction: {
         '@type': 'SearchAction',
         target: { '@type': 'EntryPoint', urlTemplate: `${page.url.origin}/?q={q}` },
@@ -80,16 +82,16 @@
 </script>
 
 <svelte:head>
-  <title>memedics — 한국 밈 트렌드 사전</title>
-  <meta name="description" content="새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 밈 사전, memedics." />
-  <link rel="canonical" href="{page.url.origin}/" />
+  <title>{m.home_head_title()}</title>
+  <meta name="description" content={m.home_head_desc()} />
+  <link rel="canonical" href="{page.url.origin}{localizeHref('/')}" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="memedics — 한국 밈 트렌드 사전" />
-  <meta property="og:description" content="새로 뜬 밈과 오래 살아남은 밈을 여러 커뮤니티에서 측정해 보여주는 밈 사전." />
-  <meta property="og:url" content="{page.url.origin}/" />
+  <meta property="og:title" content={m.home_head_title()} />
+  <meta property="og:description" content={m.home_og_desc()} />
+  <meta property="og:url" content="{page.url.origin}{localizeHref('/')}" />
   <meta property="og:image" content="{page.url.origin}/og-default.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="keywords" content="밈, 밈 뜻, 한국 밈, 밈 트렌드, 유행어, 밈 사전, meme" />
+  <meta name="keywords" content={m.home_keywords()} />
   {@html `<script type="application/ld+json">${siteLd}</script>`}
 </svelte:head>
 
@@ -101,8 +103,8 @@
 
 <div class="wrap masthead">
   <div class="eyebrow">Meme Dictionary</div>
-  <h1><a href="/" onclick={() => (q = '')} style="color:inherit;text-decoration:none" aria-label="memedics 홈">memedics</a></h1>
-  <p class="lede">새로 뜬 밈과 오래 살아남은 밈을 모아 둡니다. 판정하지 않고, 있는 그대로 보여드립니다. 해석은 읽는 사람의 몫.</p>
+  <h1><a href={localizeHref('/')} onclick={() => (q = '')} style="color:inherit;text-decoration:none" aria-label={m.tb_brand_home()}>memedics</a></h1>
+  <p class="lede">{m.home_lede()}</p>
   <div class="rule"></div>
 </div>
 
@@ -112,22 +114,22 @@
       <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
       <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     </svg>
-    <input type="search" bind:value={q} placeholder="밈 이름·뜻으로 검색" aria-label="밈 검색" autocomplete="off" />
+    <input type="search" bind:value={q} placeholder={m.home_search_ph()} aria-label={m.home_search_aria()} autocomplete="off" />
     {#if query}
-      <button type="button" class="search-clear" onclick={() => (q = '')} aria-label="검색 지우기">✕</button>
+      <button type="button" class="search-clear" onclick={() => (q = '')} aria-label={m.home_search_clear()}>✕</button>
     {/if}
   </label>
 </div>
 
 {#if query}
   <div class="wrap page">
-    <div class="list-head"><div class="count">‘{query}’ 검색 · {results.length}개</div></div>
+    <div class="list-head"><div class="count">{m.home_search_count({ q: query, count: results.length })}</div></div>
     {#if !results.length}
-      <div class="empty">‘{query}’에 맞는 밈이 없습니다. <a href="/submit">이 밈 신청하기 →</a></div>
+      <div class="empty">{m.home_search_empty({ q: query })}<a href={localizeHref('/submit')}>{m.home_search_empty_cta()}</a></div>
     {:else}
       <div class="rows">
         {#each resultsShown as m (m.id)}
-          <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
+          <a class="row" href={localizeHref(`/m/${m.id}`)} style="border-bottom:1px solid var(--line3);color:inherit">
             <div class="col">
               <div class="rowline">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
@@ -148,22 +150,22 @@
         {/each}
       </div>
       {#if results.length > resultsLimit}
-        <div class="morewrap"><button class="more" onclick={() => (resultsLimit += PAGE)}>더 보기 ({results.length - resultsLimit}개)</button></div>
+        <div class="morewrap"><button class="more" onclick={() => (resultsLimit += PAGE)}>{m.home_more({ count: results.length - resultsLimit })}</button></div>
       {/if}
     {/if}
   </div>
 {:else if activeTag}
   <div class="wrap page">
     <div class="list-head">
-      <div class="count">{activeTag} · {tagResults.length}개</div>
-      <a class="clear-tag" href="/">✕ 태그 해제</a>
+      <div class="count">{m.home_tag_count({ tag: activeTag, count: tagResults.length })}</div>
+      <a class="clear-tag" href={localizeHref('/')}>{m.home_tag_clear()}</a>
     </div>
     {#if !tagResults.length}
-      <div class="empty">‘{activeTag}’ 태그의 밈이 없습니다.</div>
+      <div class="empty">{m.home_tag_empty({ tag: activeTag })}</div>
     {:else}
       <div class="rows">
         {#each tagShown as m (m.id)}
-          <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
+          <a class="row" href={localizeHref(`/m/${m.id}`)} style="border-bottom:1px solid var(--line3);color:inherit">
             <div class="col">
               <div class="rowline">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
@@ -184,7 +186,7 @@
         {/each}
       </div>
       {#if tagResults.length > tagLimit}
-        <div class="morewrap"><button class="more" onclick={() => (tagLimit += PAGE)}>더 보기 ({tagResults.length - tagLimit}개)</button></div>
+        <div class="morewrap"><button class="more" onclick={() => (tagLimit += PAGE)}>{m.home_more({ count: tagResults.length - tagLimit })}</button></div>
       {/if}
     {/if}
   </div>
@@ -193,28 +195,28 @@
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab {tab === 'new' ? 'active' : ''}" onclick={() => (tab = 'new')}>새로 올라온</button>
-    <button class="tab {tab === 'steady' ? 'active' : ''}" onclick={() => (tab = 'steady')}>스테디</button>
-    <a class="tab tab-cta" href="/submit">＋ 밈 신청</a>
+    <button class="tab {tab === 'new' ? 'active' : ''}" onclick={() => (tab = 'new')}>{m.home_tab_new()}</button>
+    <button class="tab {tab === 'steady' ? 'active' : ''}" onclick={() => (tab = 'steady')}>{m.home_tab_steady()}</button>
+    <a class="tab tab-cta" href={localizeHref('/submit')}>{m.home_tab_submit()}</a>
   </div>
 </div>
 
 {#if tab === 'new'}
   <div class="wrap page">
     <div class="list-head">
-      <div class="count">{news.length}개 항목</div>
-      <div class="seg" role="group" aria-label="정렬">
-        <button class={newSort === 'recent' ? 'on' : ''} onclick={() => (newSort = 'recent')}>최신순</button>
-        <button class={newSort === 'name' ? 'on' : ''} onclick={() => (newSort = 'name')}>이름순</button>
-        <button class={newSort === 'comments' ? 'on' : ''} onclick={() => (newSort = 'comments')}>댓글순</button>
+      <div class="count">{m.home_count_items({ count: news.length })}</div>
+      <div class="seg" role="group" aria-label={m.home_sort_aria()}>
+        <button class={newSort === 'recent' ? 'on' : ''} onclick={() => (newSort = 'recent')}>{m.home_sort_recent()}</button>
+        <button class={newSort === 'name' ? 'on' : ''} onclick={() => (newSort = 'name')}>{m.home_sort_name()}</button>
+        <button class={newSort === 'comments' ? 'on' : ''} onclick={() => (newSort = 'comments')}>{m.home_sort_comments()}</button>
       </div>
     </div>
     {#if !news.length}
-      <div class="empty">아직 새로 올라온 밈이 없습니다.</div>
+      <div class="empty">{m.home_new_empty()}</div>
     {:else}
       <div class="rows">
         {#each newsShown as m (m.id)}
-          <a class="row" href="/m/{m.id}" style="border-bottom:1px solid var(--line3);color:inherit">
+          <a class="row" href={localizeHref(`/m/${m.id}`)} style="border-bottom:1px solid var(--line3);color:inherit">
             <div class="col">
               <div class="rowline">
                 {#if m.name}<span class="m-name">{m.name}</span>{/if}
@@ -235,26 +237,26 @@
         {/each}
       </div>
       {#if news.length > newLimit}
-        <div class="morewrap"><button class="more" onclick={() => (newLimit += PAGE)}>더 보기 ({news.length - newLimit}개)</button></div>
+        <div class="morewrap"><button class="more" onclick={() => (newLimit += PAGE)}>{m.home_more({ count: news.length - newLimit })}</button></div>
       {/if}
     {/if}
   </div>
 {:else}
   <div class="wrap page">
     <div class="list-head">
-      <div class="note">여러 소스에서 측정한 활성도 순위입니다. 앞의 번호가 순위 · 판정하지 않고 있는 그대로.</div>
+      <div class="note">{m.home_steady_note()}</div>
     </div>
     <div class="cats">
       {#each cats as c (c)}
-        <button class="cat {steadyCat === c ? 'on' : ''}" onclick={() => (steadyCat = c)}>{c}</button>
+        <button class="cat {steadyCat === c ? 'on' : ''}" onclick={() => (steadyCat = c)}>{c === '전체' ? m.home_cat_all() : c}</button>
       {/each}
     </div>
     {#if !steadyList.length}
-      <div class="empty">이 분류엔 아직 스테디 밈이 없습니다.</div>
+      <div class="empty">{m.home_steady_empty()}</div>
     {:else}
       <div class="rows">
         {#each steadyShown as m, i (m.id)}
-          <a class="dict-row" href="/m/{m.id}" style="color:inherit">
+          <a class="dict-row" href={localizeHref(`/m/${m.id}`)} style="color:inherit">
             <div class="dict-idx">{String(i + 1).padStart(2, '0')}</div>
             <div class="col">
               <div class="dict-head">
@@ -276,16 +278,16 @@
         {/each}
       </div>
       {#if steadyList.length > steadyLimit}
-        <div class="morewrap"><button class="more" onclick={() => (steadyLimit += PAGE)}>더 보기 ({steadyList.length - steadyLimit}개)</button></div>
+        <div class="morewrap"><button class="more" onclick={() => (steadyLimit += PAGE)}>{m.home_more({ count: steadyList.length - steadyLimit })}</button></div>
       {/if}
     {/if}
     {#if deads.length}
       <div class="obits">
-        <div class="obits-head">† 부고 <span class="obits-sub">두 신호(언급 소멸·판정 여론)가 겹쳐 사망 선고된 밈 · {deads.length}</span></div>
-        {#each deads as m (m.id)}
-          <a class="obit-row" href="/m/{m.id}" style="color:inherit">
-            <span class="obit-name">{m.name}</span>
-            <span class="obit-date">사망 선고</span>
+        <div class="obits-head">{m.home_obit_head()} <span class="obits-sub">{m.home_obit_sub({ count: deads.length })}</span></div>
+        {#each deads as d (d.id)}
+          <a class="obit-row" href={localizeHref(`/m/${d.id}`)} style="color:inherit">
+            <span class="obit-name">{d.name}</span>
+            <span class="obit-date">{m.home_obit_declared()}</span>
           </a>
         {/each}
       </div>
