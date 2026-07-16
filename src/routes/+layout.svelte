@@ -40,7 +40,7 @@
 
 <div class="topbar">
   <div class="wrap tb-inner">
-    <a class="tb-brand" href="/" style="border:none;color:inherit" aria-label="memedics 홈">
+    <a class="tb-brand" href={localizeHref('/')} style="border:none;color:inherit" aria-label={m.tb_brand_home()}>
       <img class="tb-logo" src="/logo-mark.png" alt="" width="24" height="24" />
       <span>memedics</span>
     </a>
@@ -48,8 +48,8 @@
       <button
         class="tb-theme"
         onclick={toggleTheme}
-        aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
-        title={theme === 'dark' ? '라이트 모드' : '다크 모드'}
+        aria-label={theme === 'dark' ? m.theme_to_light() : m.theme_to_dark()}
+        title={theme === 'dark' ? m.theme_light() : m.theme_dark()}
       >{theme === 'dark' ? '☀' : '☾'}</button>
       ·
       <button
@@ -60,10 +60,10 @@
       ·
       {#if user.current}
         <span class="tb-user">{user.current.name}</span> ·
-        <button class="tb-link" onclick={logout}>로그아웃</button> ·
-        <a class="tb-link" href="/withdraw.html">탈퇴</a>
+        <button class="tb-link" onclick={logout}>{m.nav_logout()}</button> ·
+        <a class="tb-link" href="/withdraw.html">{m.nav_withdraw()}</a>
       {:else}
-        <button class="tb-link" onclick={login}>Google 로그인</button>
+        <button class="tb-link" onclick={login}>{m.nav_login()}</button>
       {/if}
     </span>
   </div>
@@ -81,9 +81,9 @@
       <a href={localizeHref('/all')}>{m.nav_all()}</a>
       <a href={localizeHref('/submit')}>{m.nav_submit()}</a>
       <a href={localizeHref('/about')}>{m.nav_about()}</a>
-      <a href={localizeHref('/privacy')}>개인정보처리방침</a>
-      <a href={localizeHref('/terms')}>이용약관</a>
-      <a href="mailto:jamm2ic@gmail.com">문의</a>
+      <a href={localizeHref('/privacy')}>{m.nav_privacy()}</a>
+      <a href={localizeHref('/terms')}>{m.nav_terms()}</a>
+      <a href="mailto:jamm2ic@gmail.com">{m.nav_contact()}</a>
     </nav>
     <div class="ft-copy">© 2026 memedics</div>
   </div>

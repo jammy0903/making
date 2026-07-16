@@ -1,5 +1,6 @@
 // 카드 파생값 공용 헬퍼 (서버 SSR·클라 공용 — 순수 함수만)
 import type { MemeCard, MediaItem } from '$lib/server/db';
+import { m as t } from '$lib/paraglide/messages'; // 함수 파라미터 m과 충돌 피하려 t로 alias
 
 // 표시할 미디어 목록: media 배열 우선, 없으면 photo_url/video_url 폴백(하위호환)
 export function gallery(m: MemeCard): MediaItem[] {
@@ -63,22 +64,22 @@ export function searchCards(cards: MemeCard[], q: string) {
 
 // 상태 라벨 (검색 결과에서 밈이 어느 구역인지)
 export function statusLabel(m: MemeCard) {
-  return m.status === 'new' ? '새 밈' : m.status === 'dead' ? '† 부고' : '스테디';
+  return m.status === 'new' ? t.status_new() : m.status === 'dead' ? t.status_dead() : t.status_steady();
 }
 export function metaNew(m: MemeCard) {
-  const age = m.days === 0 ? '오늘 등록' : `${m.days}일 전 등록`;
-  return `${age} · 댓글 ${m.commentCount}개`;
+  const age = m.days === 0 ? t.meta_added_today() : t.meta_added_days({ days: m.days });
+  return `${age} · ${t.meta_comments({ count: m.commentCount })}`;
 }
 export function metaSteady(m: MemeCard) {
-  const src = m.rankSources ? `${m.rankSources}개 소스 측정` : '측정 대기';
-  return `${src} · 등록 ${m.months}개월 전`;
+  const src = m.rankSources ? t.meta_sources({ count: m.rankSources }) : t.meta_await();
+  return `${src} · ${t.meta_registered_months({ months: m.months })}`;
 }
 export function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return '방금 전';
-  if (min < 60) return `${min}분 전`;
+  if (min < 1) return t.time_now();
+  if (min < 60) return t.time_min({ n: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  return `${Math.floor(hr / 24)}일 전`;
+  if (hr < 24) return t.time_hour({ n: hr });
+  return t.time_day({ n: Math.floor(hr / 24) });
 }
