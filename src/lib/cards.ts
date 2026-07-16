@@ -42,8 +42,12 @@ export function deadCards(cards: MemeCard[]) {
     .filter((c) => c.status === 'dead')
     .sort((a, b) => new Date(b.died || 0).getTime() - new Date(a.died || 0).getTime());
 }
+// 태그 표시: 항상 앞에 # 하나(이미 있으면 중복 안 붙임, 없으면 붙임). 필터/링크 값은 원본 사용.
+export function displayTag(t: string) {
+  return '#' + String(t || '').replace(/^#+/, '');
+}
 export function tagText(m: MemeCard) {
-  return (m.tags || []).join(' ');
+  return (m.tags || []).map(displayTag).join(' ');
 }
 
 // 사전 검색 — 이름/설명/분류/태그를 공백 제거·소문자로 비교. 이름 일치 우선.
