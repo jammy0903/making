@@ -16,7 +16,7 @@ export const handle: Handle = ({ event, resolve }) => {
   // 최초 방문 + 비한국 IP + ko(무접두) HTML 페이지 → /en/으로 진짜 리다이렉트(307). 봇·쿠키·이미 en·에셋은 제외.
   if (
     event.request.method === 'GET' && wantsHtml && !isEn && !chosen &&
-    country && country !== 'KR' && !BOT.test(ua)
+    country && country !== 'ZZ' && !BOT.test(ua)
   ) {
     return new Response(null, { status: 307, headers: { location: `/en${path === '/' ? '/' : path}${event.url.search}` } });
   }
