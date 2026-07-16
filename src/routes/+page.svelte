@@ -57,7 +57,7 @@
     const arr = [...news];
     if (newSort === 'name') return arr.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     if (newSort === 'comments') return arr.sort((a, b) => b.commentCount - a.commentCount);
-    return arr; // 최신순 — 서버 created_at desc 순서 유지
+    return arr; // 최신순 — newCards()가 사진 새로 올라온 순으로 정렬해둔 순서 유지
   });
 
   // 더 보기 (긴 목록 점진 표시)
