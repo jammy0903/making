@@ -14,6 +14,8 @@
   } from '$lib/client/api';
   import { timeAgo } from '$lib/cards';
   import type { MediaItem } from '$lib/server/db';
+  import { m } from '$lib/paraglide/messages';
+  import { localizeHref } from '$lib/paraglide/runtime';
 
   const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
   const MAX_IMG = 10 * 1024 * 1024; // 10MB
@@ -62,7 +64,7 @@
     try {
       mine = await fetchMySubmissions();
     } catch (e) {
-      err = '내 신청 목록을 불러오지 못했어요.';
+      err = m.submit_err_load();
       console.error('신청 조회 오류:', e);
     }
     loaded = true;
@@ -84,7 +86,7 @@
       const isVideo = file.type.startsWith('video');
       const max = isVideo ? MAX_VID : MAX_IMG;
       if (file.size > max) {
-        err = `${file.name}: 용량이 너무 커요 (최대 ${Math.round(max / 1024 / 1024)}MB).`;
+        err = m.submit_err_toobig({ name: file.name, mb: Math.round(max / 1024 / 1024) });
         continue;
       }
       uploading++;
@@ -92,7 +94,7 @@
         const url = await uploadMedia(file, user.current);
         media = [...media, { type: isVideo ? 'video' : 'image', url }];
       } catch (e2) {
-        err = '업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
+        err = m.submit_err_upload();
         console.error('업로드 오류:', e2);
       }
       uploading--;
@@ -107,15 +109,15 @@
     err = '';
     ok = '';
     if (!nm) {
-      err = '밈 이름은 필수예요.';
+      err = m.submit_err_name();
       return;
     }
     if (blockDup) {
-      err = dup?.kind === 'pending' ? '이미 신청해 검토 중인 밈이에요.' : '이미 등록된 밈이에요. 목록에서 확인해 주세요.';
+      err = dup?.kind === 'pending' ? m.submit_err_dup_pending() : m.submit_err_dup_reg();
       return;
     }
     if (uploading > 0) {
-      err = '미디어 업로드가 끝날 때까지 기다려 주세요.';
+      err = m.submit_err_uploading();
       return;
     }
     if (!user.current) return;
@@ -139,9 +141,9 @@
       sourceUrl = '';
       tagsText = '';
       media = [];
-      ok = '신청이 접수됐어요. 관리자 검토 후 등록됩니다.';
+      ok = m.submit_ok();
     } catch (e) {
-      err = '신청에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      err = m.submit_err_submit();
       console.error('신청 오류:', e);
     }
     busy = false;
@@ -156,70 +158,67 @@
         s.id === id ? { ...s, status: 'withdrawn', withdrawn_at: new Date().toISOString() } : s
       );
     } catch (e) {
-      err = '철회에 실패했어요.';
+      err = m.submit_err_withdraw();
       console.error('철회 오류:', e);
     }
   }
 
   const label = (s: Submission['status']) =>
-    s === 'pending' ? '검토 대기' : s === 'accepted' ? '등록됨' : s === 'rejected' ? '반려' : '철회됨';
+    s === 'pending' ? m.sub_status_pending() : s === 'accepted' ? m.sub_status_accepted() : s === 'rejected' ? m.sub_status_rejected() : m.sub_status_withdrawn();
 </script>
 
 <svelte:head>
-  <title>밈 신청 — memedics</title>
-  <meta name="description" content="새로 뜬 밈을 memedics에 신청하세요. 로그인한 회원이 제안하면 관리자 검토 후 등록됩니다." />
+  <title>{m.submit_head_title()}</title>
+  <meta name="description" content={m.submit_head_desc()} />
   <meta name="robots" content="noindex" />
-  <link rel="canonical" href="{page.url.origin}/submit" />
+  <link rel="canonical" href="{page.url.origin}{localizeHref('/submit')}" />
 </svelte:head>
 
 <div class="wrap-narrow legal">
-  <a class="back" href="/" style="border:none">← 홈으로</a>
-  <h1>밈 신청</h1>
-  <p class="lead">
-    새로 뜬 밈을 직접 제안할 수 있어요. 기계 발굴과 마찬가지로 <strong>제안은 회원, 등록 결정은 관리자</strong>가 합니다.
-    접수·철회·등록·반려는 모두 기록으로 남습니다.
-  </p>
+  <a class="back" href={localizeHref('/')} style="border:none">{m.back_home()}</a>
+  <h1>{m.submit_h1()}</h1>
+  <p class="lead">{@html m.submit_lead()}</p>
 
   {#if !user.current}
     <div class="subgate">
-      <p>밈을 신청하려면 로그인이 필요해요.</p>
-      <button class="btn-solid" onclick={login}>Google 계정으로 로그인</button>
+      <p>{m.submit_gate()}</p>
+      <button class="btn-solid" onclick={login}>{m.login_google()}</button>
     </div>
   {:else}
     <div class="subform">
       <div class="subrow">
-        <label for="s-name">밈 이름 <span class="req">*</span></label>
-        <input id="s-name" bind:value={name} maxlength="60" placeholder="예: 중꺾마" />
+        <label for="s-name">{m.submit_name_label()} <span class="req">*</span></label>
+        <input id="s-name" bind:value={name} maxlength="60" placeholder={m.submit_name_ph()} />
         {#if dup}
           {#if dup.kind === 'registered'}
-            <div class="dup dup-warn">이미 등록된 밈이에요 — <a href="/m/{dup.id}">‘{dup.name}’ 보러가기 →</a></div>
+            <div class="dup dup-warn">{m.submit_dup_registered()}<a href={localizeHref(`/m/${dup.id}`)}>{m.submit_dup_link({ name: dup.name })}</a></div>
           {:else if dup.kind === 'pending'}
-            <div class="dup dup-warn">이미 신청해서 검토 중인 밈이에요.</div>
+            <div class="dup dup-warn">{m.submit_dup_pending()}</div>
           {:else}
-            <div class="dup dup-info">비슷한 밈이 있어요 — <a href="/m/{dup.id}">‘{dup.name}’ 확인 →</a></div>
+            <div class="dup dup-info">{m.submit_dup_similar()}<a href={localizeHref(`/m/${dup.id}`)}>{m.submit_dup_similar_link({ name: dup.name })}</a></div>
           {/if}
         {/if}
       </div>
       <div class="subrow">
-        <label for="s-desc">뜻 · 설명</label>
-        <textarea id="s-desc" bind:value={description} placeholder="이 밈이 무슨 뜻인지, 어떤 상황에서 쓰이는지"></textarea>
+        <label for="s-desc">{m.submit_desc_label()}</label>
+        <textarea id="s-desc" bind:value={description} placeholder={m.submit_desc_ph()}></textarea>
       </div>
       <div class="subrow">
-        <label for="s-ex">사용 예 · 맥락</label>
-        <textarea id="s-ex" bind:value={example} placeholder="실제로 쓰인 문장이나 어디서 봤는지"></textarea>
+        <label for="s-ex">{m.submit_ex_label()}</label>
+        <textarea id="s-ex" bind:value={example} placeholder={m.submit_ex_ph()}></textarea>
       </div>
       <div class="subrow">
-        <label for="s-src">출처 링크 (선택)</label>
+        <label for="s-src">{m.submit_src_label()}</label>
         <input id="s-src" bind:value={sourceUrl} placeholder="https://" />
       </div>
       <div class="subrow">
-        <label for="s-tags">태그 (쉼표로 구분, 선택)</label>
-        <input id="s-tags" bind:value={tagsText} placeholder="유행어, 커뮤니티" />
+        <label for="s-tags">{m.submit_tags_label()}</label>
+        <input id="s-tags" bind:value={tagsText} placeholder={m.submit_tags_ph()} />
       </div>
 
       <div class="subrow">
         <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label>사진·동영상 (선택 · 여러 개 · 사진 10MB·영상 50MB)</label>
+        <label>{m.submit_media_label()}</label>
         {#if media.length}
           <div class="media-grid">
             {#each media as item, i (item.url)}
@@ -228,29 +227,29 @@
                   <!-- svelte-ignore a11y_media_has_caption -->
                   <video src={item.url} muted playsinline preload="metadata"></video>
                 {:else}
-                  <img src={item.url} alt={`첨부 ${i + 1}`} />
+                  <img src={item.url} alt={m.submit_media_alt({ n: i + 1 })} />
                 {/if}
-                <button type="button" class="media-cell-x" onclick={() => removeMedia(i)} aria-label="제거">✕</button>
+                <button type="button" class="media-cell-x" onclick={() => removeMedia(i)} aria-label={m.submit_media_remove()}>✕</button>
               </div>
             {/each}
           </div>
         {/if}
         <input type="file" accept="image/*,video/*" multiple onchange={pickMedia} />
-        {#if uploading > 0}<div class="media-up">업로드 중… ({uploading})</div>{/if}
+        {#if uploading > 0}<div class="media-up">{m.submit_uploading({ count: uploading })}</div>{/if}
       </div>
 
       <div class="subfoot">
         {#if err}<span class="cerr" role="alert">{err}</span>{/if}
         {#if ok}<span class="cok" role="status">{ok}</span>{/if}
-        <button class="btn-solid" onclick={submit} disabled={busy || blockDup}>{busy ? '접수 중…' : '신청하기'}</button>
+        <button class="btn-solid" onclick={submit} disabled={busy || blockDup}>{busy ? m.submit_btn_busy() : m.submit_btn()}</button>
       </div>
     </div>
 
-    <h2>내가 신청한 밈</h2>
+    <h2>{m.submit_mine_h2()}</h2>
     {#if !loaded}
-      <div class="empty">불러오는 중…</div>
+      <div class="empty">{m.submit_loading()}</div>
     {:else if !mine.length}
-      <div class="empty">아직 신청한 밈이 없어요.</div>
+      <div class="empty">{m.submit_mine_empty()}</div>
     {:else}
       <div class="rows">
         {#each mine as s (s.id)}
@@ -264,7 +263,7 @@
               <div class="m-meta" style="margin-top:6px">{timeAgo(s.created_at)}</div>
             </div>
             {#if s.status === 'pending'}
-              <button class="btn" onclick={() => withdraw(s.id)}>신청 철회</button>
+              <button class="btn" onclick={() => withdraw(s.id)}>{m.submit_withdraw_btn()}</button>
             {/if}
           </div>
         {/each}
