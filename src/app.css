@@ -348,6 +348,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .dict-row { display: flex; gap: 22px; align-items: flex-start; padding: 13px 6px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
 .dict-row:hover { background: var(--hover); }
 .dict-row .col { flex: 1; min-width: 0; }
+.dict-row .thumb { width: 140px; flex: none; } /* 스테디 썸네일 고정폭(4:3) — 사진 크기 제각각 방지 */
 .dict-idx { font-family: var(--serif); font-size: 15px; color: var(--mute4); width: 26px; flex: none; padding-top: 8px; }
 .dict-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 
@@ -462,6 +463,7 @@ button { font-family: var(--sans); cursor: pointer; }
   .row { gap: 14px; }
   .row .thumb { width: 64px; }
   .dict-row { gap: 14px; }
+  .dict-row .thumb { width: 100px; }
   .dict-idx { width: 22px; }
 
   /* 상세 */
