@@ -44,7 +44,10 @@ const HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-export const prerender = true;
+// prerender 금지: 프리렌더하면 확장자 없는 정적 파일(manage-8949)로 떨어져
+// Vercel이 octet-stream으로 서빙 → 브라우저가 렌더 대신 '다운로드'해버린다.
+// 서버리스로 응답해야 런타임에 content-type: text/html 헤더가 붙어 정상 렌더됨.
+export const prerender = false;
 
 export const GET: RequestHandler = () =>
   new Response(HTML, {
