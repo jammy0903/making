@@ -34,6 +34,7 @@ export interface MemeCard {
   videoUrl: string;
   media: MediaItem[];
   status: 'new' | 'steady' | 'dead';
+  photoUpdatedAt: string | null;
   days: number;
   months: number;
   mentions: number;
@@ -61,6 +62,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     videoUrl: r.video_url || '',
     media: Array.isArray(r.media) ? r.media.filter((x: any) => x && x.url) : [],
     status: r.status || 'new',
+    photoUpdatedAt: r.photo_updated_at || null,
     days,
     months: Math.floor(days / 30),
     mentions: r.mentions || 0,

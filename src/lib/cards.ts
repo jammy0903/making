@@ -32,8 +32,20 @@ export function coverImage(m: MemeCard): string {
   return img ? img.url : '';
 }
 
+// steady여도 사진이 최근에 새로 올라왔으면 "새로올라온" 탭에 노출
+const RECENT_PHOTO_DAYS = 14;
+function hasRecentPhoto(c: MemeCard) {
+  if (!c.photoUpdatedAt) return false;
+  return Date.now() - new Date(c.photoUpdatedAt).getTime() <= RECENT_PHOTO_DAYS * 86400000;
+}
 export function newCards(cards: MemeCard[]) {
-  return cards.filter((c) => c.status === 'new');
+  return cards
+    .filter((c) => c.status === 'new' || hasRecentPhoto(c))
+    .sort((a, b) => {
+      const at = a.photoUpdatedAt ? new Date(a.photoUpdatedAt).getTime() : 0;
+      const bt = b.photoUpdatedAt ? new Date(b.photoUpdatedAt).getTime() : 0;
+      return bt - at; // 사진 새로 올라온 순 우선, 그 외는 기존(생성일 desc) 순서 유지
+    });
 }
 export function steadyCards(cards: MemeCard[]) {
   return cards.filter((c) => c.status === 'steady').sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
