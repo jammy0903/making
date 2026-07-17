@@ -15,6 +15,11 @@
   const enPath = $derived(localizeHref(koPath, { locale: 'en' }));
   const origin = $derived(page.url.origin);
 
+  // 상단 세그먼트 네비 활성 표시 (locale 접두 제거한 경로로 판정)
+  const navHome = $derived(koPath === '/');
+  const navGame = $derived(koPath.startsWith('/game'));
+  const navEra = $derived(koPath.startsWith('/era'));
+
   let theme = $state<'light' | 'dark'>('light');
 
   onMount(async () => {
@@ -56,9 +61,10 @@
       <img class="tb-logo" src="/logo-mark.png" alt="" width="24" height="24" />
       <span>memedics</span>
     </a>
-    <nav class="tb-games" aria-label="게임">
-      <a class="tb-game" href={localizeHref('/game')}><span class="tb-game-ico" aria-hidden="true">📈</span>{m.nav_game()}</a>
-      <a class="tb-game" href={localizeHref('/era')}><span class="tb-game-ico" aria-hidden="true">🕰</span>{m.nav_era()}</a>
+    <nav class="tb-nav" aria-label={m.tb_brand_home()}>
+      <a class="tb-seg" class:on={navHome} href={localizeHref('/')} aria-current={navHome ? 'page' : undefined}>{m.nav_home()}</a>
+      <a class="tb-seg" class:on={navGame} href={localizeHref('/game')} aria-current={navGame ? 'page' : undefined}>{m.nav_game()}</a>
+      <a class="tb-seg" class:on={navEra} href={localizeHref('/era')} aria-current={navEra ? 'page' : undefined}>{m.nav_era()}</a>
     </nav>
     <span class="tb-auth">
       <button
