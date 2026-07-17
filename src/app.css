@@ -72,11 +72,11 @@ button { font-family: var(--sans); cursor: pointer; }
 .tb-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); letter-spacing: 0.02em; }
 .tb-logo { width: 24px; height: 24px; border-radius: 6px; display: block; flex: none; }
 .tb-auth { font-size: 13px; color: var(--mute); }
-/* 상단바 게임 진입 버튼 — 브랜드/유틸리티와 구분되는 강조 pill */
-.tb-games { display: flex; gap: 8px; }
-.tb-game { display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px; font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--accent-dark); background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 999px; white-space: nowrap; transition: background 0.12s, color 0.12s, border-color 0.12s; }
-.tb-game:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.tb-game-ico { font-size: 15px; line-height: 1; }
+/* 상단 네비 — 세그먼트 컨트롤: 한 트랙 안에서 현재 페이지가 떠오르는 형태 */
+.tb-nav { display: inline-flex; padding: 3px; gap: 2px; background: var(--line4); border-radius: 999px; }
+.tb-seg { padding: 6px 18px; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--mute); border: none; border-radius: 999px; white-space: nowrap; transition: background 0.14s ease, color 0.14s ease; }
+.tb-seg:hover { color: var(--ink); }
+.tb-seg.on { background: var(--surface); color: var(--accent-dark); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
 .tb-user { color: var(--ink2); }
 .tb-link { background: none; border: none; color: var(--accent); font-size: 13px; padding: 0; }
 .tb-link:hover { color: var(--accent-dark); text-decoration: underline; }
@@ -525,9 +525,8 @@ button { font-family: var(--sans); cursor: pointer; }
   /* 상단바 — 로그인 상태에서 넘치지 않게 (긴 닉네임 말줄임) */
   .tb-inner { gap: 8px; }
   .tb-auth { font-size: 12px; }
-  /* 좁은 화면: 게임 pill 살짝 축소(텍스트는 유지 — 입장 유도가 목적) */
-  .tb-game { padding: 5px 11px; font-size: 13px; gap: 4px; }
-  .tb-games { gap: 6px; }
+  /* 좁은 화면: 세그먼트 여백만 축소(텍스트 유지) */
+  .tb-seg { padding: 5px 12px; }
   .tb-user { display: inline-block; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
   /* 목록 간격 축소 → 본문 폭 확보 */
