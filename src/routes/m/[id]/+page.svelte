@@ -180,6 +180,8 @@
         : ''
   );
 
+  const nextTarget = $derived(data.next ?? data.prev);
+
   const desc = $derived(m.desc || t.detail_desc_fallback({ name: m.name }));
   const pageUrl = $derived(`${page.url.origin}${localizeHref(`/m/${m.id}`)}`);
   const ogImage = $derived(m.photoUrl || `${page.url.origin}/og-default.png`);
@@ -399,6 +401,16 @@
     {/if}
 
     <div class="vote">
+      <!-- "○○ 뜻" 검색 방문자의 다음 질문에 대한 답 — 게이지를 문장으로 판정 -->
+      <div class="verdict">
+        <span class="verdict-q">{t.verdict_q()}</span>
+        <strong class="verdict-a">
+          {#if total < 3}{t.verdict_few()}
+          {:else if yesPct >= 70}{t.verdict_alive({ pct: yesPct })}
+          {:else if yesPct <= 30}{t.verdict_dead({ pct: noPct })}
+          {:else}{t.verdict_split({ pct: yesPct })}{/if}
+        </strong>
+      </div>
       <div class="vote-row">
         <div class="vote-btns {votedNow ? 'voted' : ''}">
           <button class="vote-btn" onclick={() => vote('yes')}>{t.vote_yes()}</button>
@@ -424,6 +436,13 @@
         <span class="vote-note">{t.vote_note()}</span>
         <button class="vote-share" onclick={share}>{shareLabel}</button>
       </div>
+      {#if votedNow && nextTarget}
+        <!-- 판정 직후 동선이 끊기지 않게 다음 밈으로 잇는 훅 -->
+        <a class="vote-next" href={localizeHref(`/m/${nextTarget.id}`)}>
+          <span>{t.next_hook_done()}</span>
+          <strong>{t.next_hook_cta({ name: nextTarget.name })}</strong>
+        </a>
+      {/if}
     </div>
 
     <div class="comments">

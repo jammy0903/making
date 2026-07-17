@@ -375,6 +375,13 @@ button { font-family: var(--sans); cursor: pointer; }
 
 /* vote block */
 .vote { margin-top: 44px; padding: 22px 24px; background: var(--accent-bg); border: 1px solid var(--accent-border); }
+.verdict { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--accent-border); }
+.verdict-q { display: block; font-size: 12px; color: var(--mute3); margin-bottom: 4px; }
+.verdict-a { font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--accent-dark); }
+.vote-next { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border: 1px solid var(--accent-line); background: var(--surface); flex-wrap: wrap; }
+.vote-next span { font-size: 12px; color: var(--mute3); }
+.vote-next strong { font-size: 14px; color: var(--accent); }
+.vote-next:hover strong { text-decoration: underline; }
 .vote-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .vote-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .vote-notmeme { font-size: 12px; color: var(--mute3); margin-top: 7px; }
