@@ -54,10 +54,28 @@
     else phase = 'result';
   }
 
-  // 판독 = 아는 밈들의 전성기 연도 평균(무게중심)
-  const mentalYear = $derived(
-    known.length ? Math.round(known.reduce((s, c) => s + c.year, 0) / known.length) : null
-  );
+  // 판독 채점 — 무보정 휴리스틱(응답 표본 쌓이면 IRT θ 추정으로 교체 예정).
+  // 단순 평균의 두 결함을 논문 근거로 보정한다:
+  //  (1) 과거 편향: 회고절정 연구의 cascading bump — 젊은 세대도 옛 밈(Rickroll 등)을
+  //      흔히 알아 옛 밈 지식은 나이 변별력이 낮고 평균을 과거로 끌어당긴다.
+  //      → 최신일수록 큰 가중(변별력 프록시)으로 상쇄.
+  //  (2) 소표본 극단값: 아는 밈 1~2개로 극단 연도가 나오는 것을 방지.
+  //      → 풀 중앙연도(SHRINK_Y)에 가상관측 SHRINK_K개를 섞어 중앙으로 수축.
+  const W_BASE = 2004;        // 최신 가중 기준(가중 = year - W_BASE, 2005→1 … 2025→21)
+  const SHRINK_K = 4;         // 수축 강도(가상관측 수)
+  const SHRINK_Y = 2018;      // 큐레이션 풀(2005~2025)의 중앙 연도
+  const mentalYear = $derived.by(() => {
+    const n = known.length;
+    if (!n) return null;
+    let wsum = 0, wavg = 0;
+    for (const c of known) {
+      const w = c.year - W_BASE;
+      wsum += w;
+      wavg += c.year * w;
+    }
+    wavg /= wsum; // 최신 가중 평균
+    return Math.round((wavg * n + SHRINK_Y * SHRINK_K) / (n + SHRINK_K));
+  });
   const eraLabel = $derived.by(() => {
     const y = mentalYear;
     if (y === null) return '';
