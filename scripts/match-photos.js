@@ -44,16 +44,37 @@ async function loadTargets() {
   return r.json();
 }
 
-// 네이버 이미지 검색 → 안정적인 thumbnail(phinf CDN) URL. 이름+"짤" 우선, 없으면 이름만.
+// 원본이 실제로 로딩되고(no-referrer) 이미지이며 2MB 미만인지 검증.
+const MAX_BYTES = 2_000_000;
+async function loadsOk(url) {
+  try {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), 10000);
+    const r = await fetch(url, { redirect: 'follow', signal: c.signal, headers: { 'User-Agent': 'Mozilla/5.0 Chrome/120', Accept: 'image/*,*/*', Range: 'bytes=0-0' } });
+    clearTimeout(t);
+    if (r.status !== 200 && r.status !== 206) return false;
+    const ct = (r.headers.get('content-type') || '').split(';')[0];
+    if (!/^image\//.test(ct) && ct !== 'application/octet-stream') return false;
+    const cr = r.headers.get('content-range');
+    const size = cr ? Number(cr.split('/')[1]) : Number(r.headers.get('content-length') || 0);
+    return !(size >= MAX_BYTES);
+  } catch { return false; }
+}
+
+// 네이버 이미지 검색 → 화질 우선. 원본 link(https)가 로딩되면 그걸, 아니면 프록시 thumbnail 폴백.
+// 프록시는 원본을 저화질 JPEG로 재압축하므로 원본을 우선한다(scripts/upgrade-photos.js 참고).
 async function findImage(name) {
   const q = naver.sanitizeKeyword(name) || name;
   for (const query of [`${q} 짤`, q]) {
-    const res = await naver.naverGet('/v1/search/image.json', { query, display: 1, sort: 'sim', filter: 'medium' });
+    const res = await naver.naverGet('/v1/search/image.json', { query, display: 5, sort: 'sim', filter: 'large' });
     if (res.status === 429) { await naver.sleep(1500); continue; }
     if (!res.ok) { console.warn(`  [검색 실패 ${res.status}] ${query}`); continue; }
     const data = await res.json();
-    const hit = data.items && data.items[0];
-    if (hit && hit.thumbnail) return hit.thumbnail;
+    for (const hit of data.items || []) {
+      const link = (hit.link || '').replace(/^http:/, 'https:'); // https 승격(mixed-content 방지)
+      if (link && (await loadsOk(link))) return link;             // 원본 우선
+      if (hit.thumbnail) return hit.thumbnail;                    // 원본 실패 시 프록시 폴백
+    }
   }
   return null;
 }
