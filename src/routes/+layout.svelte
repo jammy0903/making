@@ -56,11 +56,11 @@
       <img class="tb-logo" src="/logo-mark.png" alt="" width="24" height="24" />
       <span>memedics</span>
     </a>
+    <nav class="tb-games" aria-label="게임">
+      <a class="tb-game" href={localizeHref('/game')}><span class="tb-game-ico" aria-hidden="true">📈</span>{m.nav_game()}</a>
+      <a class="tb-game" href={localizeHref('/era')}><span class="tb-game-ico" aria-hidden="true">🕰</span>{m.nav_era()}</a>
+    </nav>
     <span class="tb-auth">
-      <a class="tb-link" href={localizeHref('/game')}>{m.nav_game()}</a>
-      ·
-      <a class="tb-link" href={localizeHref('/era')}>{m.nav_era()}</a>
-      ·
       <button
         class="tb-theme"
         onclick={toggleTheme}

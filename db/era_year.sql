@@ -25,6 +25,26 @@ drop policy if exists "anyone insert awareness" on meme_awareness;
 create policy "anyone insert awareness" on meme_awareness
   for insert with check (true);
 
+-- ── era_readings: 판독 결과 + 실제 나이대 자기보고(정확도 측정용) ──
+--   mental_year(판독값)와 age_band(실제)를 함께 저장해 상관/캘리브레이션 계산.
+--   나이대별 평균 mental_year가 단조 증가하면 "판독기가 세대를 가른다"의 증거.
+create table if not exists era_readings (
+  id          bigint generated always as identity primary key,
+  voter_id    text    not null,
+  mental_year int     not null,
+  known_count int     not null,
+  total_count int     not null,
+  age_band    text    not null check (age_band in ('~19','20-24','25-29','30-39','40+')),
+  created_at  timestamptz not null default now()
+);
+
+alter table era_readings enable row level security;
+
+-- awareness와 동일: insert만 공개, select 정책 없음(집계는 service role 전용)
+drop policy if exists "anyone insert reading" on era_readings;
+create policy "anyone insert reading" on era_readings
+  for insert with check (true);
+
 -- ── era_year 백필 — 전성기 연도 큐레이션(확신 있는 밈만) ──
 update memes m set era_year = v.y
 from (values
