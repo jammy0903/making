@@ -105,6 +105,94 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
+// ── 세대 판독기 결과 카드 — 문구는 호출측이 로케일에 맞게 넘긴다 ──
+export interface EraResult {
+  headline: string; // "2016년" | "판독 불가"
+  sub: string;      // 세대 라벨
+  stat: string;     // "출제 18개 중 12개 알아봄"
+  question: string; // "당신의 정신연령은?"
+  shareText: string;
+}
+
+export async function drawEraCard(r: EraResult): Promise<HTMLCanvasElement> {
+  await Promise.all([
+    document.fonts.load(`700 200px ${SERIF}`),
+    document.fonts.load(`600 44px ${SERIF}`),
+    document.fonts.load(`400 30px ${SANS}`),
+  ]).catch(() => {});
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = C.accentBorder;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(40, 40, W - 80, H - 80);
+  ctx.strokeRect(52, 52, W - 104, H - 104);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = C.accent;
+  ctx.font = `700 30px ${SANS}`;
+  ctx.fillText('M E M E D I C S', W / 2, 160);
+  ctx.fillStyle = C.mute3;
+  ctx.font = `400 22px ${SANS}`;
+  ctx.fillText('밈 세대 판독기', W / 2, 200);
+
+  ctx.fillStyle = C.ink;
+  const hpx = fitFont(ctx, r.headline, W - 200, 200, 72, 700, SERIF);
+  ctx.font = `700 ${hpx}px ${SERIF}`;
+  ctx.fillText(r.headline, W / 2, 480);
+
+  ctx.fillStyle = C.accentDark;
+  const spx = fitFont(ctx, r.sub, W - 240, 52, 32, 600, SERIF);
+  ctx.font = `600 ${spx}px ${SERIF}`;
+  ctx.fillText(r.sub, W / 2, 590);
+
+  ctx.fillStyle = C.mute;
+  ctx.font = `400 30px ${SANS}`;
+  ctx.fillText(r.stat, W / 2, 680);
+
+  ctx.fillStyle = C.ink;
+  ctx.font = `600 44px ${SERIF}`;
+  ctx.fillText(r.question, W / 2, 880);
+  ctx.fillStyle = C.mute3;
+  ctx.font = `400 26px ${SANS}`;
+  ctx.fillText(location.host, W / 2, 940);
+
+  return canvas;
+}
+
+// voteCard와 동일한 공유 흐름. 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
+export async function eraCard(r: EraResult): Promise<string> {
+  const canvas = await drawEraCard(r);
+  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
+  const text = `${r.shareText}\n${location.origin}/era`;
+  const file = new File([blob], 'memedics-era.png', { type: 'image/png' });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text });
+      return 'shared';
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return 'cancel';
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  try {
+    await navigator.clipboard.writeText(text);
+    return 'downloaded+copied';
+  } catch {
+    return 'downloaded';
+  }
+}
+
 function memeUrl(m: ShareMeme) {
   return `${location.origin}/m/${m.id}`; // 경로형 딥링크(SEO 색인 가능)
 }

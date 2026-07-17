@@ -444,6 +444,19 @@ button { font-family: var(--sans); cursor: pointer; }
   .hl-vs { justify-self: center; }
 }
 
+/* era reader (세대 판독기) — hl-* 공용 스타일 위에 얹음 */
+.era-card { max-width: 460px; margin: 0 auto; border: 1px solid var(--line); background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+.era-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--line4); }
+.era-name { font-family: var(--serif); font-weight: 700; font-size: 24px; }
+.era-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 4px; }
+.era-dunno { color: var(--mute); border-color: var(--line2); }
+.era-dunno:hover { background: var(--mute); border-color: var(--mute); }
+.era-result { margin-top: 18px; border: 1px solid var(--accent-border); background: var(--accent-bg); padding: 34px 20px; text-align: center; }
+.era-result-label { font-size: 13px; color: var(--mute3); }
+.era-year { font-family: var(--serif); font-size: 64px; font-weight: 700; color: var(--ink); margin: 8px 0 2px; }
+.era-sub { font-family: var(--serif); font-size: 20px; font-weight: 600; color: var(--accent-dark); }
+.era-stat { margin-top: 10px; font-size: 13px; color: var(--mute); }
+
 /* comments */
 .comments { margin-top: 60px; }
 .comments-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
