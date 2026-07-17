@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ fetch, url }) => {
     `  <url><loc>${koOf(path)}</loc>${alts(path)}${extra}</url>\n` +
     `  <url><loc>${enOf(path)}</loc>${alts(path)}${extra}</url>`;
 
-  const staticUrls = [pair('/', '<priority>1.0</priority>'), pair('/all', '<priority>0.8</priority>'), pair('/game', '<priority>0.6</priority>'), pair('/about')].join('\n');
+  const staticUrls = [pair('/', '<priority>1.0</priority>'), pair('/all', '<priority>0.8</priority>'), pair('/game', '<priority>0.6</priority>'), pair('/era', '<priority>0.6</priority>'), pair('/about')].join('\n');
   const memeUrls = rows
     .map((r) => pair(`/m/${r.id}`, `<lastmod>${String(r.last_activity).slice(0, 10)}</lastmod>`))
     .join('\n');

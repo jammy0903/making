@@ -59,6 +59,8 @@
     <span class="tb-auth">
       <a class="tb-link" href={localizeHref('/game')}>{m.nav_game()}</a>
       ·
+      <a class="tb-link" href={localizeHref('/era')}>{m.nav_era()}</a>
+      ·
       <button
         class="tb-theme"
         onclick={toggleTheme}
@@ -93,6 +95,7 @@
     </div>
     <nav class="ft-nav">
       <a href={localizeHref('/game')}>{m.nav_game()}</a>
+      <a href={localizeHref('/era')}>{m.nav_era()}</a>
       <a href={localizeHref('/all')}>{m.nav_all()}</a>
       <a href={localizeHref('/submit')}>{m.nav_submit()}</a>
       <a href={localizeHref('/about')}>{m.nav_about()}</a>

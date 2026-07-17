@@ -55,6 +55,17 @@ export async function castVote(memeId: number, choice: VoteChoice) {
   await sbPost('meme_votes', { meme_id: memeId, voter_id: voterId(), choice }, 'return=minimal');
 }
 
+// ── 인지도(안다/모른다) — 수집만 하고 표시 안 함(% 잠금, 표본 쌓이면 공개) ──
+// upsert(ON CONFLICT) 금지: 충돌 행을 읽어야 해서 select 정책 없는 이 테이블에선 RLS에 막힌다.
+// 평범한 insert 후 중복은 409로 받는다(= 이미 기록됨, castVote의 월중복 처리와 동일 관례).
+export async function castAwareness(memeId: number, knows: boolean) {
+  try {
+    await sbPost('meme_awareness', { meme_id: memeId, voter_id: voterId(), knows }, 'return=minimal');
+  } catch (e) {
+    if (!String(e).includes(' 409')) throw e; // 중복만 무시, 그 외 실패는 호출측에 노출
+  }
+}
+
 // ── 댓글 ──
 export async function postComment(memeId: number, nick: string, body: string, user: { id: string } | null) {
   const inserted = await sbPost('meme_comments', {
