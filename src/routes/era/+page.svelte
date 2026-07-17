@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m as t } from '$lib/paraglide/messages'; // 다른 페이지와 동일하게 t로 alias
-  import { castAwareness } from '$lib/client/api';
+  import { castAwareness, castReading, type AgeBand } from '$lib/client/api';
   import { eraCard } from '$lib/client/share';
 
   let { data } = $props();
@@ -22,6 +22,8 @@
   let pos = $state(0);
   let known = $state<Card[]>([]);
   let shareLabel = $state(t.era_share());
+  let ageDone = $state(false);
+  const AGE_BANDS: AgeBand[] = ['~19', '20-24', '25-29', '30-39', '40+'];
 
   const DECK_N = $derived(Math.min(PER_BUCKET * BUCKETS.length, data.pool.length));
   const cur = $derived(deck[pos] ?? null);
@@ -44,6 +46,7 @@
     pos = 0;
     known = [];
     shareLabel = t.era_share();
+    ageDone = false;
     phase = 'play';
   }
   function answer(knows: boolean) {
@@ -91,6 +94,13 @@
   const headline = $derived(mentalYear === null ? t.era_none_title() : t.era_year_fmt({ year: mentalYear }));
   const subline = $derived(mentalYear === null ? t.era_none_sub() : allKnown ? t.era_all_sub() : eraLabel);
 
+  function pickAge(band: AgeBand) {
+    if (mentalYear === null) return;
+    // 판독값 + 실제 나이대를 함께 기록 → 정확도 측정·문항 보정 재료. 실패해도 UX는 진행.
+    castReading(mentalYear, known.length, deck.length, band).catch((e) => console.error('판독 기록 실패:', e));
+    ageDone = true;
+  }
+
   async function share() {
     if (mentalYear === null && !deck.length) return;
     shareLabel = t.share_making();
@@ -118,6 +128,7 @@
 
 <div class="wrap-narrow page">
   <h1 class="hl-title">{t.era_title()}</h1>
+  <p class="disclaimer">{t.just_for_fun()}</p>
 
   {#if phase === 'intro'}
     <p class="hl-desc">{t.era_desc({ n: DECK_N })}</p>
@@ -141,6 +152,20 @@
       <div class="era-year">{headline}</div>
       <div class="era-sub">{subline}</div>
       <div class="era-stat">{t.era_stat({ known: known.length, total: deck.length })}</div>
+      {#if mentalYear !== null}
+        <div class="era-age">
+          {#if ageDone}
+            <div class="era-age-thanks">{t.era_age_thanks()}</div>
+          {:else}
+            <div class="era-age-q">{t.era_age_q()}</div>
+            <div class="era-age-bands">
+              {#each AGE_BANDS as band (band)}
+                <button class="era-age-band" onclick={() => pickAge(band)}>{band}</button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
       <div class="hl-over-actions">
         <button class="btn-solid" onclick={share}>{shareLabel}</button>
         <button class="btn" onclick={start}>{t.era_retry()}</button>

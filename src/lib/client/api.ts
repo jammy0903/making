@@ -66,6 +66,16 @@ export async function castAwareness(memeId: number, knows: boolean) {
   }
 }
 
+// ── 세대 판독 결과 + 실제 나이대 자기보고(정확도 측정용) ──
+export type AgeBand = '~19' | '20-24' | '25-29' | '30-39' | '40+';
+export async function castReading(mentalYear: number, knownCount: number, totalCount: number, ageBand: AgeBand) {
+  await sbPost(
+    'era_readings',
+    { voter_id: voterId(), mental_year: mentalYear, known_count: knownCount, total_count: totalCount, age_band: ageBand },
+    'return=minimal'
+  );
+}
+
 // ── 댓글 ──
 export async function postComment(memeId: number, nick: string, body: string, user: { id: string } | null) {
   const inserted = await sbPost('meme_comments', {

@@ -69,6 +69,7 @@
 
 <div class="wrap-narrow page">
   <h1 class="hl-title">{t.hl_title()}</h1>
+  <p class="disclaimer">{t.just_for_fun()}</p>
 
   {#if phase === 'intro'}
     <p class="hl-desc">{t.hl_desc()}</p>
