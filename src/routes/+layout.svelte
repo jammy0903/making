@@ -57,6 +57,8 @@
       <span>memedics</span>
     </a>
     <span class="tb-auth">
+      <a class="tb-link" href={localizeHref('/game')}>{m.nav_game()}</a>
+      ·
       <button
         class="tb-theme"
         onclick={toggleTheme}
@@ -90,6 +92,7 @@
       <span class="ft-tag">{m.brand_tagline()}</span>
     </div>
     <nav class="ft-nav">
+      <a href={localizeHref('/game')}>{m.nav_game()}</a>
       <a href={localizeHref('/all')}>{m.nav_all()}</a>
       <a href={localizeHref('/submit')}>{m.nav_submit()}</a>
       <a href={localizeHref('/about')}>{m.nav_about()}</a>
