@@ -127,6 +127,19 @@ export async function cleanupDiscovery(rawDays, ngramDays) {
   }
 }
 
+// 오늘(KST) 순위 스냅샷 적재 (RPC snapshot_ranking — db/rank_snapshots.sql).
+// 같은 날 재실행하면 갱신(멱등). 반환: 적재된 행 수.
+export async function snapshotRanking() {
+  if (!isConfigured) return 0;
+  const res = await fetch(`${URL}/rest/v1/rpc/snapshot_ranking`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error(`snapshotRanking ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // 밈별 누적 언급량 랭킹 (뷰 meme_rankings)
 export async function fetchRankings() {
   if (!isConfigured) return [];
