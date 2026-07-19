@@ -4,7 +4,7 @@
   import { localizeHref } from '$lib/paraglide/runtime';
 </script>
 
-<svelte:head><title>{page.status} — memedics</title></svelte:head>
+<svelte:head><title>{page.status} · memedics</title></svelte:head>
 
 <div class="wrap page" style="text-align:center;padding-top:80px;">
   <h1 style="font-family:var(--serif);font-size:42px;">{page.status}</h1>
