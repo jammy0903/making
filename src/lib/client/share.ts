@@ -14,6 +14,7 @@ export interface ShareMeme {
   name: string;
   voteYes: number;
   voteNo: number;
+  photo?: string; // 해당 밈의 짤. 외부 호스트가 CORS를 안 주면 로드 실패 → 사진 없는 배치로 폴백
 }
 
 function fitFont(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, startPx: number, minPx: number, weight: number, family: string) {
@@ -35,13 +36,51 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   }
 }
 
+// 카드용 이미지 로더 — crossOrigin='anonymous'로만 로드해 canvas 오염을 원천 차단한다.
+// CORS 헤더를 주는 호스트(로컬 /memes, tmdb 등)만 성공, 나머지는 onerror로 스킵돼 그려지지 않는다.
+function loadImg(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    if (!url) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timer = setTimeout(() => resolve(null), 4000); // 느린 외부 이미지가 카드 생성을 막지 않도록
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); resolve(null); };
+    img.src = url;
+  });
+}
+
+// cover 핏으로 둥근 사각 안에 이미지 그리기 + 테두리
+function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number, r: number) {
+  ctx.save();
+  roundedRect(ctx, x, y, w, h, r);
+  ctx.clip();
+  const s = Math.max(w / img.width, h / img.height);
+  const dw = img.width * s, dh = img.height * s;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  ctx.restore();
+  ctx.strokeStyle = C.accentBorder;
+  ctx.lineWidth = 2;
+  roundedRect(ctx, x, y, w, h, r);
+  ctx.stroke();
+}
+
 export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
-  await Promise.all([
-    document.fonts.load(`700 96px ${SERIF}`),
-    document.fonts.load(`600 44px ${SERIF}`),
-    document.fonts.load(`400 30px ${SANS}`),
-    document.fonts.load(`700 40px ${SANS}`),
-  ]).catch(() => {});
+  const [, img] = await Promise.all([
+    Promise.all([
+      document.fonts.load(`700 96px ${SERIF}`),
+      document.fonts.load(`600 44px ${SERIF}`),
+      document.fonts.load(`400 30px ${SANS}`),
+      document.fonts.load(`700 40px ${SANS}`),
+    ]).catch(() => {}),
+    loadImg(m.photo ?? ''),
+  ]);
+
+  // 짤이 실리면 위에 얹고 아래 요소를 내린다. 로드 실패 시 기존(사진 없는) 배치를 그대로 써서
+  // 빈 구멍이 남지 않게 한다 — KYM·네이버 등 CORS를 안 주는 호스트가 실제로 4분의 1쯤 된다.
+  const L = img
+    ? { brand: 150, sub: 190, name: 620, nameMax: 84, gy: 664, pctDy: 76, totalDy: 140, q: 892, host: 946 }
+    : { brand: 160, sub: 200, name: 380, nameMax: 104, gy: 520, pctDy: 100, totalDy: 170, q: 880, host: 940 };
 
   const total = m.voteYes + m.voteNo;
   const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
@@ -62,17 +101,19 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   ctx.textAlign = 'center';
   ctx.fillStyle = C.accent;
   ctx.font = `700 30px ${SANS}`;
-  ctx.fillText('M E M E D I C S', W / 2, 160);
+  ctx.fillText('M E M E D I C S', W / 2, L.brand);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 22px ${SANS}`;
-  ctx.fillText('한국 밈 트렌드 사전', W / 2, 200);
+  ctx.fillText('한국 밈 트렌드 사전', W / 2, L.sub);
+
+  if (img) drawCover(ctx, img, (W - 300) / 2, 236, 300, 300, 28);
 
   ctx.fillStyle = C.ink;
-  const namePx = fitFont(ctx, m.name, W - 200, 104, 48, 700, SERIF);
+  const namePx = fitFont(ctx, m.name, W - 200, L.nameMax, 48, 700, SERIF);
   ctx.font = `700 ${namePx}px ${SERIF}`;
-  ctx.fillText(m.name, W / 2, 380);
+  ctx.fillText(m.name, W / 2, L.name);
 
-  const gx = 160, gw = W - 320, gy = 520, gh = 34;
+  const gx = 160, gw = W - 320, gy = L.gy, gh = 34;
   ctx.fillStyle = C.line2;
   roundedRect(ctx, gx, gy, gw, gh, gh / 2);
   ctx.fill();
@@ -85,22 +126,22 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   ctx.textAlign = 'left';
   ctx.fillStyle = C.accentDark;
   ctx.font = `700 40px ${SANS}`;
-  ctx.fillText(`생존 ${yesPct}%`, gx, gy + 100);
+  ctx.fillText(`생존 ${yesPct}%`, gx, gy + L.pctDy);
   ctx.textAlign = 'right';
   ctx.fillStyle = C.mute;
-  ctx.fillText(`사망 ${noPct}%`, gx + gw, gy + 100);
+  ctx.fillText(`사망 ${noPct}%`, gx + gw, gy + L.pctDy);
 
   ctx.textAlign = 'center';
   ctx.fillStyle = C.mute;
   ctx.font = `400 30px ${SANS}`;
-  ctx.fillText(total ? `${total}표 참여` : '아직 판정 없음', W / 2, gy + 170);
+  ctx.fillText(total ? `${total}표 참여` : '아직 판정 없음', W / 2, gy + L.totalDy);
 
   ctx.fillStyle = C.ink;
   ctx.font = `600 44px ${SERIF}`;
-  ctx.fillText('당신의 판정은?', W / 2, 880);
+  ctx.fillText('당신의 판정은?', W / 2, L.q);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 26px ${SANS}`;
-  ctx.fillText(location.host, W / 2, 940);
+  ctx.fillText(location.host, W / 2, L.host);
 
   return canvas;
 }
@@ -112,14 +153,19 @@ export interface EraResult {
   stat: string;     // "출제 18개 중 12개 알아봄"
   question: string; // "당신의 정신연령은?"
   shareText: string;
+  photos?: string[]; // 아는 밈 썸네일(있으면 카드에 한 줄로) — 로드 실패분은 자동 제외
 }
 
 export async function drawEraCard(r: EraResult): Promise<HTMLCanvasElement> {
-  await Promise.all([
-    document.fonts.load(`700 200px ${SERIF}`),
-    document.fonts.load(`600 44px ${SERIF}`),
-    document.fonts.load(`400 30px ${SANS}`),
-  ]).catch(() => {});
+  const [, ...imgs] = await Promise.all([
+    Promise.all([
+      document.fonts.load(`700 200px ${SERIF}`),
+      document.fonts.load(`600 44px ${SERIF}`),
+      document.fonts.load(`400 30px ${SANS}`),
+    ]).catch(() => {}),
+    ...(r.photos ?? []).slice(0, 4).map(loadImg),
+  ]);
+  const thumbs = imgs.filter(Boolean) as HTMLImageElement[];
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -155,12 +201,21 @@ export async function drawEraCard(r: EraResult): Promise<HTMLCanvasElement> {
   ctx.font = `400 30px ${SANS}`;
   ctx.fillText(r.stat, W / 2, 680);
 
+  // 아는 밈 썸네일 한 줄(중앙 정렬) — 결과에 개인색을 더하고 어떤 밈을 알아봤는지 보여준다
+  if (thumbs.length) {
+    const size = 118, gap = 20;
+    const rowW = thumbs.length * size + (thumbs.length - 1) * gap;
+    let px = (W - rowW) / 2;
+    const py = 726;
+    for (const im of thumbs) { drawCover(ctx, im, px, py, size, size, 18); px += size + gap; }
+  }
+
   ctx.fillStyle = C.ink;
   ctx.font = `600 44px ${SERIF}`;
-  ctx.fillText(r.question, W / 2, 880);
+  ctx.fillText(r.question, W / 2, 890);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 26px ${SANS}`;
-  ctx.fillText(location.host, W / 2, 940);
+  ctx.fillText(location.host, W / 2, 946);
 
   return canvas;
 }
@@ -219,6 +274,103 @@ export async function voteCard(m: ShareMeme): Promise<string> {
     }
   }
 
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  try {
+    await navigator.clipboard.writeText(text);
+    return 'downloaded+copied';
+  } catch {
+    return 'downloaded';
+  }
+}
+
+// ── 하이로우 결과 카드 — 문구는 호출측이 로케일에 맞게 넘긴다 ──
+export interface HlResult {
+  big: string;      // "12연승"
+  stopped: string;  // "'밈 이름'에서 멈춤"
+  best: string;     // "최고 15연승" | "" (신기록 아닐 때 생략)
+  question: string; // "당신은 몇 연속?"
+  photo: string;    // 멈춘 밈의 사진(로드 실패 시 사진 없이 렌더)
+  shareText: string;
+}
+
+export async function drawHlCard(r: HlResult): Promise<HTMLCanvasElement> {
+  const [, img] = await Promise.all([
+    Promise.all([
+      document.fonts.load(`700 160px ${SERIF}`),
+      document.fonts.load(`600 44px ${SERIF}`),
+      document.fonts.load(`400 30px ${SANS}`),
+      document.fonts.load(`700 30px ${SANS}`),
+    ]).catch(() => {}),
+    loadImg(r.photo),
+  ]);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = C.accentBorder;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(40, 40, W - 80, H - 80);
+  ctx.strokeRect(52, 52, W - 104, H - 104);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = C.accent;
+  ctx.font = `700 30px ${SANS}`;
+  ctx.fillText('M E M E D I C S', W / 2, 150);
+  ctx.fillStyle = C.mute3;
+  ctx.font = `400 22px ${SANS}`;
+  ctx.fillText('밈 하이로우', W / 2, 190);
+
+  if (img) drawCover(ctx, img, (W - 300) / 2, 236, 300, 300, 28);
+
+  ctx.fillStyle = C.ink;
+  const bigPx = fitFont(ctx, r.big, W - 220, 160, 80, 700, SERIF);
+  ctx.font = `700 ${bigPx}px ${SERIF}`;
+  ctx.fillText(r.big, W / 2, 660);
+
+  ctx.fillStyle = C.mute;
+  const spx = fitFont(ctx, r.stopped, W - 240, 32, 24, 400, SANS);
+  ctx.font = `400 ${spx}px ${SANS}`;
+  ctx.fillText(r.stopped, W / 2, 716);
+
+  if (r.best) {
+    ctx.fillStyle = C.accentDark;
+    ctx.font = `700 30px ${SANS}`;
+    ctx.fillText(r.best, W / 2, 772);
+  }
+
+  ctx.fillStyle = C.ink;
+  ctx.font = `600 44px ${SERIF}`;
+  ctx.fillText(r.question, W / 2, 892);
+  ctx.fillStyle = C.mute3;
+  ctx.font = `400 26px ${SANS}`;
+  ctx.fillText(location.host, W / 2, 946);
+
+  return canvas;
+}
+
+// eraCard와 동일한 공유 흐름. 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
+export async function hlCard(r: HlResult): Promise<string> {
+  const canvas = await drawHlCard(r);
+  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
+  const text = `${r.shareText}\n${location.origin}/game`;
+  const file = new File([blob], 'memedics-hl.png', { type: 'image/png' });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text });
+      return 'shared';
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return 'cancel';
+    }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = file.name;

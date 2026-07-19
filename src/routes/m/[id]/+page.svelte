@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { timeAgo, gallery, ytId, ytEmbed, ytThumb, displayTag } from '$lib/cards';
+  import { timeAgo, gallery, ytId, ytEmbed, ytThumb, displayTag, coverImage } from '$lib/cards';
   import { CATEGORIES } from '$lib/categories';
   import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, uploadMedia, type VoteChoice } from '$lib/client/api';
   import { m as t } from '$lib/paraglide/messages'; // 컴포넌트 상태 m(밈)과 충돌 피해 t로 alias
@@ -267,7 +267,7 @@
   async function share() {
     shareLabel = t.share_making();
     try {
-      const r = await voteCard(m);
+      const r = await voteCard({ id: m.id, name: m.name, voteYes: m.voteYes, voteNo: m.voteNo, photo: coverImage(m) });
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.share_default();
     } catch (e) {
       shareLabel = t.share_fail();
