@@ -20,11 +20,25 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      한글 웹폰트 CSS는 유니코드 서브셋이 웨이트마다 100여 개로 쪼개져 대단히 크다(실측 181KB).
+      stylesheet로 걸면 렌더 블로킹이라 HTML이 154ms에 다 와도 첫 픽셀이 1020ms까지 밀렸다.
+      preload→onload로 비블로킹 전환한다. display=swap이라 어차피 폴백 먼저 그리는 설계다.
+      웨이트는 app.css 실사용분만: serif 400/600/700, sans 400/500/600/700.
+      (기존엔 쓰지도 않는 sans 300을 받고, 정작 쓰는 sans 600은 빠져 합성으로 그려졌다.)
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
-    <script src="/crop.js"></script>
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

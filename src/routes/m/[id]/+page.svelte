@@ -11,6 +11,7 @@
   import { voteCard } from '$lib/client/share';
   import { login, isAdmin } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
+  import { loadCropper } from '$lib/client/crop';
 
   let { data } = $props();
 
@@ -86,7 +87,7 @@
     input.value = '';
     if (!user.current) return;
     editErr = '';
-    const cropper = (window as any).cropImageToRatio;
+    const cropper = await loadCropper();
     for (const f of files) {
       if (f.size > 10 * 1024 * 1024) { editErr = `${f.name}: 사진은 10MB 이하만 가능해요`; continue; }
       let up: File = f;
