@@ -19,7 +19,10 @@
 	let frame = $state(0); // 0~3
 	let resting = $state(false);
 	let x = $state(-DOG_W);
-	let hidden = $state(false); // 폰·태블릿(터치기기)에선 숨김
+	// 숨김으로 시작한다 — SSR HTML에 <img>가 실리면 CSS로 감춰도 브라우저는 파일을 받아버려서
+	// 폰·태블릿이 볼 일도 없는 장식을 내려받고, 데스크톱에선 첫 화면 렌더와 대역폭을 다툰다.
+	// 기기 판정이 끝난 뒤(onMount) 데스크톱에서만 켠다.
+	let hidden = $state(true);
 
 	const src = $derived(resting ? base(breed, 'rest') : base(breed, `walk${frame + 1}`));
 
@@ -28,7 +31,11 @@
 		// 기기감지: (hover:none)+(pointer:coarse)=터치 전용 기기(터치 노트북은 hover:hover라 제외) · UA · 모바일 크기.
 		const touchOnly = matchMedia('(hover: none) and (pointer: coarse)').matches;
 		const mobileUA = /Android|iPhone|iPod|iPad|Mobile|Tablet|Silk/i.test(navigator.userAgent);
-		if (touchOnly || mobileUA || window.innerWidth <= 820) { hidden = true; return; } // 애니메이션도 안 돌림
+		if (touchOnly || mobileUA || window.innerWidth <= 820) return; // 숨긴 채로 두고 애니메이션도 안 돌림
+		// 확장 설치자는 아래 :global(html.dog-walk-ext-installed) 규칙으로 어차피 안 보인다.
+		// 렌더까지 막아야 보이지도 않을 이미지를 받지 않는다.
+		if (document.documentElement.classList.contains('dog-walk-ext-installed')) return;
+		hidden = false;
 		// requestAnimationFrame 대신 setInterval 사용: 탭이 숨겨져도(느리게나마) 계속 돈다.
 		// dt 는 실제 경과시간으로 계산해 프레임레이트와 무관하게 일정 속도로 걷는다.
 		let last = performance.now();
