@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { login } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
+  import { loadCropper } from '$lib/client/crop';
   import {
     submitMeme,
     fetchMySubmissions,
@@ -91,7 +92,7 @@
       }
       // 이미지는 4:3 고정비율로 크롭(사용자가 프레임 안에서 이동·확대). 동영상은 그대로.
       let up: File = file;
-      const cropper = (window as any).cropImageToRatio;
+      const cropper = isVideo ? null : await loadCropper();
       if (!isVideo && cropper) {
         const blob: Blob | null = await cropper(file, 4 / 3);
         if (!blob) continue; // 취소하면 이 파일 건너뜀
