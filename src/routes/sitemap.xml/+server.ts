@@ -1,12 +1,13 @@
 // 사이트맵 — 밈별 상세 URL 전부 색인 요청("○○ 뜻" 검색 유입의 통로).
 // ko(무접두)·en(/en/) 양쪽을 xhtml:link 대체링크로 상호 연결(다국어 SEO).
-import { sbGet } from '$lib/server/db';
+import { sbGetAll } from '$lib/server/db';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ fetch, url }) => {
-  const rows = await sbGet<{ id: number; last_activity: string }[]>(
+  // 상한(1000행) 초과분까지 전부 — 잘리면 그만큼 URL이 사이트맵에서 빠진다.
+  const rows = await sbGetAll<{ id: number; last_activity: string }>(
     fetch,
-    'meme_cards?select=id,last_activity&order=id'
+    'meme_cards?select=id,last_activity&order=id.asc'
   );
   const origin = url.origin;
   const enOf = (path: string) => `${origin}/en${path === '/' ? '/' : path}`;
