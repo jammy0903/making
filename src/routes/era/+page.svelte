@@ -111,6 +111,7 @@
         stat: t.era_stat({ known: known.length, total: deck.length }),
         question: t.era_card_q(),
         shareText: t.era_share_text({ year: headline, label: subline }),
+        photos: known.slice(0, 4).map((k) => k.photo).filter(Boolean),
       });
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.era_share();
     } catch (e) {

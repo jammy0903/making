@@ -1,8 +1,10 @@
 <script lang="ts">
   import { m as t } from '$lib/paraglide/messages'; // 상세 페이지와 동일하게 t로 alias
   import { localizeHref } from '$lib/paraglide/runtime';
+  import { hlCard } from '$lib/client/share';
 
   let { data } = $props();
+  let shareLabel = $state(t.hl_share());
 
   type Card = { id: number; name: string; photo: string; idx: number };
   const BEST_KEY = 'mmd-hl-best';
@@ -60,6 +62,26 @@
       }
     }, 1100);
   }
+
+  async function share() {
+    if (!b) return;
+    shareLabel = t.share_making();
+    try {
+      const r = await hlCard({
+        big: t.hl_card_big({ n: streak }),
+        stopped: t.hl_card_stopped({ name: b.name }),
+        best: isNewBest ? t.hl_card_best({ n: best }) : '',
+        question: t.hl_card_q(),
+        photo: b.photo,
+        shareText: t.hl_share_text({ n: streak }),
+      });
+      shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.hl_share();
+    } catch (e) {
+      shareLabel = t.share_fail();
+      console.error('하이로우 카드 공유 오류:', e);
+    }
+    setTimeout(() => (shareLabel = t.hl_share()), 2500);
+  }
 </script>
 
 <svelte:head>
@@ -115,7 +137,8 @@
         <div class="hl-over-title">{t.hl_over_title({ n: streak })}</div>
         {#if isNewBest}<div class="hl-newbest">{t.hl_new_best()}</div>{/if}
         <div class="hl-over-actions">
-          <button class="btn-solid" onclick={start}>{t.hl_retry()}</button>
+          <button class="btn-solid" onclick={share}>{shareLabel}</button>
+          <button class="btn" onclick={start}>{t.hl_retry()}</button>
           {#if b}
             <a class="hl-dict" href={localizeHref(`/m/${b.id}`)}>{t.hl_dict_link({ name: b.name })}</a>
           {/if}
