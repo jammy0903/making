@@ -1,7 +1,8 @@
 <script lang="ts">
   import { m as t } from '$lib/paraglide/messages'; // 다른 페이지와 동일하게 t로 alias
+  import { onDestroy } from 'svelte';
   import { castAwareness, castReading, type AgeBand } from '$lib/client/api';
-  import { eraCard } from '$lib/client/share';
+  import { drawEraCard, cardBlob, shareBlob, saveBlob } from '$lib/client/share';
 
   let { data } = $props();
 
@@ -22,7 +23,13 @@
   let pos = $state(0);
   let known = $state<Card[]>([]);
   let shareLabel = $state(t.era_share());
+  let saveLabel = $state(t.card_save());
   let ageDone = $state(false);
+
+  // 결과 카드 — 결과에 진입하자마자 미리 그려 화면에 띄우고, 그 blob을 공유·저장이 함께 쓴다.
+  let cardUrl = $state('');
+  let cardBusy = $state(false);
+  let cardData: Blob | null = null;
   const AGE_BANDS: AgeBand[] = ['~19', '20-24', '25-29', '30-39', '40+'];
 
   const DECK_N = $derived(Math.min(PER_BUCKET * BUCKETS.length, data.pool.length));
@@ -46,6 +53,8 @@
     pos = 0;
     known = [];
     shareLabel = t.era_share();
+    saveLabel = t.card_save();
+    dropCard();
     ageDone = false;
     phase = 'play';
   }
@@ -54,8 +63,38 @@
     if (knows) known = [...known, cur];
     castAwareness(cur.id, knows).catch((e) => console.error('인지도 수집 실패:', e)); // 수집 실패해도 판독은 계속
     if (pos + 1 < deck.length) pos++;
-    else phase = 'result';
+    else {
+      phase = 'result';
+      buildCard(); // 결과 표시와 동시에 카드 생성 시작(외부 썸네일 로딩이 있어 시간이 걸린다)
+    }
   }
+
+  function dropCard() {
+    if (cardUrl) URL.revokeObjectURL(cardUrl);
+    cardUrl = '';
+    cardData = null;
+  }
+  async function buildCard() {
+    dropCard();
+    cardBusy = true;
+    try {
+      const canvas = await drawEraCard({
+        headline,
+        sub: subline,
+        stat: t.era_stat({ known: known.length, total: deck.length }),
+        question: t.era_card_q(),
+        shareText: t.era_share_text({ year: headline, label: subline }),
+        photos: known.slice(0, 4).map((k) => k.photo).filter(Boolean),
+      });
+      cardData = await cardBlob(canvas);
+      cardUrl = URL.createObjectURL(cardData);
+    } catch (e) {
+      console.error('판독 카드 생성 오류:', e); // 카드가 없어도 텍스트 결과는 그대로 쓴다
+    } finally {
+      cardBusy = false;
+    }
+  }
+  onDestroy(dropCard);
 
   // 판독 채점 — 무보정 휴리스틱(응답 표본 쌓이면 IRT θ 추정으로 교체 예정).
   // 단순 평균의 두 결함을 논문 근거로 보정한다:
@@ -102,23 +141,24 @@
   }
 
   async function share() {
-    if (mentalYear === null && !deck.length) return;
+    if (!cardData) return;
     shareLabel = t.share_making();
     try {
-      const r = await eraCard({
-        headline,
-        sub: subline,
-        stat: t.era_stat({ known: known.length, total: deck.length }),
-        question: t.era_card_q(),
-        shareText: t.era_share_text({ year: headline, label: subline }),
-        photos: known.slice(0, 4).map((k) => k.photo).filter(Boolean),
-      });
+      const text = `${t.era_share_text({ year: headline, label: subline })}\n${location.origin}/era`;
+      const r = await shareBlob(cardData, 'memedics-era.png', text);
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.era_share();
     } catch (e) {
       shareLabel = t.share_fail();
       console.error('판독 카드 공유 오류:', e);
     }
     setTimeout(() => (shareLabel = t.era_share()), 2500);
+  }
+
+  function save() {
+    if (!cardData) return;
+    saveBlob(cardData, 'memedics-era.png');
+    saveLabel = t.card_save_done();
+    setTimeout(() => (saveLabel = t.card_save()), 2500);
   }
 </script>
 
@@ -149,10 +189,21 @@
     </div>
   {:else if phase === 'result'}
     <div class="era-result">
-      <div class="era-result-label">{t.era_result_label()}</div>
-      <div class="era-year">{headline}</div>
-      <div class="era-sub">{subline}</div>
-      <div class="era-stat">{t.era_stat({ known: known.length, total: deck.length })}</div>
+      <!-- 카드가 결과 그 자체다. 같은 연도·세대를 텍스트로 또 쓰면 두 번 나와 어색해서
+           텍스트 결과는 카드를 못 만든 경우의 폴백으로만 남긴다. -->
+      {#if cardBusy}
+        <div class="card-shot skel">{t.card_making()}</div>
+      {:else if cardUrl}
+        <figure class="card-shot">
+          <img src={cardUrl} alt="{headline} · {subline} · {t.era_stat({ known: known.length, total: deck.length })}" />
+          <figcaption>{t.card_save_hint()}</figcaption>
+        </figure>
+      {:else}
+        <div class="era-result-label">{t.era_result_label()}</div>
+        <div class="era-year">{headline}</div>
+        <div class="era-sub">{subline}</div>
+        <div class="era-stat">{t.era_stat({ known: known.length, total: deck.length })}</div>
+      {/if}
       {#if mentalYear !== null}
         <div class="era-age">
           {#if ageDone}
@@ -167,8 +218,10 @@
           {/if}
         </div>
       {/if}
+
       <div class="hl-over-actions">
-        <button class="btn-solid" onclick={share}>{shareLabel}</button>
+        <button class="btn-solid" onclick={share} disabled={!cardUrl}>{shareLabel}</button>
+        <button class="btn" onclick={save} disabled={!cardUrl}>{saveLabel}</button>
         <button class="btn" onclick={start}>{t.era_retry()}</button>
       </div>
     </div>

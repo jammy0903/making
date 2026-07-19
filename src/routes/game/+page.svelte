@@ -1,10 +1,17 @@
 <script lang="ts">
   import { m as t } from '$lib/paraglide/messages'; // 상세 페이지와 동일하게 t로 alias
+  import { onDestroy } from 'svelte';
   import { localizeHref } from '$lib/paraglide/runtime';
-  import { hlCard } from '$lib/client/share';
+  import { drawHlCard, cardBlob, shareBlob, saveBlob } from '$lib/client/share';
 
   let { data } = $props();
   let shareLabel = $state(t.hl_share());
+  let saveLabel = $state(t.card_save());
+
+  // 결과 카드 — 게임이 끝나자마자 미리 그려 두고, 그 blob을 공유·저장이 함께 쓴다.
+  let cardUrl = $state('');
+  let cardBusy = $state(false);
+  let cardData: Blob | null = null;
 
   type Card = { id: number; name: string; photo: string; idx: number };
   const BEST_KEY = 'mmd-hl-best';
@@ -39,6 +46,9 @@
     b = queue.pop()!;
     streak = 0;
     isNewBest = false;
+    shareLabel = t.hl_share();
+    saveLabel = t.card_save();
+    dropCard();
     phase = 'play';
   }
   function guess(higher: boolean) {
@@ -59,15 +69,22 @@
         phase = 'play';
       } else {
         phase = 'over';
+        buildCard(); // 결과 표시와 동시에 카드 생성 시작(밈 사진 로딩이 있어 시간이 걸린다)
       }
     }, 1100);
   }
 
-  async function share() {
+  function dropCard() {
+    if (cardUrl) URL.revokeObjectURL(cardUrl);
+    cardUrl = '';
+    cardData = null;
+  }
+  async function buildCard() {
     if (!b) return;
-    shareLabel = t.share_making();
+    dropCard();
+    cardBusy = true;
     try {
-      const r = await hlCard({
+      const canvas = await drawHlCard({
         big: t.hl_card_big({ n: streak }),
         stopped: t.hl_card_stopped({ name: b.name }),
         best: isNewBest ? t.hl_card_best({ n: best }) : '',
@@ -75,12 +92,35 @@
         photo: b.photo,
         shareText: t.hl_share_text({ n: streak }),
       });
+      cardData = await cardBlob(canvas);
+      cardUrl = URL.createObjectURL(cardData);
+    } catch (e) {
+      console.error('하이로우 카드 생성 오류:', e); // 카드가 없어도 결과 화면은 그대로 쓴다
+    } finally {
+      cardBusy = false;
+    }
+  }
+  onDestroy(dropCard);
+
+  async function share() {
+    if (!cardData) return;
+    shareLabel = t.share_making();
+    try {
+      const text = `${t.hl_share_text({ n: streak })}\n${location.origin}/game`;
+      const r = await shareBlob(cardData, 'memedics-hl.png', text);
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.hl_share();
     } catch (e) {
       shareLabel = t.share_fail();
       console.error('하이로우 카드 공유 오류:', e);
     }
     setTimeout(() => (shareLabel = t.hl_share()), 2500);
+  }
+
+  function save() {
+    if (!cardData) return;
+    saveBlob(cardData, 'memedics-hl.png');
+    saveLabel = t.card_save_done();
+    setTimeout(() => (saveLabel = t.card_save()), 2500);
   }
 </script>
 
@@ -134,10 +174,23 @@
 
     {#if phase === 'over'}
       <div class="hl-over">
-        <div class="hl-over-title">{t.hl_over_title({ n: streak })}</div>
-        {#if isNewBest}<div class="hl-newbest">{t.hl_new_best()}</div>{/if}
+        <!-- 카드가 결과 그 자체다(연승 수·멈춘 밈·신기록이 모두 카드 안에 있다).
+             텍스트로 또 쓰면 두 번 나와 어색해서 카드를 못 만든 경우의 폴백으로만 남긴다. -->
+        {#if cardBusy}
+          <div class="card-shot skel">{t.card_making()}</div>
+        {:else if cardUrl}
+          <figure class="card-shot">
+            <img src={cardUrl} alt="{t.hl_over_title({ n: streak })}{isNewBest ? ' · ' + t.hl_new_best() : ''}" />
+            <figcaption>{t.card_save_hint()}</figcaption>
+          </figure>
+        {:else}
+          <div class="hl-over-title">{t.hl_over_title({ n: streak })}</div>
+          {#if isNewBest}<div class="hl-newbest">{t.hl_new_best()}</div>{/if}
+        {/if}
+
         <div class="hl-over-actions">
-          <button class="btn-solid" onclick={share}>{shareLabel}</button>
+          <button class="btn-solid" onclick={share} disabled={!cardUrl}>{shareLabel}</button>
+          <button class="btn" onclick={save} disabled={!cardUrl}>{saveLabel}</button>
           <button class="btn" onclick={start}>{t.hl_retry()}</button>
           {#if b}
             <a class="hl-dict" href={localizeHref(`/m/${b.id}`)}>{t.hl_dict_link({ name: b.name })}</a>

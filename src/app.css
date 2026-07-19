@@ -444,6 +444,22 @@ button { font-family: var(--sans); cursor: pointer; }
 .hl-newbest { margin-top: 6px; font-size: 13px; color: var(--accent-dark); font-weight: 600; }
 .hl-over-actions { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
 .hl-dict { font-size: 13px; }
+
+/* 결과 카드 미리보기 — 공유·저장할 이미지를 결과 화면에서 그대로 보여준다(심리테스트 결과 페이지 관례).
+   폰에서는 이미지를 길게 눌러 저장하는 사용자가 많아 그 힌트를 같이 둔다. */
+.card-shot { margin: 18px auto 0; max-width: 360px; }
+.card-shot img {
+  display: block; width: 100%; height: auto; aspect-ratio: 1 / 1;
+  border: 1px solid var(--line2); border-radius: 10px;
+}
+.card-shot figcaption { margin-top: 8px; font-size: 12px; color: var(--mute3); text-align: center; }
+/* 생성 중 자리표시 — 카드가 나타날 때 레이아웃이 튀지 않도록 같은 정사각을 미리 차지한다 */
+.card-shot.skel {
+  aspect-ratio: 1 / 1; display: grid; place-items: center;
+  border: 1px dashed var(--line2); border-radius: 10px;
+  font-size: 13px; color: var(--mute3);
+}
+.hl-over-actions button:disabled { opacity: 0.5; pointer-events: none; }
 @media (max-width: 640px) {
   .hl-board { grid-template-columns: 1fr; }
   .hl-vs { justify-self: center; }

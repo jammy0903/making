@@ -36,8 +36,18 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   }
 }
 
+// 캔버스가 읽을 수 있는 src로 변환한다. 로컬(/memes 등)·same-origin은 그대로,
+// 외부 호스트는 same-origin 프록시(/img)로 태운다 — 외부 CDN은 CORS를 안 줘서
+// crossOrigin 로드가 실패하고 사진이 카드에서 빠지기 때문(프록시는 서버가 대신 받아옴).
+function canvasSrc(url: string): string {
+  if (!url) return url;
+  if (url.startsWith('/') || url.startsWith(location.origin)) return url;
+  if (/^https?:\/\//i.test(url)) return `/img?u=${encodeURIComponent(url)}`;
+  return url;
+}
+
 // 카드용 이미지 로더 — crossOrigin='anonymous'로만 로드해 canvas 오염을 원천 차단한다.
-// CORS 헤더를 주는 호스트(로컬 /memes, tmdb 등)만 성공, 나머지는 onerror로 스킵돼 그려지지 않는다.
+// 프록시를 거친 외부 사진은 same-origin이라 통과하고, 프록시 실패분만 onerror로 스킵된다.
 function loadImg(url: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
@@ -46,7 +56,7 @@ function loadImg(url: string): Promise<HTMLImageElement | null> {
     const timer = setTimeout(() => resolve(null), 4000); // 느린 외부 이미지가 카드 생성을 막지 않도록
     img.onload = () => { clearTimeout(timer); resolve(img); };
     img.onerror = () => { clearTimeout(timer); resolve(null); };
-    img.src = url;
+    img.src = canvasSrc(url);
   });
 }
 
@@ -220,26 +230,41 @@ export async function drawEraCard(r: EraResult): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-// voteCard와 동일한 공유 흐름. 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
-export async function eraCard(r: EraResult): Promise<string> {
-  const canvas = await drawEraCard(r);
-  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
-  const text = `${r.shareText}\n${location.origin}/era`;
-  const file = new File([blob], 'memedics-era.png', { type: 'image/png' });
+// 판독기·하이로우는 결과 화면이 카드를 미리 그려 두고 cardBlob/shareBlob/saveBlob을 직접 쓴다
+// (미리보기와 공유·저장이 같은 blob을 재사용) — 그래서 여기 래퍼는 두지 않는다.
 
+// ── 카드 → 파일 공통부 ──
+// 결과 화면이 카드를 먼저 그려 미리보기로 띄우고, 그 blob을 공유·저장에 재사용한다
+// (버튼 누를 때마다 다시 그리면 외부 사진을 매번 새로 기다린다).
+
+export function cardBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
+}
+
+// "사진 저장" 전용 — 공유 시트를 거치지 않고 바로 파일로 내려받는다.
+export function saveBlob(blob: Blob, filename: string) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// 공유 시트 — 폰에서는 여기에 카카오톡·인스타그램이 뜬다(Web Share level 2, files 지원 기기).
+// 미지원(주로 데스크톱)이면 저장 + 링크 복사로 폴백.
+// 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
+export async function shareBlob(blob: Blob, filename: string, text: string): Promise<string> {
+  const file = new File([blob], filename, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text });
       return 'shared';
     } catch (e) {
       if ((e as Error).name === 'AbortError') return 'cancel';
+      /* 미지원 오류면 폴백 계속 */
     }
   }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = file.name;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  saveBlob(blob, filename);
   try {
     await navigator.clipboard.writeText(text);
     return 'downloaded+copied';
@@ -255,36 +280,13 @@ function memeUrl(m: ShareMeme) {
 // 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
 export async function voteCard(m: ShareMeme): Promise<string> {
   const canvas = await drawCard(m);
-  const blob: Blob = await new Promise((r) => canvas.toBlob((b) => r(b!), 'image/png'));
   const url = memeUrl(m);
   const total = m.voteYes + m.voteNo;
   const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
   const text = total
     ? `“${m.name}” 생존 ${yesPct}% · ${total}표 — 당신의 판정은?\n${url}`
     : `“${m.name}” 살았나 죽었나 — 첫 판정을 내려주세요\n${url}`;
-  const file = new File([blob], `memedics-${m.id}.png`, { type: 'image/png' });
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], text });
-      return 'shared';
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return 'cancel';
-      /* 미지원 오류면 폴백 계속 */
-    }
-  }
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = file.name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  try {
-    await navigator.clipboard.writeText(text);
-    return 'downloaded+copied';
-  } catch {
-    return 'downloaded';
-  }
+  return shareBlob(await cardBlob(canvas), `memedics-${m.id}.png`, text);
 }
 
 // ── 하이로우 결과 카드 — 문구는 호출측이 로케일에 맞게 넘긴다 ──
@@ -328,7 +330,9 @@ export async function drawHlCard(r: HlResult): Promise<HTMLCanvasElement> {
   ctx.font = `400 22px ${SANS}`;
   ctx.fillText('밈 하이로우', W / 2, 190);
 
-  if (img) drawCover(ctx, img, (W - 300) / 2, 236, 300, 300, 28);
+  // 사진 하단 502 — 아래 "N연승"(160px)의 글자 상단이 522라 20px 여유가 남는다.
+  // 300px/y236(하단 536)이던 값은 한글 어센트에 14px 파고들어 글자가 사진에 물렸다.
+  if (img) drawCover(ctx, img, (W - 280) / 2, 222, 280, 280, 26);
 
   ctx.fillStyle = C.ink;
   const bigPx = fitFont(ctx, r.big, W - 220, 160, 80, 700, SERIF);
@@ -356,30 +360,3 @@ export async function drawHlCard(r: HlResult): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-// eraCard와 동일한 공유 흐름. 반환: 'shared' | 'cancel' | 'downloaded+copied' | 'downloaded'
-export async function hlCard(r: HlResult): Promise<string> {
-  const canvas = await drawHlCard(r);
-  const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
-  const text = `${r.shareText}\n${location.origin}/game`;
-  const file = new File([blob], 'memedics-hl.png', { type: 'image/png' });
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], text });
-      return 'shared';
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return 'cancel';
-    }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = file.name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  try {
-    await navigator.clipboard.writeText(text);
-    return 'downloaded+copied';
-  } catch {
-    return 'downloaded';
-  }
-}
