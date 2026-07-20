@@ -3,6 +3,7 @@
 // 비교 지표는 합성 score가 아니라 유량(trend_value) — 저량(누적 문서수) 오염 방지.
 import { error } from '@sveltejs/kit';
 import { sbGet, isEnLocale, isKoreanRequest } from '$lib/server/db';
+import { m as t } from '$lib/paraglide/messages';
 import type { PageServerLoad } from './$types';
 
 type Row = {
@@ -19,12 +20,12 @@ export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
     fetch,
     'rank_snapshots?select=meme_id,trend_value,memes(name,name_en,photo_url,tags)&trend_value=gte.1&order=snapshot_date.desc,trend_rank.asc&limit=100'
   );
-  if (!rows.length) throw error(503, '지수 준비 중입니다');
+  if (!rows.length) throw error(503, t.err_index_preparing());
 
   // IP 기준 국가 필터 — 한국 IP는 한국밈만, 그 외는 미국밈만 출제 (tags의 '#미국'로 원산지 판정)
   const kr = isKoreanRequest(request);
   const filtered = rows.filter((r) => (r.memes.tags || []).includes('#미국') !== kr);
-  if (filtered.length < 4) throw error(503, '지수 준비 중입니다');
+  if (filtered.length < 4) throw error(503, t.err_index_preparing());
 
   const en = isEnLocale();
   const pool = filtered.map((r) => ({

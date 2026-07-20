@@ -88,12 +88,12 @@
     editErr = '';
     const cropper = await loadCropper();
     for (const f of files) {
-      if (f.size > 10 * 1024 * 1024) { editErr = `${f.name}: 사진은 10MB 이하만 가능해요`; continue; }
+      if (f.size > 10 * 1024 * 1024) { editErr = t.edit_err_photo_size({ name: f.name }); continue; }
       let up: File = f;
       if (cropper) { const blob: Blob | null = await cropper(f, 4 / 3); if (!blob) continue; up = new File([blob], f.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' }); }
       efUploading++;
       try { const url = await uploadMedia(up, user.current); ef.photos = [...ef.photos, url]; }
-      catch (e2) { editErr = '업로드에 실패했어요.'; console.error(e2); }
+      catch (e2) { editErr = t.edit_err_upload(); console.error(e2); }
       efUploading--;
     }
   }
@@ -104,11 +104,11 @@
     const f = (input.files || [])[0];
     input.value = '';
     if (!f || !user.current) return;
-    if (f.size > 50 * 1024 * 1024) { editErr = '영상은 50MB 이하 (더 크면 유튜브 링크)'; return; }
+    if (f.size > 50 * 1024 * 1024) { editErr = t.edit_err_video_size(); return; }
     editErr = '';
     efUploading++;
     try { ef.video = await uploadMedia(f, user.current); }
-    catch (e2) { editErr = '업로드에 실패했어요.'; console.error(e2); }
+    catch (e2) { editErr = t.edit_err_upload(); console.error(e2); }
     efUploading--;
   }
 
@@ -335,30 +335,30 @@
           </select>
         </div>
         <div class="subrow">
-          <label for="e-photos">이미지 (파일 업로드 · 여러 장 · 첫 장이 커버)</label>
+          <label for="e-photos">{t.edit_photos_label()}</label>
           <input id="e-photos" type="file" accept="image/*" multiple onchange={pickEditPhotos} />
-          {#if efUploading}<div class="media-up">업로드 중… ({efUploading})</div>{/if}
+          {#if efUploading}<div class="media-up">{t.edit_uploading({ count: efUploading })}</div>{/if}
           {#if ef.photos.length}
             <div class="media-grid">
               {#each ef.photos as u, i (u)}
                 <div class="media-cell">
                   <img src={u} alt="" />
-                  {#if i === 0}<span class="cover-badge">커버</span>{/if}
-                  <button type="button" class="media-cell-x" onclick={() => removeEditPhoto(i)} aria-label="제거">✕</button>
+                  {#if i === 0}<span class="cover-badge">{t.edit_cover_badge()}</span>{/if}
+                  <button type="button" class="media-cell-x" onclick={() => removeEditPhoto(i)} aria-label={t.edit_remove()}>✕</button>
                 </div>
               {/each}
             </div>
           {/if}
         </div>
         <div class="subrow">
-          <label for="e-video">동영상 (파일 업로드 또는 유튜브 링크)</label>
+          <label for="e-video">{t.edit_video_label()}</label>
           <input id="e-video" type="file" accept="video/*" onchange={pickEditVideo} />
-          <input type="text" placeholder="또는 유튜브 링크 붙여넣기" bind:value={ef.video} style="margin-top:8px" />
+          <input type="text" placeholder={t.edit_video_ph()} bind:value={ef.video} style="margin-top:8px" />
           {#if ef.video}
             <div style="margin-top:8px">
-              {#if ytId(ef.video)}<img src={ytThumb(ef.video)} alt="유튜브 썸네일" style="max-width:220px;border-radius:6px;display:block" />
+              {#if ytId(ef.video)}<img src={ytThumb(ef.video)} alt={t.edit_yt_thumb_alt()} style="max-width:220px;border-radius:6px;display:block" />
               {:else}<!-- svelte-ignore a11y_media_has_caption --><video src={ef.video} controls muted playsinline preload="metadata" style="max-width:220px;border-radius:6px"></video>{/if}
-              <button type="button" class="btn" style="margin-top:6px" onclick={() => (ef.video = '')}>동영상 제거</button>
+              <button type="button" class="btn" style="margin-top:6px" onclick={() => (ef.video = '')}>{t.edit_video_remove()}</button>
             </div>
           {/if}
         </div>

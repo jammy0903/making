@@ -3,10 +3,11 @@
 	// 걷기 프레임(walk1~4)을 순환해 다리를 움직이고, 가끔 멈춰 쉬는(rest) 모습.
 	// 한 바퀴 돌면 품종을 랜덤으로 바꿔 여러 강아지가 번갈아 나온다.
 	import { onMount } from 'svelte';
+	import { m as t } from '$lib/paraglide/messages';
 
 	const AD_URL =
 		'https://chromewebstore.google.com/detail/glciecgcibkmbkkllmhagignmmjghkmj'; // 강아지 산책 크롬 웹스토어
-	const AD_LABEL = '강아지 산책 · 클릭';
+	const AD_LABEL = t.ad_dog_label();
 	const BREEDS = ['golden', 'corgi', 'ig', 'poodle', 'chihuahua', 'chow']; // ig = 이탈리안그레이하운드
 	const base = (b: string, f: string) => `/ads/dogs/${b}-${f}.webp`;
 
