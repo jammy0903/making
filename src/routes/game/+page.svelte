@@ -4,6 +4,7 @@
   import { localizeHref } from '$lib/paraglide/runtime';
   import { drawHlCard, cardBlob, shareBlob, saveBlob, publicImgUrl } from '$lib/client/share';
   import { kakaoEnabled, shareKakao } from '$lib/client/kakao';
+  import ThumbImg from '$lib/components/ThumbImg.svelte';
 
   let { data } = $props();
   let shareLabel = $state(t.hl_share());
@@ -184,7 +185,7 @@
     <div class="hl-board">
       {#if a}
         <div class="hl-card">
-          {#if a.photo}<img class="hl-thumb" src={a.photo} alt={a.name} referrerpolicy="no-referrer" />{/if}
+          {#if a.photo}<div class="hl-thumb"><ThumbImg src={a.photo} alt={a.name} /></div>{/if}
           <div class="hl-name">{a.name}</div>
           <div class="hl-idx-label">{t.hl_idx_label()}</div>
           <div class="hl-idx">{a.idx}</div>
@@ -193,7 +194,7 @@
       <div class="hl-vs">vs</div>
       {#if b}
         <div class="hl-card {phase === 'reveal' ? (lastCorrect ? 'win' : 'lose') : ''}">
-          {#if b.photo}<img class="hl-thumb" src={b.photo} alt={b.name} referrerpolicy="no-referrer" />{/if}
+          {#if b.photo}<div class="hl-thumb"><ThumbImg src={b.photo} alt={b.name} /></div>{/if}
           <div class="hl-name">{b.name}</div>
           <div class="hl-idx-label">{t.hl_idx_label()}</div>
           {#if phase === 'play'}

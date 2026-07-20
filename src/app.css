@@ -309,8 +309,23 @@ button { font-family: var(--sans); cursor: pointer; }
 }
 .photo-slot img, .photo-slot video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photo-slot { position: relative; }
+
+/* ── 썸네일 블러 배경(ThumbImg.svelte) ──
+   원본을 자르지 않고 전부 보이게(contain) 하고, 4:3 틀과 비율이 안 맞아 생기는 여백은
+   같은 사진을 확대·블러해서 채운다. 이유는 ThumbImg.svelte 주석 참고.
+   .tf-bg는 블러가 가장자리에서 흐려지며 배경이 비쳐 보이므로 scale로 살짝 키워 덮는다. */
+.tf-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(16px) saturate(1.15); transform: scale(1.18);
+  z-index: 0; pointer-events: none;
+}
+.tf-fg {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%; object-fit: contain; display: block;
+}
 .photo-slot.vid { position: relative; }
-.multi-badge { position: absolute; top: 5px; right: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.55); border-radius: 3px; padding: 1px 5px; line-height: 1.3; pointer-events: none; }
+/* z-index 2: 썸네일 원본(.tf-fg)이 z-index 1이라 그 위로 올려야 배지가 가려지지 않는다 */
+.multi-badge { position: absolute; top: 5px; right: 6px; z-index: 2; font-size: 11px; color: #fff; background: rgba(0,0,0,0.55); border-radius: 3px; padding: 1px 5px; line-height: 1.3; pointer-events: none; }
 .photo-slot.vid::after { content: '▶'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; text-shadow: 0 1px 4px rgba(0,0,0,0.6); pointer-events: none; }
 .detail-video { margin-bottom: 28px; }
 .detail-video video { width: 100%; max-height: 480px; background: #000; border: 1px solid var(--line); display: block; }
@@ -427,7 +442,8 @@ button { font-family: var(--sans); cursor: pointer; }
 .hl-card { border: 1px solid var(--line); background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
 .hl-card.win { border-color: var(--accent); }
 .hl-card.lose { border-color: var(--ink); }
-.hl-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--line4); }
+/* img가 아니라 컨테이너다 — 안에 ThumbImg의 블러 배경 + 원본이 겹쳐 들어간다 */
+.hl-thumb { position: relative; overflow: hidden; width: 100%; aspect-ratio: 4 / 3; background: var(--line4); }
 .hl-name { font-family: var(--serif); font-weight: 600; font-size: 18px; }
 .hl-idx-label { font-size: 11px; color: var(--mute3); }
 .hl-idx { font-family: var(--serif); font-size: 32px; font-weight: 700; color: var(--accent-dark); }
@@ -478,7 +494,8 @@ button { font-family: var(--sans); cursor: pointer; }
 
 /* era reader (세대 판독기) — hl-* 공용 스타일 위에 얹음 */
 .era-card { max-width: 460px; margin: 0 auto; border: 1px solid var(--line); background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
-.era-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--line4); }
+/* img가 아니라 컨테이너다 — .hl-thumb과 동일 구조 */
+.era-thumb { position: relative; overflow: hidden; width: 100%; aspect-ratio: 4 / 3; background: var(--line4); }
 .era-name { font-family: var(--serif); font-weight: 700; font-size: 24px; }
 .era-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 4px; }
 .era-dunno { color: var(--mute); border-color: var(--line2); }

@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { newCards, tagText, metaNew, metaSteady, coverImage, ytId, ytThumb } from '$lib/cards';
   import { castVote, markVoted, type VoteChoice } from '$lib/client/api';
+  import ThumbImg from '$lib/components/ThumbImg.svelte';
   import type { MemeCard } from '$lib/server/db';
 
   let { cards }: { cards: MemeCard[] } = $props();
@@ -123,7 +124,7 @@
             >
               {#if coverImage(m)}
                 <div class="photo-slot">
-                  <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                  <ThumbImg src={coverImage(m)} alt={m.name} loading="lazy" />
                   {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
                 </div>
               {:else if m.videoUrl}
