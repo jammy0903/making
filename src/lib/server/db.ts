@@ -43,17 +43,30 @@ async function sbGetPage<T>(fetch: Fetch, path: string, from: number): Promise<T
   return (await r.json()) as T[];
 }
 
+// 한 번에 병렬로 받을 페이지 수. 현재 데이터가 1218행이라 2페이지면 한 번의 왕복으로 끝난다.
+// 총량이 2000행을 넘어서면 배치를 한 번 더 도니(그때도 2개씩 병렬) 그대로 동작한다.
+// 더 키우면 범위 밖 페이지까지 함께 쏘게 되는데, OFFSET이 범위를 넘어도 Postgres는
+// meme_cards(4중 집계 조인)를 끝까지 계산하고 버리므로 헛도는 비용이 싸지 않다 —
+// 데이터가 2000행을 넘길 즈음 이 값을 올리는 게 맞다.
+const PAGE_BATCH = 2;
+
 // 상한을 넘는 테이블 전체 조회 — 꽉 찬 페이지가 나오는 동안 계속 이어 받는다.
 // 총량을 미리 알면 나머지 페이지를 병렬로 받을 수 있지만, Prefer: count=exact가
 // meme_cards 뷰(4중 집계 조인)를 세느라 전체를 구체화해 되레 2배 느렸다(실측 1995ms vs 1053ms).
+// 그래서 총량을 묻지 않고 앞 PAGE_BATCH개를 그냥 동시에 쏜다 — 1218행이면 페이지 0·1이
+// 함께 오므로 순차 2왕복이 1왕복이 된다(홈 SSR의 마지막 직렬 구간이었다).
 // ⚠️ path의 order에는 반드시 유일 tiebreaker(id)가 들어가야 한다 — memes.created_at은
 //    대량삽입 탓에 1000행에 distinct 16개뿐이라, 동점 정렬은 페이지 간 중복·누락을 만든다.
 export async function sbGetAll<T = unknown>(fetch: Fetch, path: string): Promise<T[]> {
   const out: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const rows = await sbGetPage<T>(fetch, path, from);
-    out.push(...rows);
-    if (rows.length < PAGE) return out;
+  for (let base = 0; ; base += PAGE * PAGE_BATCH) {
+    // Promise.all은 입력 순서를 보존하므로 페이지 순서(=정렬 순서)가 그대로 유지된다.
+    const pages = await Promise.all(
+      Array.from({ length: PAGE_BATCH }, (_, i) => sbGetPage<T>(fetch, path, base + i * PAGE))
+    );
+    for (const rows of pages) out.push(...rows);
+    // 하나라도 덜 찬 페이지가 나오면 그 뒤는 없다(정렬이 안정적이라 중간에 구멍은 안 생긴다).
+    if (pages.some((rows) => rows.length < PAGE)) return out;
   }
 }
 
