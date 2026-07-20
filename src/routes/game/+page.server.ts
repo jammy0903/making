@@ -35,6 +35,11 @@ export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
     idx: Math.round(r.trend_value * 10),
   }));
 
-  setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600', vary: 'x-vercel-ip-country, accept-language' }); // 스냅샷이 일 1회라 1시간 캐시
+  // 스냅샷이 일 1회라 1시간 캐시. vary는 국가 헤더만 — accept-language를 넣었더니
+  // 브라우저마다 값이 미세하게 달라(ko-KR,ko;q=0.9 / ko,en;q=0.7 …) 캐시가 값마다
+  // 쪼개져 실사용자 대부분이 미스(실측 ~0.9s)를 맞았다. 프로덕션에선 국가 판정이
+  // x-vercel-ip-country만으로 끝나므로(accept-language는 그 헤더가 없을 때만 쓰는 폴백)
+  // 이 헤더 하나만 vary하면 캐시 정확성은 그대로다.
+  setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600', vary: 'x-vercel-ip-country' });
   return { pool };
 };

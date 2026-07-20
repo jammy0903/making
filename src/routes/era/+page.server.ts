@@ -23,6 +23,8 @@ export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
     year: r.era_year,
   }));
 
-  setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600', vary: 'x-vercel-ip-country, accept-language' });
+  // 큐레이션 데이터라 갱신 드묾. vary에서 accept-language를 뺀 이유는 game과 동일 —
+  // 값이 브라우저마다 달라 캐시가 잘게 쪼개졌다(그쪽 주석 참고).
+  setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600', vary: 'x-vercel-ip-country' });
   return { pool };
 };
