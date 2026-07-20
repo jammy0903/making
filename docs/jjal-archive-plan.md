@@ -39,7 +39,7 @@
 ```sql
 create table jjals (
   id            bigserial primary key,
-  image_url     text not null,          -- 로컬 /jjal/... 또는 외부 원본 URL
+  image_url     text,                   -- 로컬 /jjal/... 또는 외부 원본 URL. source='meme'이면 null(조인으로 해석)
   thumb_url     text,                   -- 그리드용 축소본(없으면 image_url)
   width         int,  height int,       -- 그리드 레이아웃 깨짐 방지용(필수)
   caption       text,                   -- 짤 설명. 임베딩의 주재료
@@ -48,12 +48,30 @@ create table jjals (
   source_url    text,                   -- 출처 페이지(저작권 표기·역추적용)
   meme_id       bigint references memes(id) on delete set null,
   status        text not null default 'live',  -- 'live' | 'hidden' | 'pending'
-  embedding     vector(1536),
+  embedding     vector(1536),           -- 차원은 Phase 0 모델 확정 시 결정
+  embedding_model text,                 -- 임베딩 생성에 쓴 모델명. 모델 교체 시 재임베딩 대상 추적용
   created_at    timestamptz default now()
 );
-create index on jjals using ivfflat (embedding vector_cosine_ops);
 create index on jjals (status);
+create index on jjals using gin (keywords);  -- 키워드 정확 일치(하이브리드 검색)용
+
+-- 질의 임베딩 캐시 + 검색 로그 겸용
+create table jjal_queries (
+  query         text primary key,       -- 정규화(trim·소문자)한 검색어
+  embedding     vector(1536),
+  embedding_model text,
+  search_count  int default 1,          -- 검색 로그: 인기 검색어 산출
+  last_result_count int,                -- 검색 로그: 0이면 "빈 검색어" = 수집 우선순위
+  last_searched_at timestamptz default now()
+);
 ```
+
+**벡터 인덱스(ivfflat)는 일부러 안 만든다.** 수천 행 규모에선 순차 스캔이 더 정확하고 충분히
+빠르다. ivfflat은 빈 테이블에 만들면 리스트가 엉망이 되고, `status='live'` 필터와 결합하면
+결과 누락도 생긴다. **수만 장을 넘으면 그때, 데이터가 채워진 상태에서 생성**한다.
+
+`source='meme'`는 `image_url`을 복사하지 않고 **`meme_id`만 두고 조회 시
+`memes.photo_url`을 조인**한다. 밈 사진이 교체돼도 동기화가 필요 없어진다(트리거·배치 불요).
 
 `meme_id`는 짤이 특정 밈의 짤일 때만 채운다. 이걸로 밈 상세 페이지에 "이 밈 짤 더 보기"를
 붙일 수 있고, 반대로 짤에서 밈 사전으로 들어오는 유입 경로가 생긴다.
@@ -63,7 +81,7 @@ create index on jjals (status);
 | source | 무엇 | 규칙 |
 | --- | --- | --- |
 | `internal` | 우리가 직접 모아 올린 짤 | `static/jjal/`에 두고 로컬 경로 사용 |
-| `meme` | 기존 `memes.photo_url` 재활용 | **복사하지 않고 URL만 참조.** 밈 사진이 바뀌면 동기화 필요 |
+| `meme` | 기존 `memes.photo_url` 재활용 | **URL 저장 안 함. `meme_id`로 조인해 해석** — 밈 사진이 바뀌어도 동기화 불요 |
 | `external` | Tenor 등 외부 API 결과 | **원본 CDN 직링크만.** 다운로드해 우리 서버에 재호스팅하지 않는다 |
 | `user` | 방문자 업로드 | `status='pending'`으로 들어와 관리자 승인 후 `live` |
 
@@ -81,7 +99,13 @@ create index on jjals (status);
 `embedding is null`인 행을 주기적으로 채우는 스크립트(`scripts/embed-jjals.js`)를 둔다.
 
 **검색어 임베딩**: 사용자 질의도 같은 모델로 임베딩해야 한다. 매 검색마다 API를 부르면
-느리고 비싸므로 **질의 임베딩을 캐시**한다(같은 검색어는 재사용). 인기 검색어는 사실상 항상 캐시 히트.
+느리고 비싸므로 **질의 임베딩을 `jjal_queries` 테이블에 캐시**한다(같은 검색어는 재사용).
+인기 검색어는 사실상 항상 캐시 히트. 인메모리 캐시는 안 된다 — Vercel 서버리스는 인스턴스마다
+따로 놀고 콜드스타트마다 증발한다. 같은 테이블이 검색 로그를 겸하므로(`search_count`,
+`last_result_count`) Phase 3의 "빈 검색어 목록"도 여기서 그냥 뽑힌다.
+
+**어뷰징 방어**: 캐시 미스마다 임베딩 API 비용이 나가므로, 검색 API에 **질의 길이 제한
+(예: 50자)과 IP당 레이트리밋**을 건다. 랜덤 문자열을 쏟아붓는 비용 공격을 막기 위함이다.
 
 **품질 주의**: 한국어 밈·신조어는 임베딩 모델이 잘 모르는 단어가 많다(`스불재`, `알빠노`).
 그래서 `caption`을 **뜻이 드러나게** 쓰는 게 핵심이다. `스불재`가 아니라
@@ -92,12 +116,20 @@ create index on jjals (status);
 
 ```
 검색어 "비"
-  ↓ 질의 임베딩 (캐시)
+  ↓ ⓪ keywords 정확 일치 조회 (하이브리드)
+  ↓ 질의 임베딩 (jjal_queries 캐시)
   ↓ pgvector 코사인 유사도 상위 N(=200) 후보
   ↓ ① 의미 갈래 나누기 → 섹션 분리
   ↓ ② 거리 밴드로 자르기 → 스크롤 단계
-  → 그리드 렌더
+  → 그리드 렌더 (⓪ 일치분은 벡터 점수와 무관하게 밴드 1 최상단)
 ```
+
+### ⓪ 하이브리드: 키워드 일치 우선
+
+벡터 검색 단독으론 안 된다. 임베딩 모델이 한국어 밈·신조어를 모르는 경우(4장), caption이
+부실한 경우의 안전망으로 **`keywords` 배열 정확 일치를 먼저 조회**해서 밴드 1 최상단에
+고정한다. `비`라고 쳤을 때 keywords에 `비`가 박힌 짤은 벡터 점수가 어떻든 무조건 먼저 나온다.
+GIN 인덱스(3장)가 이 조회를 받친다.
 
 ### ① 섹션 분리 (동음이의)
 
@@ -126,8 +158,11 @@ create index on jjals (status);
 
 ## 6. 화면
 
-- **핀터레스트형 메이슨리 그리드.** CSS `columns` 기반(라이브러리 없이). 이미지마다 `width`/`height`를
-  DB에 갖고 있으므로 `aspect-ratio`를 미리 넣어 **로딩 중 레이아웃 밀림(CLS)을 막는다.**
+- **핀터레스트형 메이슨리 그리드.** 라이브러리 없이 **JS 열 분배**(현재 높이가 가장 낮은 열에
+  다음 아이템 삽입)로 만든다. CSS `columns`는 안 쓴다 — 아이템이 열 세로 방향으로 흘러
+  유사도 순서가 깨지고, 무한 스크롤 append 때 전체 열이 재배치되어 화면이 출렁인다.
+  이미지마다 `width`/`height`를 DB에 갖고 있으므로 `aspect-ratio`를 미리 넣어
+  **로딩 중 레이아웃 밀림(CLS)을 막고**, 열 분배 계산에도 그대로 쓴다.
 - **무한 스크롤.** 밴드 단위로 다음 묶음을 가져온다.
 - **짤 클릭 시**: 확대 + 이미지 복사/다운로드 + 출처 링크. 연결된 밈이 있으면 `/m/{id}`로 가는 링크.
 - **다크모드**: 기존 CSS 변수(`--surface`, `--line`, `--accent`)를 그대로 쓴다.
@@ -163,10 +198,11 @@ static/jjal/            # internal 소스 이미지
 
 ## 9. 구현 순서
 
-- **Phase 0 — 기반**: `pgvector` 확장 활성화, `jjals` 테이블·인덱스 생성, 임베딩 API 키를
-  `.env`에 등록(코드에 하드코딩 금지).
+- **Phase 0 — 기반**: 임베딩 모델 확정(→ vector 차원 확정), `pgvector` 확장 활성화,
+  `jjals`·`jjal_queries` 테이블·인덱스 생성, 임베딩 API 키를 `.env`에 등록(코드에 하드코딩 금지).
 - **Phase 1 — 씨앗 데이터**: 기존 밈 사진 1122장을 `source='meme'`으로 넣고, 밈의
   `name`/`description`/`tags`로 caption을 자동 생성한 뒤 임베딩을 채운다.
+  이때 **이미지 치수 프로브**로 width/height도 함께 채운다(기존 밈에는 이 값이 없다).
   **이것만으로 검색이 되는지부터 확인한다.** 여기서 결과가 형편없으면 caption 작성 규칙(4장)을 먼저 고친다.
 - **Phase 2 — 검색 페이지**: `/jjal` 기본 그리드 + 벡터 검색. 밴드·섹션 임계값을 실측으로 확정.
 - **Phase 3 — 물량 확보**: 관리자 업로드 화면으로 자체 짤을 쌓는다. 검색 로그를 남겨
@@ -179,11 +215,12 @@ Phase 1이 끝나는 시점에 이미 쓸 수 있는 페이지가 나온다. Pha
 ## 10. 미결정 · 리스크
 
 - **임베딩 모델 선택** — 한국어 성능과 비용을 비교해 Phase 0에서 정한다. 차원 수가 모델마다
-  다르므로 테이블의 `vector(1536)`도 그때 확정한다.
+  다르므로 테이블의 `vector(1536)`도 그때 확정한다. 이후 모델을 바꾸면 구·신 벡터가 섞여
+  검색이 조용히 망가지므로, `embedding_model` 컬럼으로 재임베딩 대상을 추적한다.
 - **외부 API 병합 방식** — 외부 결과는 임베딩이 없어 같은 잣대로 정렬할 수 없다.
   섹션을 따로 두거나(예: "웹에서 더 찾기") 별도 처리해야 한다. Phase 4에서 결정.
-- **`source='meme'` 짤의 동기화** — 밈 사진이 교체되면 짤 쪽 URL도 따라가야 한다.
-  트리거로 처리할지 배치로 맞출지 미정.
+- **죽은 링크** — `external`·`meme` 소스는 원본이 삭제되면 그리드에 구멍이 난다.
+  죽은 링크를 주기 점검해 `status='hidden'` 처리하는 배치가 필요하다(Phase 3 이후).
 - **저작권** — 재호스팅 금지 원칙은 지키되, 사용자 업로드가 늘면 신고·삭제 절차가 필요하다.
-- **빈 결과** — 초기에는 검색어 대부분이 빈손일 가능성이 높다. Phase 3의 "빈 검색어 로그"가
-  사실상 짤 수집 우선순위 목록이 된다.
+- **빈 결과** — 초기에는 검색어 대부분이 빈손일 가능성이 높다. `jjal_queries`의
+  `last_result_count=0` 목록이 사실상 짤 수집 우선순위 목록이 된다.
