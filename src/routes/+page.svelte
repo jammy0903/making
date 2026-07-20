@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
+  import ThumbImg from '$lib/components/ThumbImg.svelte';
   import type { MemeCard } from '$lib/server/db';
   import { m } from '$lib/paraglide/messages';
   import { getLocale, localizeHref } from '$lib/paraglide/runtime';
@@ -145,7 +146,7 @@
             </div>
             {#if coverImage(m)}
               <div class="photo-slot thumb">
-                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                <ThumbImg src={coverImage(m)} alt={m.name} loading="lazy" />
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
@@ -181,7 +182,7 @@
             </div>
             {#if coverImage(m)}
               <div class="photo-slot thumb">
-                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                <ThumbImg src={coverImage(m)} alt={m.name} loading="lazy" />
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
@@ -237,7 +238,7 @@
             </div>
             {#if coverImage(m)}
               <div class="photo-slot thumb">
-                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                <ThumbImg src={coverImage(m)} alt={m.name} loading="lazy" />
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}
@@ -278,7 +279,7 @@
             </div>
             {#if coverImage(m)}
               <div class="photo-slot thumb">
-                <img src={coverImage(m)} alt={m.name} loading="lazy" referrerpolicy="no-referrer" />
+                <ThumbImg src={coverImage(m)} alt={m.name} loading="lazy" />
                 {#if m.media.length > 1}<span class="multi-badge" aria-hidden="true">▤</span>{/if}
               </div>
             {:else if m.videoUrl}

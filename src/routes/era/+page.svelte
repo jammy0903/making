@@ -4,6 +4,7 @@
   import { castAwareness, castReading, type AgeBand } from '$lib/client/api';
   import { drawEraCard, cardBlob, shareBlob, saveBlob, publicImgUrl } from '$lib/client/share';
   import { kakaoEnabled, shareKakao } from '$lib/client/kakao';
+  import ThumbImg from '$lib/components/ThumbImg.svelte';
 
   let { data } = $props();
 
@@ -200,7 +201,7 @@
       <span>{t.era_progress({ i: pos + 1, n: deck.length })}</span>
     </div>
     <div class="era-card">
-      {#if cur.photo}<img class="era-thumb" src={cur.photo} alt={cur.name} referrerpolicy="no-referrer" />{/if}
+      {#if cur.photo}<div class="era-thumb"><ThumbImg src={cur.photo} alt={cur.name} /></div>{/if}
       <div class="era-name">{cur.name}</div>
       <div class="era-btns">
         <button class="hl-btn" onclick={() => answer(true)}>{t.era_know()}</button>
