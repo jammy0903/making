@@ -1,5 +1,7 @@
 // 투표 결과 공유 카드 — public/share.js 이식(클라 전용, 이벤트 핸들러에서만 호출).
 // 카드는 받은 사람에게 "당신의 판정은?"을 던져 /m/[id]로 투표하러 오게 하는 유입 루프.
+import { m as t } from '$lib/paraglide/messages';
+
 const C = {
   bg: '#E6F2ED', ink: '#1B1B18', ink2: '#2A2A26',
   accent: '#1E7A4E', accentDark: '#14603C', accentBorder: '#CBE7D6',
@@ -122,7 +124,7 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   ctx.fillText('M E M E D I C S', W / 2, L.brand);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 22px ${SANS}`;
-  ctx.fillText('한국 밈 트렌드 사전', W / 2, L.sub);
+  ctx.fillText(t.card_brand_sub(), W / 2, L.sub);
 
   if (img) drawCover(ctx, img, (W - 300) / 2, 236, 300, 300, 28);
 
@@ -135,20 +137,20 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   if (revealed) {
     ctx.fillStyle = C.accentDark;
     ctx.font = `700 76px ${SERIF}`;
-    ctx.fillText(`${m.eraYear}년 밈`, W / 2, L.gy + L.pctDy);
+    ctx.fillText(t.card_guess_year({ year: m.eraYear as number }), W / 2, L.gy + L.pctDy);
     ctx.fillStyle = C.mute;
     ctx.font = `400 30px ${SANS}`;
-    const line = gap === 0 ? '정확히 맞힘' : `나는 ${m.myGuess}년 · ${gap}년 차이`;
+    const line = gap === 0 ? t.card_guess_exact() : t.card_guess_off({ mine: m.myGuess as number, gap });
     ctx.fillText(line, W / 2, L.gy + L.totalDy);
   } else {
     ctx.fillStyle = C.accentDark;
     ctx.font = `700 76px ${SERIF}`;
-    ctx.fillText('몇 년도 밈?', W / 2, L.gy + L.pctDy);
+    ctx.fillText(t.card_guess_blind(), W / 2, L.gy + L.pctDy);
   }
 
   ctx.fillStyle = C.ink;
   ctx.font = `600 44px ${SERIF}`;
-  ctx.fillText(revealed ? '당신은 몇 년도라고 볼래요?' : '몇 년도 밈일까요?', W / 2, L.q);
+  ctx.fillText(revealed ? t.card_guess_q() : t.card_guess_q_blind(), W / 2, L.q);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 26px ${SANS}`;
   ctx.fillText(location.host, W / 2, L.host);
@@ -195,7 +197,7 @@ export async function drawEraCard(r: EraResult): Promise<HTMLCanvasElement> {
   ctx.fillText('M E M E D I C S', W / 2, 160);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 22px ${SANS}`;
-  ctx.fillText('밈 세대 판독기', W / 2, 200);
+  ctx.fillText(t.era_title(), W / 2, 200);
 
   ctx.fillStyle = C.ink;
   const hpx = fitFont(ctx, r.headline, W - 200, 200, 72, 700, SERIF);
@@ -282,8 +284,8 @@ export async function voteCard(m: ShareMeme): Promise<string> {
   const canvas = await drawCard(m);
   const url = memeUrl(m);
   const text = m.myGuess !== null && m.eraYear !== null
-    ? `“${m.name}” ${m.eraYear}년 밈 — 나는 ${m.myGuess}년이라 찍었어요. 당신은?\n${url}`
-    : `“${m.name}” 몇 년도 밈일까요?\n${url}`;
+    ? `${t.guess_share_text({ name: m.name, year: m.eraYear, mine: m.myGuess })}\n${url}`
+    : `${t.guess_share_blind({ name: m.name })}\n${url}`;
   return shareBlob(await cardBlob(canvas), `memedics-${m.id}.png`, text);
 }
 
@@ -326,7 +328,7 @@ export async function drawHlCard(r: HlResult): Promise<HTMLCanvasElement> {
   ctx.fillText('M E M E D I C S', W / 2, 150);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 22px ${SANS}`;
-  ctx.fillText('밈 하이로우', W / 2, 190);
+  ctx.fillText(t.hl_title(), W / 2, 190);
 
   // 사진 하단 502 — 아래 "N연승"(160px)의 글자 상단이 522라 20px 여유가 남는다.
   // 300px/y236(하단 536)이던 값은 한글 어센트에 14px 파고들어 글자가 사진에 물렸다.
