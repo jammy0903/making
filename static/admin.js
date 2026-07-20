@@ -18,7 +18,7 @@ async function api(path, opts = {}) {
 }
 
 // ─── 상태 ───
-const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], notmemes: [], memes: [], members: [], submissions: [], editing: null };
+const state = { user: null, checking: true, tab: 'candidates', candidates: [], deaths: [], notmemes: [], memes: [], members: [], submissions: [], editing: null, eraSummary: null, eraByAge: [], eraItems: [] };
 function set(p) { Object.assign(state, p); render(); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
@@ -54,6 +54,17 @@ async function loadMemes(q) {
   const filter = q ? `&name=ilike.*${encodeURIComponent(q)}*` : '';
   state.memes = await api(`memes?select=${MEME_COLS}&order=id.desc&limit=300${filter}`);
 }
+// 판독기(era) 보정 지표 — db/era_calibration.sql의 뷰 3개(admin.js는 뷰 정의는 몰라도 그대로 select만 함)
+async function loadEraStats() {
+  const [summary, byAge, items] = await Promise.all([
+    api('era_calibration_summary?select=*'),
+    api('era_calibration?select=*'),
+    api('meme_awareness_stats?select=*&knows_total=gte.5&order=awareness_pct.asc&limit=300'),
+  ]);
+  state.eraSummary = summary && summary[0] ? summary[0] : null;
+  state.eraByAge = byAge || [];
+  state.eraItems = items || [];
+}
 async function saveMeme(data, id) {
   const opts = { headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(data) };
   if (id) await api(`memes?id=eq.${id}`, { method: 'PATCH', ...opts });
@@ -69,6 +80,7 @@ async function go(tab) {
     else if (tab === 'deaths') await loadDeaths();
     else if (tab === 'notmemes') await loadNotmemes();
     else if (tab === 'members') await loadMembers();
+    else if (tab === 'era') await loadEraStats();
     else await loadMemes();
   } catch (e) {}
   render();
@@ -205,6 +217,7 @@ function shell(inner) {
       <button class="${state.tab === 'notmemes' ? 'on' : ''}" onclick="go('notmemes')">밈 아님</button>
       <button class="${state.tab === 'memes' ? 'on' : ''}" onclick="go('memes')">밈 관리</button>
       <button class="${state.tab === 'members' ? 'on' : ''}" onclick="go('members')">회원</button>
+      <button class="${state.tab === 'era' ? 'on' : ''}" onclick="go('era')">판독기 통계</button>
     </div>` : '';
   return `<div class="admin-wrap">
     <div class="admin-head"><h1>memedics · 관리자</h1><span style="font-size:13px;color:var(--mute)">${who}</span></div>
@@ -423,6 +436,51 @@ function editForm() {
       <span class="status-msg" id="save-msg"></span>
     </div>`;
 }
+// 판독기(era) 보정 지표 — db/era_calibration.sql 뷰 3개를 그대로 표로. 목적은 딱 두 가지:
+//  ① 나이대별 평균 판독연도가 어릴수록 높게(단조 감소) 나오는지 — 상관계수 부호로 한눈에.
+//  ② 인지도(%)가 극단(90%+ 또는 한 자릿수)인 문항 — 변별력 없는 출제 후보를 솎아낼 목록.
+function eraStatsView() {
+  const s = state.eraSummary;
+  // 상관계수 하나로 다 판단하지 않는다 — cascading reminiscence bump(Krumhansl & Zupnick 2013)에 따르면
+  // 옛 콘텐츠 인지도는 나이에 따라 매끈히 줄지 않고 특정 시기에 덩어리(bump)로 뭉친다. 전체 상관이
+  // 약해도 나이대별 표에서 국소적으로는 갈릴 수 있으므로, 표 자체의 단조성을 따로 계산해 같이 보여준다.
+  const ages = state.eraByAge;
+  let shape = '표본 부족';
+  if (ages.length >= 3) {
+    const vals = ages.map((r) => r.avg_mental_year);
+    const monotone = vals.every((v, i) => i === 0 || v <= vals[i - 1]);
+    shape = monotone
+      ? '나이대별 표도 매끈하게 감소 — 단순 상관 해석 신뢰 가능'
+      : '⚠ 나이대별 표가 매끈하지 않음(중간에 역전 구간 있음) — 전체 상관만 보지 말고 아래 표에서 어느 나이대가 튀는지 직접 확인할 것 (덩어리 패턴 가능성)';
+  }
+  const corrNote = s && s.n >= 20
+    ? (s.age_year_corr < -0.1 ? '정상(어릴수록 연도↑)' : s.age_year_corr > 0.1 ? '⚠ 반대 방향 — 가중치 재설계 필요' : '⚠ 상관 약함 — 아래 나이대별 표에서 국소 패턴 확인 필요(전체 무상관과 덩어리 패턴은 이 숫자만으론 구별 안 됨)')
+    : '표본 부족(n<20) — 판단 보류';
+  const ageRows = state.eraByAge.length
+    ? state.eraByAge.map((r) => `
+      <div class="adm-row">
+        <div class="t">${esc(r.age_band)} <span style="font-size:12px;color:var(--mute)">n=${r.n}</span></div>
+        <div class="m">평균 판독연도 ${r.avg_mental_year} (표준편차 ${r.stddev_mental_year ?? '-'}) · 평균 인지율 ${r.avg_known_pct}%</div>
+      </div>`).join('')
+    : `<div class="empty">era_readings 표본이 아직 없습니다.</div>`;
+  const extreme = state.eraItems.slice(0, 20).concat(state.eraItems.slice(-20).reverse());
+  const itemRows = state.eraItems.length
+    ? extreme.map((r) => `
+      <div class="adm-row">
+        <div class="t">${esc(r.name)} <span style="font-size:12px;color:var(--mute)">${r.era_year ?? '-'}</span></div>
+        <div class="m">인지도 ${r.awareness_pct}% (${r.knows_yes}/${r.knows_total}) ${r.awareness_pct >= 90 || r.awareness_pct <= 15 ? '— 변별력 낮음, 솎아낼 후보' : ''}</div>
+      </div>`).join('')
+    : `<div class="empty">meme_awareness 표본(문항당 5건↑)이 아직 없습니다.</div>`;
+  return `
+    <div style="margin-bottom:8px;font-size:13px;color:var(--mute3)">
+      나이대↔판독연도 상관계수: <b>${s ? s.age_year_corr : '-'}</b> (n=${s ? s.n : 0}) — ${corrNote}
+    </div>
+    <div style="margin-bottom:16px;font-size:13px;color:var(--mute3)">나이대별 표 형태: ${shape}</div>
+    <h3 style="font-size:15px;margin:0 0 8px">나이대별 판독값</h3>
+    ${ageRows}
+    <h3 style="font-size:15px;margin:20px 0 8px">인지도 극단 문항 (상위/하위 20, 표본 5건↑)</h3>
+    ${itemRows}`;
+}
 function render() {
   if (state.checking) { root.innerHTML = shell(`<div class="center">확인 중…</div>`); return; }
   if (!state.user) { root.innerHTML = shell(`<div class="center"><button class="btn-solid" onclick="login()">Google로 로그인</button></div>`); return; }
@@ -433,6 +491,7 @@ function render() {
     : state.tab === 'deaths' ? deathsView()
     : state.tab === 'notmemes' ? notmemesView()
     : state.tab === 'members' ? membersView()
+    : state.tab === 'era' ? eraStatsView()
     : memesView();
   root.innerHTML = shell(view);
 }
