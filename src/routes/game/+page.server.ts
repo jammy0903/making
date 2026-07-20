@@ -12,17 +12,15 @@ type Row = {
 };
 
 export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
-  const latest = await sbGet<{ snapshot_date: string }[]>(
-    fetch,
-    'rank_snapshots?select=snapshot_date&order=snapshot_date.desc&limit=1'
-  );
-  if (!latest.length) throw error(503, '지수 준비 중입니다');
-  const day = latest[0].snapshot_date;
-
+  // 원래는 "최신 snapshot_date 조회 → 그 날짜로 다시 조회" 2회 순차 호출이었다(왕복 2배).
+  // snapshot_date.desc, trend_rank.asc로 한 번에 정렬하면 최신 날짜의 상위 랭크가 먼저
+  // 나오므로 limit만으로 같은 결과를 한 번의 호출로 얻는다(day는 화면에서 안 써서 버림).
   const rows = await sbGet<Row[]>(
     fetch,
-    `rank_snapshots?select=meme_id,trend_value,memes(name,name_en,photo_url,tags)&snapshot_date=eq.${day}&trend_value=gte.1&order=trend_rank.asc&limit=100`
+    'rank_snapshots?select=meme_id,trend_value,memes(name,name_en,photo_url,tags)&trend_value=gte.1&order=snapshot_date.desc,trend_rank.asc&limit=100'
   );
+  if (!rows.length) throw error(503, '지수 준비 중입니다');
+
   // IP 기준 국가 필터 — 한국 IP는 한국밈만, 그 외는 미국밈만 출제 (tags의 '#미국'로 원산지 판정)
   const kr = isKoreanRequest(request);
   const filtered = rows.filter((r) => (r.memes.tags || []).includes('#미국') !== kr);
@@ -38,5 +36,5 @@ export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
   }));
 
   setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600', vary: 'x-vercel-ip-country, accept-language' }); // 스냅샷이 일 1회라 1시간 캐시
-  return { pool, day };
+  return { pool };
 };
