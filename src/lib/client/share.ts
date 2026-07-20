@@ -12,8 +12,8 @@ const W = 1080, H = 1080;
 export interface ShareMeme {
   id: number;
   name: string;
-  voteYes: number;
-  voteNotmeme: number; // 예전엔 voteNo(죽은 밈)와의 생존율이었으나 사망 개념을 걷어내며 바뀌었다
+  eraYear: number | null;   // 전성기 연도 = 연도 맞히기의 정답
+  myGuess: number | null;   // 내가 찍은 해. null이면 아직 안 맞힌 것 → 정답을 카드에 안 싣는다
   photo?: string; // 해당 밈의 짤. 외부 호스트가 CORS를 안 주면 로드 실패 → 사진 없는 배치로 폴백
 }
 
@@ -100,9 +100,9 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
     ? { brand: 150, sub: 190, name: 620, nameMax: 84, gy: 664, pctDy: 76, totalDy: 140, q: 892, host: 946 }
     : { brand: 160, sub: 200, name: 380, nameMax: 104, gy: 520, pctDy: 100, totalDy: 170, q: 880, host: 940 };
 
-  const total = m.voteYes + m.voteNotmeme;
-  const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
-  const noPct = total ? 100 - yesPct : 0;
+  // 아직 안 맞힌 사람에게 받은 카드가 정답을 흘리면 재미가 없다 → 맞힌 경우에만 정답을 싣는다.
+  const revealed = m.myGuess !== null && m.eraYear !== null;
+  const gap = revealed ? Math.abs((m.myGuess as number) - (m.eraYear as number)) : 0;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -131,32 +131,24 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   ctx.font = `700 ${namePx}px ${SERIF}`;
   ctx.fillText(m.name, W / 2, L.name);
 
-  const gx = 160, gw = W - 320, gy = L.gy, gh = 34;
-  ctx.fillStyle = C.line2;
-  roundedRect(ctx, gx, gy, gw, gh, gh / 2);
-  ctx.fill();
-  if (total && yesPct > 0) {
-    ctx.fillStyle = C.accent;
-    roundedRect(ctx, gx, gy, Math.max(gh, (gw * yesPct) / 100), gh, gh / 2);
-    ctx.fill();
-  }
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = C.accentDark;
-  ctx.font = `700 40px ${SANS}`;
-  ctx.fillText(`밈이다 ${yesPct}%`, gx, gy + L.pctDy);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = C.mute;
-  ctx.fillText(`아니다 ${noPct}%`, gx + gw, gy + L.pctDy);
-
   ctx.textAlign = 'center';
-  ctx.fillStyle = C.mute;
-  ctx.font = `400 30px ${SANS}`;
-  ctx.fillText(total ? `${total}표 참여` : '아직 판정 없음', W / 2, gy + L.totalDy);
+  if (revealed) {
+    ctx.fillStyle = C.accentDark;
+    ctx.font = `700 76px ${SERIF}`;
+    ctx.fillText(`${m.eraYear}년 밈`, W / 2, L.gy + L.pctDy);
+    ctx.fillStyle = C.mute;
+    ctx.font = `400 30px ${SANS}`;
+    const line = gap === 0 ? '정확히 맞힘' : `나는 ${m.myGuess}년 · ${gap}년 차이`;
+    ctx.fillText(line, W / 2, L.gy + L.totalDy);
+  } else {
+    ctx.fillStyle = C.accentDark;
+    ctx.font = `700 76px ${SERIF}`;
+    ctx.fillText('몇 년도 밈?', W / 2, L.gy + L.pctDy);
+  }
 
   ctx.fillStyle = C.ink;
   ctx.font = `600 44px ${SERIF}`;
-  ctx.fillText('당신의 판정은?', W / 2, L.q);
+  ctx.fillText(revealed ? '당신은 몇 년도라고 볼래요?' : '몇 년도 밈일까요?', W / 2, L.q);
   ctx.fillStyle = C.mute3;
   ctx.font = `400 26px ${SANS}`;
   ctx.fillText(location.host, W / 2, L.host);
@@ -289,11 +281,9 @@ function memeUrl(m: ShareMeme) {
 export async function voteCard(m: ShareMeme): Promise<string> {
   const canvas = await drawCard(m);
   const url = memeUrl(m);
-  const total = m.voteYes + m.voteNotmeme;
-  const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
-  const text = total
-    ? `“${m.name}” 밈이다 ${yesPct}% · ${total}표 — 당신의 판정은?\n${url}`
-    : `“${m.name}” 이거 밈 맞나요 — 첫 판정을 내려주세요\n${url}`;
+  const text = m.myGuess !== null && m.eraYear !== null
+    ? `“${m.name}” ${m.eraYear}년 밈 — 나는 ${m.myGuess}년이라 찍었어요. 당신은?\n${url}`
+    : `“${m.name}” 몇 년도 밈일까요?\n${url}`;
   return shareBlob(await cardBlob(canvas), `memedics-${m.id}.png`, text);
 }
 
