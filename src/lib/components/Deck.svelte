@@ -153,7 +153,6 @@
       <div class="deck-vote">
         <button class="dv dv-yes" onclick={() => judge('yes')}>밈이다</button>
         <button class="dv dv-not" onclick={() => judge('notmeme')}>밈이 아니다</button>
-        <button class="dv dv-dead" onclick={() => judge('no')}>죽은 밈이다</button>
       </div>
     {/if}
 

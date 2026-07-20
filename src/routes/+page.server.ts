@@ -1,4 +1,4 @@
-// 홈 SSR — 순위(스테디)·새로 뜬·부고를 서버에서 렌더(SEO의 시작점)
+// 홈 SSR — 순위(스테디)·새로 뜬을 서버에서 렌더(SEO의 시작점)
 import { loadCards } from '$lib/server/db';
 import type { PageServerLoad } from './$types';
 

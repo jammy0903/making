@@ -85,7 +85,7 @@ export interface MemeCard {
   photoUrl: string;
   videoUrl: string;
   media: MediaItem[];
-  status: 'new' | 'steady' | 'dead';
+  status: 'new' | 'steady';
   origin: 'kr' | 'us'; // 근본 나라 (한국/미국)
   photoUpdatedAt: string | null;
   days: number;
@@ -93,9 +93,7 @@ export interface MemeCard {
   mentions: number;
   commentCount: number;
   voteYes: number;
-  voteNo: number;
   voteNotmeme: number;
-  died: string | null;
   rank: number | null;
   rankSources: number;
 }
@@ -122,9 +120,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
     mentions: r.mentions || 0,
     commentCount: r.comment_count || 0,
     voteYes: r.vote_yes || 0,
-    voteNo: r.vote_no || 0,
     voteNotmeme: r.vote_notmeme || 0,
-    died: r.died_at || null,
     rank: null,
     rankSources: 0,
   };
@@ -133,7 +129,7 @@ export function mapCard(r: Record<string, any>): MemeCard {
 // 목록용 컬럼만 — select=*는 홈에서 안 쓰는 last_activity·source까지 실어 페이로드를 키운다.
 // source는 상세(/m/[id])에서만 쓰므로 목록에서 뺀다.
 const LIST_COLS =
-  'id,name,description,tags,category,status,photo_url,video_url,media,created_at,photo_updated_at,died_at,mentions,comment_count,vote_yes,vote_no,vote_notmeme';
+  'id,name,description,tags,category,status,photo_url,video_url,media,created_at,photo_updated_at,mentions,comment_count,vote_yes,vote_notmeme';
 const LIST_COLS_EN = `${LIST_COLS},name_en,tags_en,description_en`; // ko 요청엔 안 보냄(132KB)
 
 // 카드 전체 + 측정 순위(score) 병합
