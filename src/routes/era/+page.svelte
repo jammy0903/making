@@ -242,7 +242,10 @@
       <div class="hl-over-actions">
         <button class="btn-solid" onclick={share} disabled={!cardUrl}>{shareLabel}</button>
         {#if kakaoEnabled()}
-          <button class="btn" onclick={shareToKakao}>{kakaoLabel}</button>
+          <button class="btn-kakao" onclick={shareToKakao}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#191919" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.73 1.828 5.14 4.6 6.55-.2.75-.73 2.72-.84 3.14-.13.52.19.51.4.37.17-.11 2.7-1.83 3.8-2.58.66.1 1.34.15 2.04.15 5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/></svg>
+            {kakaoLabel}
+          </button>
         {/if}
         <button class="btn" onclick={save} disabled={!cardUrl}>{saveLabel}</button>
         <button class="btn" onclick={start}>{t.era_retry()}</button>
