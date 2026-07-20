@@ -1,6 +1,7 @@
 // 세대 판독기 SSR — era_year(전성기 연도)가 큐레이션된 밈만 출전 (db/era_year.sql)
 import { error } from '@sveltejs/kit';
 import { sbGet, isEnLocale, isKoreanRequest } from '$lib/server/db';
+import { m as t } from '$lib/paraglide/messages';
 import type { PageServerLoad } from './$types';
 
 type Row = { id: number; name: string; name_en: string | null; photo_url: string | null; era_year: number; tags: string[] | null };
@@ -13,7 +14,7 @@ export const load: PageServerLoad = async ({ fetch, setHeaders, request }) => {
   // IP 기준 국가 필터 — 한국 IP는 한국밈만, 그 외는 미국밈만 출제 (tags의 '#미국'로 원산지 판정)
   const kr = isKoreanRequest(request);
   const filtered = rows.filter((r) => (r.tags || []).includes('#미국') !== kr);
-  if (filtered.length < 12) throw error(503, '판독기 준비 중입니다');
+  if (filtered.length < 12) throw error(503, t.err_era_preparing());
 
   const en = isEnLocale();
   const pool = filtered.map((r) => ({

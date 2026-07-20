@@ -1,11 +1,12 @@
 // 밈 상세 SSR — "○○ 뜻" 검색 유입의 착지 페이지. 메타·OG는 +page.svelte의 svelte:head.
 import { error } from '@sveltejs/kit';
 import { sbGet, mapCard, loadComments, isEnLocale } from '$lib/server/db';
+import { m as t } from '$lib/paraglide/messages';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
   const id = Number(params.id);
-  if (!Number.isInteger(id) || id <= 0) throw error(404, '없는 밈입니다');
+  if (!Number.isInteger(id) || id <= 0) throw error(404, t.err_no_meme());
 
   // 이전/다음/댓글 쿼리는 본문 조회 결과에 의존하지 않는다(id만 있으면 됨) — 본문을
   // 먼저 기다렸다 나머지를 병렬로 부르던 걸(왕복 2회) 넷 다 동시에 쏘도록 합쳤다(왕복 1회).
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
     // 표본 3개 미만이면 뷰가 행을 안 내보낸다(개인 추측 노출 방지) → 그땐 군중 평균을 숨긴다.
     sbGet<Guess[]>(fetch, `era_guess_stats?meme_id=eq.${id}&select=guesses,avg_guess,era_year,avg_abs_error`).catch(() => []),
   ]);
-  if (!rows.length) throw error(404, '없는 밈입니다');
+  if (!rows.length) throw error(404, t.err_no_meme());
   const en = isEnLocale();
   const nb = (r?: Nb) => (r ? { id: r.id, name: (en && r.name_en) || r.name } : null);
   setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=120' });
