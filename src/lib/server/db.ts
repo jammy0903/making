@@ -10,6 +10,16 @@ export function isEnLocale(): boolean {
   try { return getLocale() === 'en'; } catch { return false; }
 }
 
+// 한국 IP 판별 — hooks.server.ts의 언어 리다이렉트 신호(x-vercel-ip-country → accept-language)와
+// 동일 기준을 재사용해, 신호가 없을 때만 한국으로 기본 처리한다(사이트 전역에서 판정 일관성 유지).
+export function isKoreanRequest(request: Request): boolean {
+  const country = request.headers.get('x-vercel-ip-country');
+  if (country) return country === 'KR';
+  const acceptLang = request.headers.get('accept-language') || '';
+  if (acceptLang) return /(^|,|\s)ko(-|;|,|$)/i.test(acceptLang);
+  return true;
+}
+
 export async function sbGet<T = unknown>(fetch: Fetch, path: string): Promise<T> {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
     headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },

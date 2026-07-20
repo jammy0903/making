@@ -16,7 +16,7 @@
     [2023, 2024],
     [2025, 9999],
   ];
-  const PER_BUCKET = 3;
+  const PER_BUCKET = 4;
 
   let phase = $state<'intro' | 'play' | 'result'>('intro');
   let deck = $state<Card[]>([]);
