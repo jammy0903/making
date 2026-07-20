@@ -21,3 +21,4 @@ discovery-inbox/*
 # Paraglide 생성물 (빌드 시 재생성)
 src/lib/paraglide/
 pnpm-lock.yaml
+.vercel
