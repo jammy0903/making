@@ -12,12 +12,12 @@
   --mute: #6E6E67;
   --mute2: #8E8E86;
   --mute3: #A6A69C;
-  --mute4: #C2C2B8;
-  --mute5: #B8B8AE;
-  --line: #E4E3DC;
-  --line2: #DADAD2;
-  --line3: #EDECE6;
-  --line4: #F0EFE9;
+  --mute4: #A8C4B4;
+  --mute5: #9DBCAB;
+  --line: #BFDECD;
+  --line2: #A9D2BD;
+  --line3: #CDE6D8;
+  --line4: #DCEDE4;
   --surface: #fff;      /* 카드·상단바·입력 배경 */
   --surface2: #FCFCFA;  /* 미묘한 보조 표면(입력칸·썸네일) */
   --hover: #F2F2EC;     /* 행 hover */
@@ -59,7 +59,7 @@ input::placeholder, textarea::placeholder { color: var(--mute5); }
 button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 1px;
 }
-button { font-family: var(--sans); cursor: pointer; }
+button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
 
 .wrap { max-width: 900px; margin: 0 auto; padding: 0 32px; }
 .wrap-narrow { max-width: 730px; margin: 0 auto; padding: 0 32px; }
@@ -137,11 +137,11 @@ button { font-family: var(--sans); cursor: pointer; }
 .spacer { flex: 1; min-height: 10px; }
 
 /* ── Buttons ── */
-.btn { border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 8px 18px; font-size: 14px; white-space: nowrap; }
+.btn { border-radius: 999px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 8px 18px; font-size: 14px; white-space: nowrap; }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn-accent { border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 8px 18px; font-size: 14px; white-space: nowrap; }
+.btn-accent { border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 8px 18px; font-size: 14px; white-space: nowrap; }
 .btn-accent:hover { background: var(--accent); color: #fff; }
-.btn-solid { background: var(--accent); color: #fff; border: none; padding: 10px 24px; font-size: 14px; }
+.btn-solid { border-radius: 999px; background: var(--accent); color: #fff; border: none; padding: 10px 24px; font-size: 14px; }
 .btn-solid:hover { background: var(--accent-dark); }
 
 /* ── Footer ── */
@@ -271,9 +271,9 @@ button { font-family: var(--sans); cursor: pointer; }
 .tab-cta:hover { color: var(--accent-dark); }
 
 /* ── Segmented (variant toggle) ── */
-.seg { display: flex; border: 1px solid var(--line2); }
+.seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line2); border-radius: 999px; }
 .seg button { background: transparent; color: var(--mute); border: none; padding: 7px 16px; font-size: 13px; white-space: nowrap; }
-.seg button + button { border-left: 1px solid var(--line2); }
+
 .seg button.on { background: var(--accent); color: #fff; }
 
 .list-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
@@ -453,7 +453,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .hl-vs { align-self: center; font-size: 13px; color: var(--mute3); }
 .hl-q { font-size: 12px; color: var(--mute3); }
 .hl-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 2px; }
-.hl-btn { border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 10px; font-size: 15px; }
+.hl-btn { border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 10px; font-size: 15px; }
 .hl-btn:hover { background: var(--accent); color: #fff; }
 .hl-mark { font-size: 13px; font-weight: 600; }
 .hl-mark.win { color: var(--accent-dark); }

@@ -4,6 +4,7 @@
   import { newCards, tagText, metaNew, metaSteady, coverImage, ytId, ytThumb } from '$lib/cards';
   import { castVote, markVoted, type VoteChoice } from '$lib/client/api';
   import ThumbImg from '$lib/components/ThumbImg.svelte';
+  import { m as t } from '$lib/paraglide/messages';
   import type { MemeCard } from '$lib/server/db';
 
   let { cards }: { cards: MemeCard[] } = $props();
@@ -108,7 +109,7 @@
 </script>
 
 <div class="wrap deck-section">
-  <div class="deck-title">밈 판정 · 이 밈, 아직 살아있나?</div>
+  <div class="deck-title">{t.deck_title()}</div>
   <div class="deck-holder">
     <div class="deck-stage">
       {#if !done && list.length > 0}
@@ -118,7 +119,7 @@
               class="deck-card"
               style={cardStyle(v.off)}
               role="group"
-              aria-roledescription="밈 판정 카드"
+              aria-roledescription={t.deck_card_role()}
               aria-label={m.name}
               onpointerdown={v.off === 0 ? down : undefined}
             >
@@ -140,28 +141,28 @@
             </div>
         {/each}
       {:else if list.length === 0}
-        <div class="deck-done"><span>판정할 밈이 없어요</span></div>
+        <div class="deck-done"><span>{t.deck_empty()}</span></div>
       {:else}
         <div class="deck-done">
-          <span>다 판정했어요</span>
-          <button class="btn-accent" onclick={() => { done = false; idx = 0; }}>처음부터 다시</button>
+          <span>{t.deck_all_done()}</span>
+          <button class="btn-accent" onclick={() => { done = false; idx = 0; }}>{t.deck_restart()}</button>
         </div>
       {/if}
     </div>
 
     {#if !done && list.length > 0}
       <div class="deck-vote">
-        <button class="dv dv-yes" onclick={() => judge('yes')}>밈이다</button>
-        <button class="dv dv-not" onclick={() => judge('notmeme')}>밈이 아니다</button>
+        <button class="dv dv-yes" onclick={() => judge('yes')}>{t.deck_yes()}</button>
+        <button class="dv dv-not" onclick={() => judge('notmeme')}>{t.deck_no()}</button>
       </div>
     {/if}
 
     <div class="deck-nav">
-      <button class="btn" onclick={prev}>← 이전</button>
+      <button class="btn" onclick={prev}>{t.deck_prev()}</button>
       <span class="deck-counter">{counter}</span>
-      <button class="btn" onclick={next}>건너뛰기 →</button>
+      <button class="btn" onclick={next}>{t.deck_skip()}</button>
     </div>
-    <div class="deck-hint">판정하면 다음 카드로 · 좌우로 넘기거나 건너뛰기 · 탭하면 자세히</div>
+    <div class="deck-hint">{t.deck_hint()}</div>
   </div>
   <div class="rule" style="margin-top:30px;"></div>
 </div>
