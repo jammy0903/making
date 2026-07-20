@@ -13,7 +13,7 @@ export interface ShareMeme {
   id: number;
   name: string;
   voteYes: number;
-  voteNo: number;
+  voteNotmeme: number; // 예전엔 voteNo(죽은 밈)와의 생존율이었으나 사망 개념을 걷어내며 바뀌었다
   photo?: string; // 해당 밈의 짤. 외부 호스트가 CORS를 안 주면 로드 실패 → 사진 없는 배치로 폴백
 }
 
@@ -100,7 +100,7 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
     ? { brand: 150, sub: 190, name: 620, nameMax: 84, gy: 664, pctDy: 76, totalDy: 140, q: 892, host: 946 }
     : { brand: 160, sub: 200, name: 380, nameMax: 104, gy: 520, pctDy: 100, totalDy: 170, q: 880, host: 940 };
 
-  const total = m.voteYes + m.voteNo;
+  const total = m.voteYes + m.voteNotmeme;
   const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
   const noPct = total ? 100 - yesPct : 0;
 
@@ -144,10 +144,10 @@ export async function drawCard(m: ShareMeme): Promise<HTMLCanvasElement> {
   ctx.textAlign = 'left';
   ctx.fillStyle = C.accentDark;
   ctx.font = `700 40px ${SANS}`;
-  ctx.fillText(`생존 ${yesPct}%`, gx, gy + L.pctDy);
+  ctx.fillText(`밈이다 ${yesPct}%`, gx, gy + L.pctDy);
   ctx.textAlign = 'right';
   ctx.fillStyle = C.mute;
-  ctx.fillText(`사망 ${noPct}%`, gx + gw, gy + L.pctDy);
+  ctx.fillText(`아니다 ${noPct}%`, gx + gw, gy + L.pctDy);
 
   ctx.textAlign = 'center';
   ctx.fillStyle = C.mute;
@@ -289,11 +289,11 @@ function memeUrl(m: ShareMeme) {
 export async function voteCard(m: ShareMeme): Promise<string> {
   const canvas = await drawCard(m);
   const url = memeUrl(m);
-  const total = m.voteYes + m.voteNo;
+  const total = m.voteYes + m.voteNotmeme;
   const yesPct = total ? Math.round((m.voteYes / total) * 100) : 0;
   const text = total
-    ? `“${m.name}” 생존 ${yesPct}% · ${total}표 — 당신의 판정은?\n${url}`
-    : `“${m.name}” 살았나 죽었나 — 첫 판정을 내려주세요\n${url}`;
+    ? `“${m.name}” 밈이다 ${yesPct}% · ${total}표 — 당신의 판정은?\n${url}`
+    : `“${m.name}” 이거 밈 맞나요 — 첫 판정을 내려주세요\n${url}`;
   return shareBlob(await cardBlob(canvas), `memedics-${m.id}.png`, text);
 }
 

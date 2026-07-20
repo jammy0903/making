@@ -50,16 +50,11 @@ export function newCards(cards: MemeCard[]) {
 export function steadyCards(cards: MemeCard[]) {
   return cards.filter((c) => c.status === 'steady').sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
 }
-// 근본 나라별 밈 (사망 제외). 인기(rank) 우선, 그다음 최신순.
+// 근본 나라별 밈. 인기(rank) 우선, 그다음 최신순.
 export function originCards(cards: MemeCard[], origin: 'kr' | 'us') {
   return cards
-    .filter((c) => c.origin === origin && c.status !== 'dead')
+    .filter((c) => c.origin === origin)
     .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity) || a.days - b.days);
-}
-export function deadCards(cards: MemeCard[]) {
-  return cards
-    .filter((c) => c.status === 'dead')
-    .sort((a, b) => new Date(b.died || 0).getTime() - new Date(a.died || 0).getTime());
 }
 // 태그 표시: 항상 앞에 # 하나(이미 있으면 중복 안 붙임, 없으면 붙임). 필터/링크 값은 원본 사용.
 export function displayTag(t: string) {
@@ -82,7 +77,7 @@ export function searchCards(cards: MemeCard[], q: string) {
 
 // 상태 라벨 (검색 결과에서 밈이 어느 구역인지)
 export function statusLabel(m: MemeCard) {
-  return m.status === 'new' ? t.status_new() : m.status === 'dead' ? t.status_dead() : t.status_steady();
+  return m.status === 'new' ? t.status_new() : t.status_steady();
 }
 export function metaNew(m: MemeCard) {
   const age = m.days === 0 ? t.meta_added_today() : t.meta_added_days({ days: m.days });

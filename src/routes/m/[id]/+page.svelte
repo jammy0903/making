@@ -7,7 +7,7 @@
   import { m as t } from '$lib/paraglide/messages'; // 컴포넌트 상태 m(밈)과 충돌 피해 t로 alias
   import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
-  const CHOICE_LABEL: Record<VoteChoice, string> = { yes: t.choice_yes(), no: t.choice_no(), notmeme: t.choice_notmeme() };
+  const CHOICE_LABEL: Record<VoteChoice, string> = { yes: t.choice_yes(), notmeme: t.choice_notmeme() };
   import { voteCard } from '$lib/client/share';
   import { login, isAdmin } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
@@ -71,7 +71,7 @@
         name: raw.name || '', keywords: (raw.keywords || []).join(', '), description: raw.description || '',
         tags: (raw.tags || []).join(', '), category: raw.category || '', status: raw.status || 'new',
         photos, video: raw.video_url || vids[0] || '',
-        source: raw.source || '', died_at: raw.died_at || null,
+        source: raw.source || '',
       };
       editMode = true;
     } catch (e) {
@@ -126,7 +126,6 @@
       name: ef.name.trim(), keywords: splitList(ef.keywords), description: ef.description.trim(),
       tags: splitList(ef.tags), category: ef.category.trim() || null, status: ef.status,
       source: ef.source.trim() || null, photo_url: photos[0] || null, video_url: video || null, media,
-      died_at: ef.status === 'dead' ? (ef.died_at || new Date().toISOString()) : null,
     };
     try {
       await updateMeme(m.id, data);
@@ -164,9 +163,10 @@
   const canEdit = (c: { user_id: string | null }) =>
     !!user.current && (String(c.user_id) === String(user.current.id) || isAdmin(user.current));
 
-  const total = $derived(m.voteYes + m.voteNo); // 생존 게이지는 밈이다 vs 죽은밈
+  // 게이지는 밈이다 vs 밈이 아니다. 예전엔 '죽은 밈이다'와의 생존율이었으나 사망 개념을
+  // 걷어내며 바뀌었다 — 언제 밈이었는지는 전성기 연도(era_year)가 답한다.
+  const total = $derived(m.voteYes + m.voteNotmeme);
   const yesPct = $derived(total ? Math.round((m.voteYes / total) * 100) : 0);
-  const noPct = $derived(total ? 100 - yesPct : 0);
   const votedEntry = $derived.by(() => {
     voteVersion;
     if (typeof localStorage === 'undefined') return null;
@@ -203,7 +203,6 @@
     if (votedNow) return;
     markVoted(m.id, choice);
     if (choice === 'yes') m.voteYes++;
-    else if (choice === 'no') m.voteNo++;
     else m.voteNotmeme++;
     voteVersion++;
     try {
@@ -267,7 +266,7 @@
   async function share() {
     shareLabel = t.share_making();
     try {
-      const r = await voteCard({ id: m.id, name: m.name, voteYes: m.voteYes, voteNo: m.voteNo, photo: coverImage(m) });
+      const r = await voteCard({ id: m.id, name: m.name, voteYes: m.voteYes, voteNotmeme: m.voteNotmeme, photo: coverImage(m) });
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.share_default();
     } catch (e) {
       shareLabel = t.share_fail();
@@ -328,7 +327,6 @@
           <select id="e-status" bind:value={ef.status}>
             <option value="new">{t.edit_status_new()}</option>
             <option value="steady">{t.edit_status_steady()}</option>
-            <option value="dead">{t.edit_status_dead()}</option>
           </select>
         </div>
         <div class="subrow">
@@ -396,7 +394,7 @@
         <div class="tag-head">{#each m.tags as tag (tag)}<a class="tagchip" href={localizeHref(`/?tag=${encodeURIComponent(tag)}`)}>{displayTag(tag)}</a>{/each}</div>
       {/if}
       <div class="reg">
-        {reg}{#if m.status === 'dead'} · <span class="obit-mark">{t.detail_dead_mark()}</span>{/if}{#if m.src} · {t.detail_src()} <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
+        {reg}{#if m.src} · {t.detail_src()} <a href={m.src} target="_blank" rel="noopener">{m.src}</a>{/if}
       </div>
       {#if m.desc}<p class="detail-desc">{m.desc}</p>{/if}
     {/if}
@@ -408,7 +406,7 @@
         <strong class="verdict-a">
           {#if total < 3}{t.verdict_few()}
           {:else if yesPct >= 70}{t.verdict_alive({ pct: yesPct })}
-          {:else if yesPct <= 30}{t.verdict_dead({ pct: noPct })}
+          {:else if yesPct <= 30}{t.verdict_notmeme({ pct: 100 - yesPct })}
           {:else}{t.verdict_split({ pct: yesPct })}{/if}
         </strong>
       </div>
@@ -416,9 +414,8 @@
         <div class="vote-btns {votedNow ? 'voted' : ''}">
           <button class="vote-btn" onclick={() => vote('yes')}>{t.vote_yes()}</button>
           <button class="vote-btn" onclick={() => vote('notmeme')}>{t.vote_notmeme()}</button>
-          <button class="vote-btn" onclick={() => vote('no')}>{t.vote_dead()}</button>
         </div>
-        <span class="vote-total">{t.vote_total({ count: total + m.voteNotmeme })}</span>
+        <span class="vote-total">{t.vote_total({ count: total })}</span>
         {#if voteHint}<span class="vote-hint">{voteHint}</span>{/if}
       </div>
       <div
@@ -429,10 +426,7 @@
         aria-valuemin="0"
         aria-valuemax="100"
       ><div style="width:{yesPct}%"></div></div>
-      <div class="vote-legend"><span>{t.vote_legend_yes({ pct: yesPct, votes: m.voteYes })}</span><span>{t.vote_legend_no({ pct: noPct, votes: m.voteNo })}</span></div>
-      {#if m.voteNotmeme > 0}
-        <div class="vote-notmeme">{t.vote_notmeme_count({ count: m.voteNotmeme })}</div>
-      {/if}
+      <div class="vote-legend"><span>{t.vote_legend_yes({ pct: yesPct, votes: m.voteYes })}</span><span>{t.vote_legend_no({ pct: 100 - yesPct, votes: m.voteNotmeme })}</span></div>
       <div class="vote-foot">
         <span class="vote-note">{t.vote_note()}</span>
         <button class="vote-share" onclick={share}>{shareLabel}</button>

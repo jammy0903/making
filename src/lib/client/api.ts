@@ -33,7 +33,9 @@ export function voterId() {
   }
   return v;
 }
-export type VoteChoice = 'yes' | 'no' | 'notmeme'; // 밈이다 / 죽은 밈이다 / 밈이 아니다
+// 밈이다 / 밈이 아니다. 예전엔 'no'(죽은 밈이다)가 있었으나 사망 개념을 걷어내며 없앴다
+// — 밈이 언제 것인지는 전성기 연도(era_year)가 말해준다.
+export type VoteChoice = 'yes' | 'notmeme';
 type VotedEntry = { c: VoteChoice; t: number };
 export function votedMap(): Record<string, VotedEntry> {
   try {
@@ -162,7 +164,7 @@ export async function withdrawSubmission(id: number) {
 // 편집용 원본 행(meme_cards 뷰엔 없는 keywords 등 포함). 읽기는 공개.
 export async function fetchMemeRaw(id: number) {
   const r = await fetch(
-    `${SB.url}/rest/v1/memes?id=eq.${id}&select=id,name,keywords,description,tags,category,status,source,photo_url,video_url,media,died_at`,
+    `${SB.url}/rest/v1/memes?id=eq.${id}&select=id,name,keywords,description,tags,category,status,source,photo_url,video_url,media`,
     { headers: headers() }
   );
   if (!r.ok) throw new Error(`GET meme ${r.status}: ${await r.text()}`);

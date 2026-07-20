@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { newCards, steadyCards, deadCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
+  import { newCards, steadyCards, searchCards, statusLabel, metaNew, metaSteady, coverImage, ytId, ytThumb, displayTag } from '$lib/cards';
   import Deck from '$lib/components/Deck.svelte';
   import ThumbImg from '$lib/components/ThumbImg.svelte';
   import type { MemeCard } from '$lib/server/db';
@@ -47,11 +47,10 @@
     q = '';
     goto(`/?tag=${encodeURIComponent(tag)}`);
   }
-  // 나라 필터 적용(전체면 그대로) → 새밈·스테디·부고 모두 이 집합에서 파생
+  // 나라 필터 적용(전체면 그대로) → 새밈·스테디 모두 이 집합에서 파생
   const filtered = $derived(countryFilter === 'all' ? data.cards : data.cards.filter((c) => c.origin === countryFilter));
   const news = $derived(newCards(filtered));
   const steadies = $derived(steadyCards(filtered));
-  const deads = $derived(deadCards(filtered));
   const cats = $derived(['전체', ...new Set(steadies.map((c) => c.cat).filter(Boolean))]);
   const steadyList = $derived(steadyCat === '전체' ? steadies : steadies.filter((m) => m.cat === steadyCat));
 
@@ -291,17 +290,6 @@
       {#if steadyList.length > steadyLimit}
         <div class="morewrap"><button class="more" onclick={() => (steadyLimit += PAGE)}>{m.home_more({ count: steadyList.length - steadyLimit })}</button></div>
       {/if}
-    {/if}
-    {#if deads.length}
-      <div class="obits">
-        <div class="obits-head">{m.home_obit_head()} <span class="obits-sub">{m.home_obit_sub({ count: deads.length })}</span></div>
-        {#each deads as d (d.id)}
-          <a class="obit-row" href={localizeHref(`/m/${d.id}`)} style="color:inherit">
-            <span class="obit-name">{d.name}</span>
-            <span class="obit-date">{m.home_obit_declared()}</span>
-          </a>
-        {/each}
-      </div>
     {/if}
   </div>
 {/if}
