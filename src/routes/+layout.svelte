@@ -22,6 +22,9 @@
 
   let theme = $state<'light' | 'dark'>('light');
 
+  // 맨 위로 버튼: 한 화면 이상 내려갔을 때만 노출
+  let showTop = $state(false);
+
   onMount(async () => {
     // 테마: 저장된 선호 우선, 없으면 시스템 설정
     const stored = localStorage.getItem('mmd-theme');
@@ -47,7 +50,17 @@
     localStorage.setItem('mmd-theme', theme);
     document.documentElement.dataset.theme = theme;
   }
+
+  function onScroll() {
+    showTop = window.scrollY > window.innerHeight;
+  }
+
+  function scrollTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 </script>
+
+<svelte:window onscroll={onScroll} />
 
 <svelte:head>
   <link rel="alternate" hreflang="ko" href="{origin}{koPath}" />
@@ -113,5 +126,47 @@
   </div>
 </footer>
 
+{#if showTop}
+  <button
+    class="to-top"
+    onclick={scrollTop}
+    aria-label={getLocale() === 'en' ? 'Back to top' : '맨 위로 이동'}
+    title={getLocale() === 'en' ? 'Back to top' : '맨 위로'}
+  >↑</button>
+{/if}
+
 <!-- 하우스 광고: 화면 아래를 걸어다니는 강아지 (dog-walk 크롬 확장) -->
 <WalkingDog />
+
+<style>
+  /* 걸어다니는 강아지(z-index 6, bottom 4px) 위로 겹치지 않게 띄움 */
+  .to-top {
+    position: fixed;
+    right: 16px;
+    bottom: 56px;
+    z-index: 7;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-border);
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14);
+  }
+
+  .to-top:hover {
+    background: var(--accent-bg);
+  }
+
+  @media (max-width: 640px) {
+    .to-top {
+      right: 12px;
+      bottom: 48px;
+      width: 38px;
+      height: 38px;
+    }
+  }
+</style>
