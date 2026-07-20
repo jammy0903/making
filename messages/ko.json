@@ -300,5 +300,8 @@
   "guess_exact": "정확히 맞혔어요 🎯",
   "guess_off": "나는 {mine}년 · {gap}년 차이",
   "guess_crowd": "다른 사람들 평균 {avg}년 · {n}명 참여",
-  "guess_note": "전성기 연도는 큐레이션 값이에요 · 브라우저당 1회"
+  "guess_note": "전성기 연도는 큐레이션 값이에요 · 브라우저당 1회",
+  "guess_mine_short": "나 {year}",
+  "guess_crowd_short": "평균 {year}",
+  "guess_crowd_few": "아직 추측이 적어요 · 3명부터 평균이 공개돼요"
 }

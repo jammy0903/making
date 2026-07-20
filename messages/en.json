@@ -300,5 +300,8 @@
   "guess_exact": "Spot on 🎯",
   "guess_off": "You said {mine} · off by {gap}",
   "guess_crowd": "Others average {avg} · {n} guesses",
-  "guess_note": "Peak year is a curated value · one guess per browser"
+  "guess_note": "Peak year is a curated value · one guess per browser",
+  "guess_mine_short": "you {year}",
+  "guess_crowd_short": "avg {year}",
+  "guess_crowd_few": "Not enough guesses yet · average shows from 3"
 }

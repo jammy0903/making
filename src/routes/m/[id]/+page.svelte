@@ -177,6 +177,9 @@
   });
   const guessDone = $derived(myGuess !== null);
   const gap = $derived(myGuess !== null && data.eraYear ? Math.abs(myGuess - data.eraYear) : 0);
+  // 연표 위 위치(%). 군중 데이터가 없어도 "내 추측 vs 정답" 둘만으로 그림이 성립한다 —
+  // 표본 3명 미만이면 평균을 숨기므로(개인 추측 노출 방지) 초기엔 이 그래프가 결과의 전부다.
+  const pos = (y: number) => Math.max(0, Math.min(100, ((y - GUESS_MIN) / (GUESS_MAX - GUESS_MIN)) * 100));
 
   async function submitGuess() {
     if (guessDone) return;
@@ -426,12 +429,33 @@
             <span class="verdict-q">{t.guess_answer_label()}</span>
             <strong class="verdict-a">{data.eraYear}{t.guess_year_suffix()}</strong>
           </div>
+          <!-- 연표 그래프 — 정답은 위, 내 추측은 아래에 찍어 두 라벨이 겹치지 않게 한다
+               (연도가 가까울수록 마커가 붙는데, 위아래로 나누면 그때도 읽힌다). -->
+          <div class="gtl">
+            <div class="gtl-track">
+              <div class="gtl-gap" style="left:{Math.min(pos(myGuess ?? 0), pos(data.eraYear))}%; width:{Math.abs(pos(data.eraYear) - pos(myGuess ?? 0))}%"></div>
+              <div class="gtl-mark answer" style="left:{pos(data.eraYear)}%">
+                <span class="gtl-lab top">{data.eraYear}</span>
+              </div>
+              <div class="gtl-mark mine" style="left:{pos(myGuess ?? 0)}%">
+                <span class="gtl-lab bot">{t.guess_mine_short({ year: myGuess ?? 0 })}</span>
+              </div>
+              {#if data.guessStat}
+                <div class="gtl-mark crowd" style="left:{pos(data.guessStat.avg_guess)}%">
+                  <span class="gtl-lab bot2">{t.guess_crowd_short({ year: data.guessStat.avg_guess })}</span>
+                </div>
+              {/if}
+            </div>
+            <div class="guess-ends"><span>{GUESS_MIN}</span><span>{GUESS_MAX}</span></div>
+          </div>
           <div class="guess-result">
             {#if gap === 0}{t.guess_exact()}
             {:else}{t.guess_off({ mine: myGuess ?? 0, gap })}{/if}
           </div>
           {#if data.guessStat}
             <div class="guess-crowd">{t.guess_crowd({ avg: data.guessStat.avg_guess, n: data.guessStat.guesses })}</div>
+          {:else}
+            <div class="guess-crowd">{t.guess_crowd_few()}</div>
           {/if}
         {/if}
         <div class="vote-foot">
