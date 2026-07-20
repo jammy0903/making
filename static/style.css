@@ -100,6 +100,10 @@ button { font-family: var(--sans); cursor: pointer; }
 .btn-accent:hover { background: var(--accent); color: #fff; }
 .btn-solid { background: var(--accent); color: #fff; border: none; padding: 10px 24px; font-size: 14px; }
 .btn-solid:hover { background: var(--accent-dark); }
+/* 카카오 공식 브랜드 컬러(#FEE500) + 말풍선 아이콘 — 카톡 공유 버튼임을 한눈에 알아보게 */
+.btn-kakao { display: inline-flex; align-items: center; gap: 7px; background: #FEE500; color: #191919; border: none; padding: 8px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.btn-kakao:hover { background: #F6DC00; }
+.btn-kakao svg { flex-shrink: 0; }
 
 /* ── Tabs ── */
 .tabs { display: flex; gap: 30px; align-items: flex-end; padding-top: 16px; }
