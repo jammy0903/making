@@ -46,6 +46,14 @@ function canvasSrc(url: string): string {
   return url;
 }
 
+// 카카오 공유 등 외부 서버가 직접 fetch해야 하는 곳에서 쓰는 절대 URL 버전.
+// canvasSrc와 동일 로직(외부 호스트는 same-origin 프록시로)이되 origin을 붙여 완전한 URL로 만든다.
+export function publicImgUrl(url: string): string {
+  const src = canvasSrc(url);
+  if (!src) return `${location.origin}/og-default.png`;
+  return src.startsWith('http') ? src : `${location.origin}${src}`;
+}
+
 // 카드용 이미지 로더 — crossOrigin='anonymous'로만 로드해 canvas 오염을 원천 차단한다.
 // 프록시를 거친 외부 사진은 same-origin이라 통과하고, 프록시 실패분만 onerror로 스킵된다.
 function loadImg(url: string): Promise<HTMLImageElement | null> {
