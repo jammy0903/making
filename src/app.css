@@ -596,6 +596,68 @@ button { font-family: var(--sans); cursor: pointer; }
   .cform textarea,
   .cform input.nick,
   .cedit { font-size: 16px; }
+
+  /* ── 모바일 밀도 압축 ──
+     폰에서는 컴포넌트가 큼직해 스크롤이 길어진다 → 세로 여백·큰 폰트·고정 높이를
+     한 단계씩 줄여 한 화면에 더 많이 보이게 한다. 터치 타깃(버튼 패딩)은 유지. */
+  .masthead { padding-top: 26px; }
+  .masthead h1 { font-size: 28px; }
+  .masthead .lede { font-size: 14px; line-height: 1.6; margin-top: 8px; }
+  .masthead .rule { margin-top: 18px; }
+  .page { padding: 18px 0 60px; }
+  .searchwrap { margin-top: 16px; }
+  .searchbar { padding: 9px 13px; }
+  .empty { padding: 24px 6px; }
+
+  /* 홈 덱 — 카드·제목 여백 축소 */
+  .deck-section { padding: 18px 0 4px; }
+  .deck-title { margin-bottom: 12px; }
+  .deck-stage, .deck-card { height: 264px; }
+  .deck-nav { margin-top: 12px; }
+  .deck-vote { margin-top: 10px; }
+  .deck-hint { margin-top: 8px; }
+  .dv { padding: 10px 6px; }
+
+  /* 목록 */
+  .tabs { padding-top: 8px; }
+  .tab { font-size: 15px; }
+  .row .m-desc, .idx-desc { font-size: 13px; }
+  .card { padding: 16px 16px 14px; }
+  .card .cardphoto { height: 160px; margin-bottom: 12px; }
+  .card .foot { margin-top: 12px; padding-top: 10px; }
+  .morewrap { margin-top: 14px; }
+
+  /* 상세 */
+  .detail { margin-top: 16px; }
+  .carousel, .detail-media, .detail-video { margin-bottom: 16px; }
+  .detail-desc { margin-top: 16px; }
+  .vote { margin-top: 26px; }
+  .reg { margin-top: 10px; }
+  .guess-pick { font-size: 28px; }
+
+  /* 게임(하이로우·세대 판독) */
+  .hl-title { font-size: 22px; margin: 4px 0 6px; }
+  .hl-desc { font-size: 15px; line-height: 1.6; }
+  .hl-pool { margin-bottom: 10px; }
+  .hl-card { padding: 12px; gap: 6px; }
+  .hl-idx { font-size: 26px; }
+  .era-card { padding: 14px; gap: 8px; }
+  .era-name { font-size: 20px; }
+  .era-result { padding: 22px 16px; margin-top: 14px; }
+  .era-year { font-size: 46px; }
+  .era-sub { font-size: 17px; }
+
+  /* 댓글·폼 */
+  .comments { margin-top: 32px; }
+  .cform { padding: 14px; margin-top: 14px; }
+  .citem { padding: 14px 2px; }
+  .subgate { padding: 18px; }
+  .subform { padding: 14px; }
+  .subrow { margin-bottom: 11px; }
+
+  /* 푸터 */
+  .site-footer { margin-top: 26px; }
+  .ft-inner { padding: 20px 18px 26px; gap: 10px; }
 }
 
 @media (max-width: 420px) {
