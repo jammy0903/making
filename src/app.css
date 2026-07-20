@@ -59,7 +59,7 @@ input::placeholder, textarea::placeholder { color: var(--mute5); }
 button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 1px;
 }
-button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
+button { font-family: var(--sans); cursor: pointer; }
 
 .wrap { max-width: 900px; margin: 0 auto; padding: 0 32px; }
 .wrap-narrow { max-width: 730px; margin: 0 auto; padding: 0 32px; }
@@ -118,7 +118,7 @@ button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
 .deck-counter { font-size: 13px; color: var(--mute3); }
 .deck-hint { text-align: center; margin-top: 10px; font-size: 12px; color: var(--mute4); }
 .deck-vote { display: flex; gap: 8px; margin-top: 16px; }
-.dv { flex: 1; padding: 12px 6px; font-size: 14px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); white-space: nowrap; transition: background .12s, color .12s, border-color .12s; }
+.dv { border-radius: 999px; flex: 1; padding: 12px 6px; font-size: 14px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); white-space: nowrap; transition: background .12s, color .12s, border-color .12s; }
 .dv-yes:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .dv-not:hover { background: var(--mute2); color: #fff; border-color: var(--mute2); }
 
@@ -260,7 +260,7 @@ button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
 
 /* 더 보기 */
 .morewrap { display: flex; justify-content: center; margin-top: 22px; }
-.more { border: 1px solid var(--line2); background: var(--surface); color: var(--mute); padding: 9px 26px; font-size: 13px; }
+.more { border-radius: 999px; border: 1px solid var(--line2); background: var(--surface); color: var(--mute); padding: 9px 26px; font-size: 13px; }
 .more:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Tabs ── */
@@ -272,7 +272,7 @@ button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
 
 /* ── Segmented (variant toggle) ── */
 .seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line2); border-radius: 999px; }
-.seg button { background: transparent; color: var(--mute); border: none; padding: 7px 16px; font-size: 13px; white-space: nowrap; }
+.seg button { border-radius: 999px; background: transparent; color: var(--mute); border: none; padding: 7px 16px; font-size: 13px; white-space: nowrap; }
 
 .seg button.on { background: var(--accent); color: #fff; }
 
@@ -355,7 +355,7 @@ button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
 
 /* ── Steady: categories ── */
 .cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 22px; }
-.cat { border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 6px 15px; font-size: 13px; white-space: nowrap; transition: background .12s; }
+.cat { border-radius: 999px; border: 1px solid var(--line2); background: var(--surface); color: var(--ink2); padding: 6px 15px; font-size: 13px; white-space: nowrap; transition: background .12s; }
 .cat.on { border-color: var(--accent); background: var(--accent); color: #fff; }
 /* 탭 밑 나라 필터 (전체/한국/미국) */
 .country-filter { display: flex; gap: 8px; margin: 12px 0 4px; }
@@ -479,6 +479,10 @@ button { font-family: var(--sans); cursor: pointer; border-radius: 999px; }
   font-size: 13px; color: var(--mute3);
 }
 .hl-over-actions button:disabled { opacity: 0.5; pointer-events: none; }
+/* 카카오 공유 — admin(static/style.css)에만 있던 규칙이 앱 페이지에 빠져 있었다 */
+.btn-kakao { display: inline-flex; align-items: center; gap: 7px; background: #FEE500; color: #191919; border: none; border-radius: 999px; padding: 8px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.btn-kakao:hover { background: #F6DC00; }
+.btn-kakao svg { flex-shrink: 0; }
 @media (max-width: 640px) {
   .hl-board { grid-template-columns: 1fr; }
   .hl-vs { justify-self: center; }
