@@ -26,26 +26,44 @@
   let best = $state(0);
   let lastCorrect = $state(false);
   let isNewBest = $state(false);
-  let queue: Card[] = [];
+  let usedIds = new Set<number>();
 
-  // 시작 화면은 정적 렌더 → 셔플은 클라이언트에서만(SSR 불일치 없음)
-  function shuffled(): Card[] {
-    const arr = [...data.pool];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+  // 지수(idx)로 정렬해 둔 배열 — 다음 상대를 "비슷한 순위대"에서 뽑는 데 씀.
+  // 완전 무작위 매칭은 초인기 밈 vs 무명 밈처럼 격차가 커서 찍어도 맞히는 매치가
+  // 잦았다(롱테일 분포라 대부분 쌍이 극단적으로 갈림) — 순위 인접 매칭으로 긴장감을 살린다.
+  const ranked: Card[] = [...data.pool].sort((x: Card, y: Card) => x.idx - y.idx);
+  const posOf = new Map<number, number>(ranked.map((c, i) => [c.id, i]));
+  const WINDOW = Math.max(4, Math.round(ranked.length * 0.12)); // 풀 크기의 ~12%, 최소 4
+
+  // anchor(직전 승자)와 순위가 가까운 상대를 window 안에서 무작위로 뽑는다.
+  // window 안에 이미 다 쓴 상대뿐이면 window를 넓혀가며 재시도(그래도 없으면 null).
+  function pickNear(anchorId: number, exclude: Set<number>): Card | null {
+    const pos = posOf.get(anchorId) ?? 0;
+    for (let radius = WINDOW; radius <= ranked.length; radius += WINDOW) {
+      const lo = Math.max(0, pos - radius);
+      const hi = Math.min(ranked.length - 1, pos + radius);
+      const cands = ranked.slice(lo, hi + 1).filter((c) => c.id !== anchorId && !exclude.has(c.id));
+      if (cands.length) return cands[Math.floor(Math.random() * cands.length)];
     }
-    return arr;
+    return null;
   }
-  function draw(): Card {
-    if (!queue.length) queue = shuffled().filter((p) => p.id !== a?.id && p.id !== b?.id);
-    return queue.pop()!;
+  // 다음 상대 뽑기 — window 안에 남은 후보가 없으면(많이 플레이해서 다 씀) anchor만
+  // 남기고 나머지는 재사용 가능하게 리셋(직전 상대 반복만 막고 계속 진행).
+  function nextOpponent(anchorId: number): Card {
+    let next = pickNear(anchorId, usedIds);
+    if (!next) {
+      usedIds = new Set([anchorId]);
+      next = pickNear(anchorId, usedIds)!;
+    }
+    usedIds.add(next.id);
+    return next;
   }
   function start() {
     best = Number(localStorage.getItem(BEST_KEY) || 0);
-    queue = shuffled();
-    a = queue.pop()!;
-    b = queue.pop()!;
+    usedIds = new Set();
+    a = ranked[Math.floor(Math.random() * ranked.length)];
+    usedIds.add(a.id);
+    b = nextOpponent(a.id);
     streak = 0;
     isNewBest = false;
     shareLabel = t.hl_share();
@@ -68,7 +86,7 @@
           localStorage.setItem(BEST_KEY, String(best));
         }
         a = b;
-        b = draw();
+        b = nextOpponent(a.id);
         phase = 'play';
       } else {
         phase = 'over';
