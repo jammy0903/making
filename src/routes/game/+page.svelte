@@ -2,11 +2,13 @@
   import { m as t } from '$lib/paraglide/messages'; // 상세 페이지와 동일하게 t로 alias
   import { onDestroy } from 'svelte';
   import { localizeHref } from '$lib/paraglide/runtime';
-  import { drawHlCard, cardBlob, shareBlob, saveBlob } from '$lib/client/share';
+  import { drawHlCard, cardBlob, shareBlob, saveBlob, publicImgUrl } from '$lib/client/share';
+  import { kakaoEnabled, shareKakao } from '$lib/client/kakao';
 
   let { data } = $props();
   let shareLabel = $state(t.hl_share());
   let saveLabel = $state(t.card_save());
+  let kakaoLabel = $state(t.kakao_share());
 
   // 결과 카드 — 게임이 끝나자마자 미리 그려 두고, 그 blob을 공유·저장이 함께 쓴다.
   let cardUrl = $state('');
@@ -48,6 +50,7 @@
     isNewBest = false;
     shareLabel = t.hl_share();
     saveLabel = t.card_save();
+    kakaoLabel = t.kakao_share();
     dropCard();
     phase = 'play';
   }
@@ -122,6 +125,23 @@
     saveLabel = t.card_save_done();
     setTimeout(() => (saveLabel = t.card_save()), 2500);
   }
+
+  async function shareToKakao() {
+    if (!b) return;
+    try {
+      await shareKakao({
+        title: t.hl_kakao_title({ n: streak }),
+        description: t.hl_kakao_desc({ name: b.name }),
+        imageUrl: publicImgUrl(b.photo),
+        path: '/game',
+        buttonText: t.hl_start(),
+      });
+    } catch (e) {
+      kakaoLabel = t.kakao_share_fail();
+      console.error('카톡 공유 오류:', e);
+      setTimeout(() => (kakaoLabel = t.kakao_share()), 2500);
+    }
+  }
 </script>
 
 <svelte:head>
@@ -190,6 +210,9 @@
 
         <div class="hl-over-actions">
           <button class="btn-solid" onclick={share} disabled={!cardUrl}>{shareLabel}</button>
+          {#if kakaoEnabled()}
+            <button class="btn" onclick={shareToKakao}>{kakaoLabel}</button>
+          {/if}
           <button class="btn" onclick={save} disabled={!cardUrl}>{saveLabel}</button>
           <button class="btn" onclick={start}>{t.hl_retry()}</button>
           {#if b}

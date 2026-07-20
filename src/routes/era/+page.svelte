@@ -2,7 +2,8 @@
   import { m as t } from '$lib/paraglide/messages'; // 다른 페이지와 동일하게 t로 alias
   import { onDestroy } from 'svelte';
   import { castAwareness, castReading, type AgeBand } from '$lib/client/api';
-  import { drawEraCard, cardBlob, shareBlob, saveBlob } from '$lib/client/share';
+  import { drawEraCard, cardBlob, shareBlob, saveBlob, publicImgUrl } from '$lib/client/share';
+  import { kakaoEnabled, shareKakao } from '$lib/client/kakao';
 
   let { data } = $props();
 
@@ -24,6 +25,7 @@
   let known = $state<Card[]>([]);
   let shareLabel = $state(t.era_share());
   let saveLabel = $state(t.card_save());
+  let kakaoLabel = $state(t.kakao_share());
   let ageDone = $state(false);
 
   // 결과 카드 — 결과에 진입하자마자 미리 그려 화면에 띄우고, 그 blob을 공유·저장이 함께 쓴다.
@@ -54,6 +56,7 @@
     known = [];
     shareLabel = t.era_share();
     saveLabel = t.card_save();
+    kakaoLabel = t.kakao_share();
     dropCard();
     ageDone = false;
     phase = 'play';
@@ -160,6 +163,23 @@
     saveLabel = t.card_save_done();
     setTimeout(() => (saveLabel = t.card_save()), 2500);
   }
+
+  async function shareToKakao() {
+    if (mentalYear === null) return;
+    try {
+      await shareKakao({
+        title: t.era_kakao_title({ year: headline }),
+        description: t.era_kakao_desc({ label: subline }),
+        imageUrl: publicImgUrl(known[0]?.photo ?? ''),
+        path: '/era',
+        buttonText: t.era_start(),
+      });
+    } catch (e) {
+      kakaoLabel = t.kakao_share_fail();
+      console.error('카톡 공유 오류:', e);
+      setTimeout(() => (kakaoLabel = t.kakao_share()), 2500);
+    }
+  }
 </script>
 
 <svelte:head>
@@ -221,6 +241,9 @@
 
       <div class="hl-over-actions">
         <button class="btn-solid" onclick={share} disabled={!cardUrl}>{shareLabel}</button>
+        {#if kakaoEnabled()}
+          <button class="btn" onclick={shareToKakao}>{kakaoLabel}</button>
+        {/if}
         <button class="btn" onclick={save} disabled={!cardUrl}>{saveLabel}</button>
         <button class="btn" onclick={start}>{t.era_retry()}</button>
       </div>
