@@ -163,7 +163,7 @@
   <div class="wrap page">
     <div class="list-head">
       <div class="count">{m.home_tag_count({ tag: activeTag, count: tagResults.length })}</div>
-      <a class="clear-tag" href={localizeHref('/')}>{m.home_tag_clear()}</a>
+      <a class="clear-tag" href={localizeHref('/')}><span class="x" aria-hidden="true">✕</span>{m.home_tag_clear()}</a>
     </div>
     {#if !tagResults.length}
       <div class="empty">{m.home_tag_empty({ tag: activeTag })}</div>
