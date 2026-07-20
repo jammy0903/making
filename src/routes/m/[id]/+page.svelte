@@ -3,11 +3,10 @@
   import { goto } from '$app/navigation';
   import { timeAgo, gallery, ytId, ytEmbed, ytThumb, displayTag, coverImage } from '$lib/cards';
   import { CATEGORIES } from '$lib/categories';
-  import { votedMap, sameMonth, markVoted, castVote, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, uploadMedia, type VoteChoice } from '$lib/client/api';
+  import { guessedMap, markGuessed, castEraGuess, postComment, editComment, deleteComment, fetchMemeRaw, updateMeme, deleteMemeById, uploadMedia } from '$lib/client/api';
   import { m as t } from '$lib/paraglide/messages'; // 컴포넌트 상태 m(밈)과 충돌 피해 t로 alias
   import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 
-  const CHOICE_LABEL: Record<VoteChoice, string> = { yes: t.choice_yes(), notmeme: t.choice_notmeme() };
   import { voteCard } from '$lib/client/share';
   import { login, isAdmin } from '$lib/client/auth';
   import { user } from '$lib/client/session.svelte';
@@ -158,28 +157,38 @@
   let editText = $state('');
   let confirmDelId = $state<number | null>(null);
   let shareLabel = $state(t.share_default());
-  let voteVersion = $state(0); // 투표 직후 쿨다운 재계산 트리거
 
   const canEdit = (c: { user_id: string | null }) =>
     !!user.current && (String(c.user_id) === String(user.current.id) || isAdmin(user.current));
 
-  // 게이지는 밈이다 vs 밈이 아니다. 예전엔 '죽은 밈이다'와의 생존율이었으나 사망 개념을
-  // 걷어내며 바뀌었다 — 언제 밈이었는지는 전성기 연도(era_year)가 답한다.
-  const total = $derived(m.voteYes + m.voteNotmeme);
-  const yesPct = $derived(total ? Math.round((m.voteYes / total) * 100) : 0);
-  const votedEntry = $derived.by(() => {
-    voteVersion;
+  // ── 연도 맞히기 ──
+  // 슬라이더 범위는 실제 era_year 분포(1985~2026)를 덮되, 시작값은 중앙값(2018)에 둔다
+  // — 어느 쪽으로도 같은 거리라 특정 연도로 유도하지 않는다.
+  const GUESS_MIN = 1985;
+  const GUESS_MAX = new Date().getFullYear();
+  let guessYear = $state(2018);
+  let guessVersion = $state(0); // 제출 직후 재계산 트리거
+  // 서버는 개별 추측을 안 내주므로(집계 뷰만 공개) 이미 맞혔는지는 로컬 기록으로 판단한다.
+  const myGuess = $derived.by(() => {
+    guessVersion;
     if (typeof localStorage === 'undefined') return null;
-    return votedMap()[String(m.id)] || null;
+    const v = guessedMap()[String(m.id)];
+    return typeof v === 'number' ? v : null;
   });
-  const votedNow = $derived(!!(votedEntry && sameMonth(votedEntry.t)));
-  const voteHint = $derived(
-    votedNow
-      ? t.vote_hint_done()
-      : votedEntry
-        ? t.vote_hint_last({ choice: CHOICE_LABEL[votedEntry.c as VoteChoice] ?? t.vote_judge_fallback() })
-        : ''
-  );
+  const guessDone = $derived(myGuess !== null);
+  const gap = $derived(myGuess !== null && data.eraYear ? Math.abs(myGuess - data.eraYear) : 0);
+
+  async function submitGuess() {
+    if (guessDone) return;
+    const y = guessYear;
+    markGuessed(m.id, y); // 먼저 로컬에 남긴다 — 전송이 실패해도 정답은 보여준다
+    guessVersion++;
+    try {
+      await castEraGuess(m.id, y);
+    } catch (e) {
+      console.error('연도 추측 전송 실패:', e); // 조용히 삼키지 않되 화면은 계속 진행
+    }
+  }
 
   const nextTarget = $derived(data.next ?? data.prev);
 
@@ -198,19 +207,6 @@
       inDefinedTermSet: { '@type': 'DefinedTermSet', name: t.detail_ld_setname(), url: `${page.url.origin}/` },
     })
   );
-
-  async function vote(choice: VoteChoice) {
-    if (votedNow) return;
-    markVoted(m.id, choice);
-    if (choice === 'yes') m.voteYes++;
-    else m.voteNotmeme++;
-    voteVersion++;
-    try {
-      await castVote(m.id, choice);
-    } catch {
-      /* 같은 달 중복(409) 등은 표시만 유지 */
-    }
-  }
 
   async function submitComment() {
     const text = draftText.trim();
@@ -266,7 +262,13 @@
   async function share() {
     shareLabel = t.share_making();
     try {
-      const r = await voteCard({ id: m.id, name: m.name, voteYes: m.voteYes, voteNotmeme: m.voteNotmeme, photo: coverImage(m) });
+      const r = await voteCard({
+        id: m.id,
+        name: m.name,
+        eraYear: data.eraYear,
+        myGuess, // 아직 안 맞혔으면 null → 카드가 정답 없이 "몇 년도게?"로 나간다(스포일러 방지)
+        photo: coverImage(m),
+      });
       shareLabel = r === 'downloaded+copied' ? t.share_saved_copied() : r === 'downloaded' ? t.share_saved() : r === 'shared' ? t.share_shared() : t.share_default();
     } catch (e) {
       shareLabel = t.share_fail();
@@ -399,46 +401,52 @@
       {#if m.desc}<p class="detail-desc">{m.desc}</p>{/if}
     {/if}
 
-    <div class="vote">
-      <!-- "○○ 뜻" 검색 방문자의 다음 질문에 대한 답 — 게이지를 문장으로 판정 -->
-      <div class="verdict">
-        <span class="verdict-q">{t.verdict_q()}</span>
-        <strong class="verdict-a">
-          {#if total < 3}{t.verdict_few()}
-          {:else if yesPct >= 70}{t.verdict_alive({ pct: yesPct })}
-          {:else if yesPct <= 30}{t.verdict_notmeme({ pct: 100 - yesPct })}
-          {:else}{t.verdict_split({ pct: yesPct })}{/if}
-        </strong>
-      </div>
-      <div class="vote-row">
-        <div class="vote-btns {votedNow ? 'voted' : ''}">
-          <button class="vote-btn" onclick={() => vote('yes')}>{t.vote_yes()}</button>
-          <button class="vote-btn" onclick={() => vote('notmeme')}>{t.vote_notmeme()}</button>
+    <!-- 방문자 판정 = 연도 맞히기. "○○ 뜻"으로 들어온 사람이 뜻을 읽은 뒤 바로 해볼 수 있는
+         한 동작이고, 이 사전의 축(전성기 연도)을 그대로 쓴다. era_year가 없으면 통째로 숨긴다. -->
+    {#if data.eraYear}
+      <div class="vote guess">
+        {#if !guessDone}
+          <div class="verdict">
+            <span class="verdict-q">{t.guess_q()}</span>
+            <strong class="verdict-a guess-pick">{guessYear}{t.guess_year_suffix()}</strong>
+          </div>
+          <input
+            class="guess-slider"
+            type="range"
+            min={GUESS_MIN}
+            max={GUESS_MAX}
+            step="1"
+            bind:value={guessYear}
+            aria-label={t.guess_q()}
+          />
+          <div class="guess-ends"><span>{GUESS_MIN}</span><span>{GUESS_MAX}</span></div>
+          <button class="btn-solid guess-submit" onclick={submitGuess}>{t.guess_submit()}</button>
+        {:else}
+          <div class="verdict">
+            <span class="verdict-q">{t.guess_answer_label()}</span>
+            <strong class="verdict-a">{data.eraYear}{t.guess_year_suffix()}</strong>
+          </div>
+          <div class="guess-result">
+            {#if gap === 0}{t.guess_exact()}
+            {:else}{t.guess_off({ mine: myGuess ?? 0, gap })}{/if}
+          </div>
+          {#if data.guessStat}
+            <div class="guess-crowd">{t.guess_crowd({ avg: data.guessStat.avg_guess, n: data.guessStat.guesses })}</div>
+          {/if}
+        {/if}
+        <div class="vote-foot">
+          <span class="vote-note">{t.guess_note()}</span>
+          <button class="vote-share" onclick={share}>{shareLabel}</button>
         </div>
-        <span class="vote-total">{t.vote_total({ count: total })}</span>
-        {#if voteHint}<span class="vote-hint">{voteHint}</span>{/if}
+        {#if guessDone && nextTarget}
+          <!-- 판정 직후 동선이 끊기지 않게 다음 밈으로 잇는 훅 -->
+          <a class="vote-next" href={localizeHref(`/m/${nextTarget.id}`)}>
+            <span>{t.next_hook_done()}</span>
+            <strong>{t.next_hook_cta({ name: nextTarget.name })}</strong>
+          </a>
+        {/if}
       </div>
-      <div
-        class="vote-bar"
-        role="progressbar"
-        aria-label={t.vote_aria_survival()}
-        aria-valuenow={yesPct}
-        aria-valuemin="0"
-        aria-valuemax="100"
-      ><div style="width:{yesPct}%"></div></div>
-      <div class="vote-legend"><span>{t.vote_legend_yes({ pct: yesPct, votes: m.voteYes })}</span><span>{t.vote_legend_no({ pct: 100 - yesPct, votes: m.voteNotmeme })}</span></div>
-      <div class="vote-foot">
-        <span class="vote-note">{t.vote_note()}</span>
-        <button class="vote-share" onclick={share}>{shareLabel}</button>
-      </div>
-      {#if votedNow && nextTarget}
-        <!-- 판정 직후 동선이 끊기지 않게 다음 밈으로 잇는 훅 -->
-        <a class="vote-next" href={localizeHref(`/m/${nextTarget.id}`)}>
-          <span>{t.next_hook_done()}</span>
-          <strong>{t.next_hook_cta({ name: nextTarget.name })}</strong>
-        </a>
-      {/if}
-    </div>
+    {/if}
 
     <div class="comments">
       <div class="comments-head"><h3>{t.comments_head({ count: m.commentCount })}</h3></div>

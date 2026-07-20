@@ -400,21 +400,19 @@ button { font-family: var(--sans); cursor: pointer; }
 .vote-next span { font-size: 12px; color: var(--mute3); }
 .vote-next strong { font-size: 14px; color: var(--accent); }
 .vote-next:hover strong { text-decoration: underline; }
-.vote-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.vote-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.vote-notmeme { font-size: 12px; color: var(--mute3); margin-top: 7px; }
-.vote-btns.voted { opacity: 0.45; pointer-events: none; }
-.vote-btn { border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 6px 20px; font-size: 14px; white-space: nowrap; }
-.vote-btn:hover { background: var(--accent); color: #fff; }
-.vote-total { font-size: 12px; color: var(--mute3); }
-.vote-hint { font-size: 12px; color: var(--accent-dark); }
 
 /* 재심 덱 배지 */
 .deck-retrial { display: inline-block; align-self: flex-start; margin-bottom: 8px; padding: 3px 10px; font-size: 11px; letter-spacing: 0.04em; color: var(--accent-dark); border: 1px solid var(--accent-line); background: var(--accent-bg); }
 
-.vote-bar { display: flex; height: 6px; margin-top: 18px; background: var(--line); overflow: hidden; }
-.vote-bar > div { background: var(--accent); }
-.vote-legend { display: flex; justify-content: space-between; margin-top: 9px; font-size: 12px; color: var(--mute); }
+/* ── 연도 맞히기 ── 슬라이더 하나로 끝나는 판정. 큰 숫자가 현재 선택값이라
+   손가락으로 끄는 동안 바로 읽힌다(모바일에서 연도 입력은 타이핑이 제일 나쁘다). */
+.guess-pick { font-size: 34px; letter-spacing: -0.01em; }
+.guess-slider { width: 100%; margin: 6px 0 2px; accent-color: var(--accent); }
+.guess-slider::-webkit-slider-thumb { cursor: grab; }
+.guess-ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--mute3); }
+.guess-submit { width: 100%; margin-top: 14px; }
+.guess-result { font-family: var(--serif); font-size: 15px; color: var(--ink2); }
+.guess-crowd { font-size: 12px; color: var(--mute3); margin-top: 6px; }
 .vote-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 .vote-note { font-size: 11px; color: var(--mute3); }
 .vote-share { border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent); padding: 5px 14px; font-size: 12px; white-space: nowrap; }
@@ -572,7 +570,6 @@ button { font-family: var(--sans); cursor: pointer; }
   .seg button { padding: 11px 16px; }
   .cat { padding: 10px 15px; }
   .more { padding: 12px 26px; }
-  .vote-btn { padding: 10px 20px; }
 
   /* iOS: 입력 포커스 자동확대 방지(폰트 16px 미만이면 확대됨) */
   .searchbar input,
@@ -590,8 +587,4 @@ button { font-family: var(--sans); cursor: pointer; }
   .list-head .seg { width: 100%; }
   .list-head .seg button { flex: 1; }
 
-  /* 판정 버튼 — 나란히 꽉 채운 큰 버튼 */
-  .vote-row { gap: 10px; }
-  .vote-btns { width: 100%; }
-  .vote-btn { flex: 1; }
 }

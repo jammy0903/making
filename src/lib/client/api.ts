@@ -68,6 +68,31 @@ export async function castAwareness(memeId: number, knows: boolean) {
   }
 }
 
+// ── 연도 맞히기(상세 페이지 판정) ──
+// awareness와 동일 관례: 브라우저당 밈 1회, 중복은 409로 오고 무시한다(정답은 이미 화면에 떴다).
+export async function castEraGuess(memeId: number, guessYear: number) {
+  try {
+    await sbPost('era_guesses', { meme_id: memeId, voter_id: voterId(), guess_year: guessYear }, 'return=minimal');
+  } catch (e) {
+    if (!String(e).includes(' 409')) throw e;
+  }
+}
+
+// 맞힌 연도 로컬 기억 — 재방문 시 정답을 다시 감추지 않으려고(서버는 개별 추측을 안 내준다)
+const GUESS_KEY = 'mmd-era-guess';
+export function guessedMap(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(GUESS_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+export function markGuessed(memeId: number | string, guessYear: number) {
+  const m = guessedMap();
+  m[String(memeId)] = guessYear;
+  localStorage.setItem(GUESS_KEY, JSON.stringify(m));
+}
+
 // ── 세대 판독 결과 + 실제 나이대 자기보고(정확도 측정용) ──
 export type AgeBand = '~19' | '20-24' | '25-29' | '30-39' | '40+';
 export async function castReading(mentalYear: number, knownCount: number, totalCount: number, ageBand: AgeBand) {
