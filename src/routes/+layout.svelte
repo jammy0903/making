@@ -19,6 +19,7 @@
   const navHome = $derived(koPath === '/');
   const navGame = $derived(koPath.startsWith('/game'));
   const navEra = $derived(koPath.startsWith('/era'));
+  const navJjal = $derived(koPath.startsWith('/jjal'));
 
   let theme = $state<'light' | 'dark'>('light');
 
@@ -78,6 +79,7 @@
       <a class="tb-seg" class:on={navHome} href={localizeHref('/')} aria-current={navHome ? 'page' : undefined}>{m.nav_home()}</a>
       <a class="tb-seg" class:on={navGame} href={localizeHref('/game')} aria-current={navGame ? 'page' : undefined}>{m.nav_game()}</a>
       <a class="tb-seg" class:on={navEra} href={localizeHref('/era')} aria-current={navEra ? 'page' : undefined}>{m.nav_era()}</a>
+      <a class="tb-seg" class:on={navJjal} href={localizeHref('/jjal')} aria-current={navJjal ? 'page' : undefined}>{m.nav_jjal()}</a>
     </nav>
     <span class="tb-auth">
       <button
