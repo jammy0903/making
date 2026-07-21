@@ -90,11 +90,20 @@ def main() -> None:
     probed = [r for r in probed if ok_shape(r)]
     print(f"C. 형태 필터 → {len(probed)}")
 
-    # B. 근사 중복 제거 — 같은 짤이 키워드마다 다른 URL로 잡히는 걸 잡는다
+    # B. 근사 중복 제거 — 같은 짤이 키워드마다 다른 URL로 잡히는 걸 잡는다.
+    # 전수 비교는 수만 개에서 O(n²)로 못 쓴다. 64비트 해시를 8비트씩 8밴드로 쪼개
+    # 같은 밴드를 공유하는 후보끼리만 비교한다 — 비둘기집 원리상 거리 7 이하면
+    # 반드시 한 밴드가 일치하므로 HAMMING_MAX(=5)에선 전수 비교와 결과가 같다.
     kept: list[dict] = []
+    buckets: dict[tuple[int, int], list[int]] = {}
     for r in probed:
-        if any(bin(r["_hash"] ^ k["_hash"]).count("1") <= HAMMING_MAX for k in kept):
+        h = r["_hash"]
+        bands = [(i, (h >> (i * 8)) & 0xFF) for i in range(8)]
+        cand = {i for b in bands for i in buckets.get(b, ())}
+        if any(bin(h ^ kept[i]["_hash"]).count("1") <= HAMMING_MAX for i in cand):
             continue
+        for b in bands:
+            buckets.setdefault(b, []).append(len(kept))
         kept.append(r)
     print(f"B. 근사 중복 제거 → {len(kept)}")
 
