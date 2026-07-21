@@ -66,25 +66,26 @@ export async function searchJjals(fetch: Fetch, raw: string): Promise<Jjal[]> {
   const out: Jjal[] = [];
 
   // 별칭 확장 — 'GD'로는 0건이지만 '지드래곤'으로는 나온다(docs/jjal-alias-plan.md).
-  // 원본이 배열 맨 앞이라 원본 일치 결과가 항상 위에 온다.
-  for (const term of expandQuery(q)) {
-    const enc = encodeURIComponent(term);
-    // ① keywords 배열 정확 일치 — 벡터 점수와 무관하게 최상단 고정이 원칙
-    const exact = await sbGet<Jjal[]>(
-      fetch,
-      `jjals?select=${COLS}&status=eq.live&keywords=cs.{"${enc}"}&limit=120`
-    );
-    for (const j of exact) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
-
-    // ①' caption 부분 일치 — 정확 일치가 못 잡는 표현을 받친다.
-    // 한 글자엔 쓰지 않는다: "비"가 "미모의 비결"의 '비'에도 걸려 결과가 온통 노이즈가 된다
-    if (term.length >= 2) {
-      const like = await sbGet<Jjal[]>(
-        fetch,
-        `jjals?select=${COLS}&status=eq.live&caption=ilike.*${enc}*&limit=120`
-      );
-      for (const j of like) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
-    }
+  // 확장어마다 순차로 왕복하면 응답이 확장어 수에 비례해 늘어난다(실측: 1개 0.19s → 4개 0.62s).
+  // 서로 의존이 없으므로 전부 동시에 던지고, 합칠 때만 순서를 지킨다.
+  const terms = expandQuery(q);
+  const pairs = await Promise.all(
+    terms.map(async (term) => {
+      const enc = encodeURIComponent(term);
+      return Promise.all([
+        // ① keywords 배열 정확 일치 — 벡터 점수와 무관하게 최상단 고정이 원칙
+        sbGet<Jjal[]>(fetch, `jjals?select=${COLS}&status=eq.live&keywords=cs.{"${enc}"}&limit=120`),
+        // ①' caption 부분 일치 — 정확 일치가 못 잡는 표현을 받친다.
+        // 한 글자엔 쓰지 않는다: "비"가 "미모의 비결"의 '비'에도 걸려 결과가 온통 노이즈가 된다
+        term.length >= 2
+          ? sbGet<Jjal[]>(fetch, `jjals?select=${COLS}&status=eq.live&caption=ilike.*${enc}*&limit=120`)
+          : Promise.resolve([] as Jjal[]),
+      ]);
+    })
+  );
+  // 합치는 순서가 곧 노출 순서다 — 원본 질의(terms[0])의 정확 일치가 항상 맨 위에 온다
+  for (const [exact, like] of pairs) {
+    for (const j of [...exact, ...like]) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
   }
 
   // ② 벡터 유사도 — 의미 확장(비 → 장마·우산). 거리 컷 밖은 버린다(없으면 안 보여준다 원칙)
