@@ -21,15 +21,25 @@ export const GET: RequestHandler = async ({ fetch, url }) => {
     `  <url><loc>${koOf(path)}</loc>${alts(path)}${extra}</url>\n` +
     `  <url><loc>${enOf(path)}</loc>${alts(path)}${extra}</url>`;
 
-  const staticUrls = [pair('/', '<priority>1.0</priority>'), pair('/all', '<priority>0.8</priority>'), pair('/game', '<priority>0.6</priority>'), pair('/era', '<priority>0.6</priority>'), pair('/about')].join('\n');
+  // 짤은 아직 i18n 미적용(한국어 전용)이라 en 대체링크를 만들지 않는다 — 없는 번역을 가리키게 된다
+  const single = (path: string, extra = '') => `  <url><loc>${koOf(path)}</loc>${extra}</url>`;
+
+  const staticUrls = [pair('/', '<priority>1.0</priority>'), pair('/all', '<priority>0.8</priority>'), pair('/game', '<priority>0.6</priority>'), pair('/era', '<priority>0.6</priority>'), pair('/about'), single('/jjal', '<priority>0.8</priority>')].join('\n');
   const memeUrls = rows
     .map((r) => pair(`/m/${r.id}`, `<lastmod>${String(r.last_activity).slice(0, 10)}</lastmod>`))
     .join('\n');
+  // 짤 상세 — 캡션·키워드를 가진 색인 대상만(docs/jjal-seo-plan.md: 텍스트가 유일한 색인 재료)
+  const jjals = await sbGetAll<{ id: number }>(
+    fetch,
+    'jjals?select=id&status=eq.live&caption=not.is.null&order=id.asc'
+  );
+  const jjalUrls = jjals.map((r) => single(`/jjal/${r.id}`)).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${staticUrls}
 ${memeUrls}
+${jjalUrls}
 </urlset>`;
   return new Response(xml, {
     headers: { 'Content-Type': 'application/xml', 'cache-control': 'public, max-age=0, s-maxage=3600' },

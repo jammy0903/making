@@ -2,6 +2,8 @@
   // 짤 보관소 — 검색 → 메이슨리 그리드 → 클릭 시 확대 + 복사·다운로드.
   // 메이슨리는 CSS columns가 아니라 JS 열 분배(설계서 6장: 순서 보존·append 시 재배치 방지).
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
+  import { copyImage, download, isGif } from '$lib/client/jjalImage';
 
   let { data } = $props();
 
@@ -19,7 +21,12 @@
     const w = window.innerWidth;
     cols = w < 480 ? 2 : w < 900 ? 3 : w < 1280 ? 4 : 5;
   }
-  onMount(calcCols);
+  onMount(() => {
+    calcCols();
+    // 상세 페이지의 키워드 링크(/jjal?q=퇴근)로 들어온 경우 바로 그 검색을 재현한다
+    const initial = page.url.searchParams.get('q');
+    if (initial) search(initial);
+  });
 
   // 현재 높이가 가장 낮은 열에 다음 아이템을 넣는다 — 유사도 순서가 좌→우로 유지된다
   const columns = $derived.by(() => {
@@ -53,51 +60,29 @@
     }
   }
 
-  // 복사·다운로드는 /img 프록시 경유 — 외부 CDN이 CORS를 안 줘도 same-origin으로 받는다
-  const proxied = (j: Jjal) => `/img?u=${encodeURIComponent(j.image_url)}`;
-
-  async function copyImage(j: Jjal) {
-    try {
-      const blob = await (await fetch(proxied(j))).blob();
-      // 클립보드는 PNG만 받는 브라우저가 많다 — 캔버스로 변환
-      const png = blob.type === 'image/png' ? blob : await toPng(blob);
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
-      copyLabel = '복사됨!';
-    } catch {
-      copyLabel = '실패 — 다운로드를 이용하세요';
-    }
+  async function onCopy(j: Jjal) {
+    copyLabel = (await copyImage(j.image_url)) ? '복사됨!' : '실패 — 다운로드를 이용하세요';
     setTimeout(() => (copyLabel = '복사'), 1500);
   }
-
-  async function toPng(blob: Blob): Promise<Blob> {
-    const bmp = await createImageBitmap(blob);
-    const c = document.createElement('canvas');
-    c.width = bmp.width;
-    c.height = bmp.height;
-    c.getContext('2d')!.drawImage(bmp, 0, 0);
-    return new Promise((res) => c.toBlob((b) => res(b!), 'image/png'));
-  }
-
-  async function download(j: Jjal) {
-    try {
-      const blob = await (await fetch(proxied(j))).blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `jjal-${j.id}.${blob.type.split('/')[1] || 'jpg'}`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(j.image_url, '_blank'); // 프록시 실패 시 원본 새 탭 → 직접 저장
-    }
-  }
-
-  const isGif = (j: Jjal) => /\.gif($|\?)/i.test(j.image_url);
 </script>
 
 <svelte:window onresize={calcCols} />
 <svelte:head>
-  <title>짤 보관소 — memedics</title>
-  <meta name="description" content="상황에 맞는 짤을 검색하고 바로 복사·저장하세요." />
+  <title>짤 보관소 — 상황별 웃긴 짤 검색 | memedics</title>
+  <meta
+    name="description"
+    content="퇴근·현타·어이없음 같은 상황과 감정으로 짤을 검색하고, 복사·다운로드해서 메신저에 바로 쓰세요."
+  />
+  <link rel="canonical" href="{page.url.origin}/jjal" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="memedics" />
+  <meta property="og:title" content="짤 보관소 — 상황별 웃긴 짤 검색" />
+  <meta
+    property="og:description"
+    content="상황과 감정으로 검색해서 딱 맞는 짤을 찾고 바로 복사하세요."
+  />
+  <meta property="og:url" content="{page.url.origin}/jjal" />
+  <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <div class="wrap">
@@ -132,14 +117,23 @@
       {#each columns as col, ci (ci)}
         <div class="col">
           {#each col as j (j.id)}
-            <button class="cell" onclick={() => (sel = j)}>
+            <!-- href는 크롤러용(색인 경로), 클릭은 모달 — onClick 전용 링크는 네이버·구글 모두 못 따라간다 -->
+            <a
+              class="cell"
+              href="/jjal/{j.id}"
+              onclick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey) return; // 새 탭 열기는 그대로 둔다
+                e.preventDefault();
+                sel = j;
+              }}
+            >
               <img
                 src={j.thumb_url || j.image_url}
                 alt={j.caption || '짤'}
                 loading="lazy"
                 style:aspect-ratio={j.width && j.height ? `${j.width}/${j.height}` : undefined}
               />
-            </button>
+            </a>
           {/each}
         </div>
       {/each}
@@ -160,13 +154,14 @@
       <img src={sel.image_url} alt={sel.caption || '짤'} />
       {#if sel.caption}<p class="cap">{sel.caption}</p>{/if}
       <div class="actions">
-        {#if isGif(sel)}
+        {#if isGif(sel.image_url)}
           <!-- GIF는 복사하면 정지 이미지가 된다 — 다운로드가 기본 -->
-          <button class="primary" onclick={() => download(sel!)}>GIF 저장</button>
+          <button class="primary" onclick={() => download(sel!.image_url, sel!.id)}>GIF 저장</button>
         {:else}
-          <button class="primary" onclick={() => copyImage(sel!)}>{copyLabel}</button>
-          <button onclick={() => download(sel!)}>다운로드</button>
+          <button class="primary" onclick={() => onCopy(sel!)}>{copyLabel}</button>
+          <button onclick={() => download(sel!.image_url, sel!.id)}>다운로드</button>
         {/if}
+        <a href="/jjal/{sel.id}">자세히</a>
         {#if sel.meme_id}
           <a href="/m/{sel.meme_id}">밈 사전에서 보기</a>
         {/if}
