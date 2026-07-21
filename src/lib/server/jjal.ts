@@ -2,6 +2,7 @@
 // ⓪ keywords 정확 일치(최상단 고정) → ① caption 부분 일치 → ② 벡터 유사도(의미 확장).
 // 질의 임베딩은 HF 추론 API(multilingual-e5-large)로 만들고 jjal_queries에 캐시한다.
 import { sbGet } from '$lib/server/db';
+import { expandQuery } from '$lib/server/jjalAlias';
 import { SB_URL, SB_KEY } from '$lib/sb';
 import { env } from '$env/dynamic/private';
 
@@ -61,23 +62,29 @@ async function embedQuery(fetch: Fetch, q: string): Promise<string | null> {
 export async function searchJjals(fetch: Fetch, raw: string): Promise<Jjal[]> {
   const q = raw.trim().slice(0, QUERY_MAX);
   if (!q) return [];
-  const enc = encodeURIComponent(q);
-  // ① keywords 배열 정확 일치 — 벡터 점수와 무관하게 최상단 고정이 원칙
-  const exact = await sbGet<Jjal[]>(
-    fetch,
-    `jjals?select=${COLS}&status=eq.live&keywords=cs.{"${enc}"}&limit=120`
-  );
-  const seen = new Set(exact.map((j) => j.id));
-  const out: Jjal[] = [...exact];
+  const seen = new Set<number>();
+  const out: Jjal[] = [];
 
-  // ① caption 부분 일치 — 정확 일치가 못 잡는 표현을 받친다.
-  // 한 글자 질의엔 쓰지 않는다: "비"가 "미모의 비결"의 '비'에도 걸려 결과가 온통 노이즈가 된다
-  if (q.length >= 2) {
-    const like = await sbGet<Jjal[]>(
+  // 별칭 확장 — 'GD'로는 0건이지만 '지드래곤'으로는 나온다(docs/jjal-alias-plan.md).
+  // 원본이 배열 맨 앞이라 원본 일치 결과가 항상 위에 온다.
+  for (const term of expandQuery(q)) {
+    const enc = encodeURIComponent(term);
+    // ① keywords 배열 정확 일치 — 벡터 점수와 무관하게 최상단 고정이 원칙
+    const exact = await sbGet<Jjal[]>(
       fetch,
-      `jjals?select=${COLS}&status=eq.live&caption=ilike.*${enc}*&limit=120`
+      `jjals?select=${COLS}&status=eq.live&keywords=cs.{"${enc}"}&limit=120`
     );
-    for (const j of like) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
+    for (const j of exact) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
+
+    // ①' caption 부분 일치 — 정확 일치가 못 잡는 표현을 받친다.
+    // 한 글자엔 쓰지 않는다: "비"가 "미모의 비결"의 '비'에도 걸려 결과가 온통 노이즈가 된다
+    if (term.length >= 2) {
+      const like = await sbGet<Jjal[]>(
+        fetch,
+        `jjals?select=${COLS}&status=eq.live&caption=ilike.*${enc}*&limit=120`
+      );
+      for (const j of like) if (!seen.has(j.id)) { seen.add(j.id); out.push(j); }
+    }
   }
 
   // ② 벡터 유사도 — 의미 확장(비 → 장마·우산). 거리 컷 밖은 버린다(없으면 안 보여준다 원칙)
