@@ -92,6 +92,25 @@ export async function searchJjals(fetch: Fetch, raw: string): Promise<Jjal[]> {
   return out;
 }
 
+// 상세 페이지 — 색인 대상이므로 없으면 404를 내야 한다(soft 404 금지)
+export async function getJjal(fetch: Fetch, id: number): Promise<Jjal | null> {
+  const rows = await sbGet<Jjal[]>(fetch, `jjals?select=${COLS}&status=eq.live&id=eq.${id}&limit=1`);
+  return rows[0] ?? null;
+}
+
+// 상세 페이지 하단 관련 짤 — 키워드가 하나라도 겹치는 것.
+// 내부 링크가 곧 크롤 경로다(그리드에서 못 닿는 짤을 여기서 잇는다).
+export async function relatedJjals(fetch: Fetch, j: Jjal, limit = 12): Promise<Jjal[]> {
+  const kws = (j.keywords || []).slice(0, 6);
+  if (!kws.length) return [];
+  const ov = kws.map((k) => `"${encodeURIComponent(k)}"`).join(',');
+  const rows = await sbGet<Jjal[]>(
+    fetch,
+    `jjals?select=${COLS}&status=eq.live&keywords=ov.{${ov}}&id=neq.${j.id}&limit=${limit}`
+  );
+  return rows;
+}
+
 // 첫 진입 그리드 — 최신 등록순 한 묶음
 export async function recentJjals(fetch: Fetch, limit = 60): Promise<Jjal[]> {
   return sbGet<Jjal[]>(
