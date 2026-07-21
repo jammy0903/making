@@ -10,7 +10,7 @@
   const url = $derived(`${page.url.origin}/jjal/${j.id}`);
 
   // 캡션이 곧 title이다 — 판정 단계에서 만든 한국어 한 문장이 검색 결과에 그대로 노출된다
-  const title = $derived(`${j.caption || `짤 #${j.id}`} — 짤 보관소 | memedics`);
+  const title = $derived(`${j.caption || `짤 #${j.id}`} · 짤 보관소 | memedics`);
   const desc = $derived(
     j.caption
       ? `${j.caption} · ${kws.length ? kws.join(', ') + ' 상황에 쓰는 짤입니다. ' : ''}복사·다운로드해서 메신저에 바로 쓰세요.`

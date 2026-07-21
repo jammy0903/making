@@ -68,7 +68,7 @@
 
 <svelte:window onresize={calcCols} />
 <svelte:head>
-  <title>짤 보관소 — 상황별 웃긴 짤 검색 | memedics</title>
+  <title>짤 보관소 · 상황별 웃긴 짤 검색 | memedics</title>
   <meta
     name="description"
     content="퇴근·현타·어이없음 같은 상황과 감정으로 짤을 검색하고, 복사·다운로드해서 메신저에 바로 쓰세요."
@@ -76,7 +76,7 @@
   <link rel="canonical" href="{page.url.origin}/jjal" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="memedics" />
-  <meta property="og:title" content="짤 보관소 — 상황별 웃긴 짤 검색" />
+  <meta property="og:title" content="짤 보관소 · 상황별 웃긴 짤 검색" />
   <meta
     property="og:description"
     content="상황과 감정으로 검색해서 딱 맞는 짤을 찾고 바로 복사하세요."
