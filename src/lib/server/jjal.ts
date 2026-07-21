@@ -28,10 +28,12 @@ export async function searchJjals(fetch: Fetch, raw: string): Promise<Jjal[]> {
     fetch,
     `jjals?select=${COLS}&status=eq.live&keywords=cs.{"${enc}"}&limit=120`
   );
-  // ② caption·keywords 부분 일치 — 정확 일치가 못 잡는 표현을 받친다
+  // ② caption 부분 일치 — 정확 일치가 못 잡는 표현을 받친다.
+  // 한 글자 질의엔 쓰지 않는다: "비"가 "미모의 비결"의 '비'에도 걸려 결과가 온통 노이즈가 된다
+  if (q.length < 2) return exact;
   const like = await sbGet<Jjal[]>(
     fetch,
-    `jjals?select=${COLS}&status=eq.live&or=(caption.ilike.*${enc}*,keywords.cs.{"${enc}"})&limit=120`
+    `jjals?select=${COLS}&status=eq.live&caption=ilike.*${enc}*&limit=120`
   );
   const seen = new Set(exact.map((j) => j.id));
   return [...exact, ...like.filter((j) => !seen.has(j.id))];
