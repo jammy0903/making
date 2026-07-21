@@ -46,7 +46,14 @@ def load_seen() -> set[str]:
 
 def crawl_keyword(page, keyword: str, scrolls: int, seen: set[str]) -> list[dict]:
     url = "https://www.pinterest.com/search/pins/?q=" + urllib.parse.quote(keyword)
-    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    for attempt in range(3):  # 첫 로드는 종종 타임아웃난다 — 키워드를 통째로 잃지 않게 재시도
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            break
+        except Exception:
+            if attempt == 2:
+                raise
+            page.wait_for_timeout(5000)
     page.wait_for_timeout(5000)
 
     found: dict[str, str] = {}

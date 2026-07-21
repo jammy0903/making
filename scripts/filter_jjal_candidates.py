@@ -37,7 +37,7 @@ BLOCK = [
 
 def dhash(img: Image.Image, size: int = 8) -> int:
     g = img.convert("L").resize((size + 1, size), Image.LANCZOS)
-    px = list(g.getdata())
+    px = list(g.tobytes())
     bits = 0
     for row in range(size):
         base = row * (size + 1)
