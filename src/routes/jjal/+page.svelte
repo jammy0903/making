@@ -139,6 +139,16 @@
       {/each}
     </div>
   {/if}
+
+  <!-- 태그 랜딩 앵커 — 크롤러가 /jjal에서 태그 페이지로 내려가는 경로(칩 버튼은 크롤 불가) -->
+  <nav class="taglinks">
+    <h2>태그로 보기</h2>
+    <ul>
+      {#each data.tags as t (t.keyword)}
+        <li><a href="/jjal/tag/{encodeURIComponent(t.keyword)}">{t.title}</a></li>
+      {/each}
+    </ul>
+  </nav>
 </div>
 
 {#if sel}
@@ -251,6 +261,30 @@
     text-align: center;
     color: var(--muted, #888);
     padding: 48px 0;
+  }
+  .taglinks {
+    margin-top: 32px;
+  }
+  .taglinks h2 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  .taglinks ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .taglinks a {
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1px solid var(--line, #ddd);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    color: inherit;
   }
   .modal {
     position: fixed;
