@@ -2,6 +2,7 @@
 // 네이버 가이드가 "모든 콘텐츠가 JS로 로딩되는 구조"를 미노출 사유로 명시하므로 SSR로 내려준다.
 import { error } from '@sveltejs/kit';
 import { getJjal, relatedJjals } from '$lib/server/jjal';
+import { getTag } from '$lib/server/jjalTags';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, params, setHeaders }) => {
@@ -12,6 +13,8 @@ export const load: PageServerLoad = async ({ fetch, params, setHeaders }) => {
   if (!jjal) throw error(404, '없는 짤이에요'); // soft 404 금지 — 크롤 예산이 샌다
 
   const related = await relatedJjals(fetch, jjal);
+  // 키워드 중 태그 랜딩이 있는 것 — 칩을 검색(?q=)이 아니라 색인 페이지로 잇는다(내부 링크 강화)
+  const taggedKws = (jjal.keywords || []).filter((k) => getTag(k));
   setHeaders({ 'cache-control': 'public, max-age=0, s-maxage=3600' });
-  return { jjal, related };
+  return { jjal, related, taggedKws };
 };

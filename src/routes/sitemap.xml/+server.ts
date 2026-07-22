@@ -1,6 +1,7 @@
 // 사이트맵 — 밈별 상세 URL 전부 색인 요청("○○ 뜻" 검색 유입의 통로).
 // ko(무접두)·en(/en/) 양쪽을 xhtml:link 대체링크로 상호 연결(다국어 SEO).
 import { sbGetAll } from '$lib/server/db';
+import { JJAL_TAGS } from '$lib/server/jjalTags';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ fetch, url }) => {
@@ -34,11 +35,16 @@ export const GET: RequestHandler = async ({ fetch, url }) => {
     'jjals?select=id&status=eq.live&caption=not.is.null&order=id.asc'
   );
   const jjalUrls = jjals.map((r) => single(`/jjal/${r.id}`)).join('\n');
+  // 태그 랜딩 — 도입 문단을 가진 큐레이션 태그만(Phase 2 원칙)
+  const tagUrls = JJAL_TAGS.map((t) =>
+    single(`/jjal/tag/${encodeURIComponent(t.keyword)}`, '<priority>0.7</priority>')
+  ).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${staticUrls}
 ${memeUrls}
+${tagUrls}
 ${jjalUrls}
 </urlset>`;
   return new Response(xml, {

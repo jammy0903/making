@@ -90,7 +90,14 @@
       <!-- 키워드는 텍스트로도 남긴다 — 이 페이지가 가진 거의 유일한 색인 재료다 -->
       <ul class="kws">
         {#each kws as k (k)}
-          <li><a href="/jjal?q={encodeURIComponent(k)}">{k}</a></li>
+          <!-- 태그 랜딩이 있으면 그쪽으로 — ?q= 검색 URL은 색인 대상이 아니다 -->
+          <li>
+            <a
+              href={data.taggedKws.includes(k)
+                ? `/jjal/tag/${encodeURIComponent(k)}`
+                : `/jjal?q=${encodeURIComponent(k)}`}>{k}</a
+            >
+          </li>
         {/each}
       </ul>
     {/if}
